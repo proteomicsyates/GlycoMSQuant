@@ -45,13 +45,15 @@ import gnu.trove.map.hash.TObjectDoubleHashMap;
  * @author salvador
  *
  */
-public class QuantCompare2PCQInputTSV {
+public class QuantCompare2PCQInputTSV extends javax.swing.SwingWorker<File, Object> {
 	private final static Logger log = Logger.getLogger(QuantCompare2PCQInputTSV.class);
 	private final File inputFile;
 	private final String proteinOfInterestACC;
-	final static double DEFAULT_FAKE_PTM = 0.123;
+	public final static double DEFAULT_FAKE_PTM = 0.123;
 	private final static DecimalFormat formatter = new DecimalFormat("+#.###");
 	private final static String DEFAULT_PROTEIN_OF_INTEREST = "BG505_SOSIP_gp140";
+	public static final String FINISHED = "Conversion_finished";
+	public static final String NUM_VALID_PEPTIDES = "Num_valid_peptides";
 	private final double fakePTM;
 	private final double intensityThreshold;
 	private int peptidesValid;
@@ -122,7 +124,7 @@ public class QuantCompare2PCQInputTSV {
 		final QuantCompare2PCQInputTSV q = new QuantCompare2PCQInputTSV(inputFile, proteinOfInterestACC, fakePTM, 0.0,
 				AmountType.INTENSITY, normlizeExperimentsByProtein, "");
 		try {
-			final File pcqFile = q.run();
+			final File pcqFile = q.runConversion();
 			if (pcqFile != null && pcqFile.exists()) {
 				log.info("PCQ input file created succesfully at: " + pcqFile.getAbsolutePath());
 			}
@@ -141,7 +143,8 @@ public class QuantCompare2PCQInputTSV {
 	 * @return
 	 * @throws IOException
 	 */
-	public File run() throws IOException {
+	public File runConversion() throws IOException {
+		firePropertyChange("progress", null, "Reading input file...");
 		final QuantCompareParser reader = new QuantCompareParser(inputFile);
 		reader.setChargeSensible(true);
 		reader.setDistinguishModifiedSequences(true);
@@ -149,6 +152,7 @@ public class QuantCompare2PCQInputTSV {
 		File outputFile = new File(inputFile.getParentFile().getAbsolutePath() + File.separator
 				+ FilenameUtils.getBaseName(inputFile.getAbsolutePath()) + suffix + "_pcq.txt");
 		writeFile(outputFile, reader);
+		firePropertyChange(FINISHED, null, outputFile);
 		return outputFile;
 	}
 
@@ -162,6 +166,8 @@ public class QuantCompare2PCQInputTSV {
 			fw.write("ID\tSEQUENCE\tINTENSITY\tweight\tPROTEIN\n");
 			List<QuantifiedPeptideInterface> peptides = new ArrayList<QuantifiedPeptideInterface>();
 			peptides.addAll(reader.getPeptideMap().values());
+			firePropertyChange("progress", null, "Input file readed. Working with " + peptides.size() + " peptides.");
+			firePropertyChange("progress", "", "Filtering list of peptides...");
 			int initialNumberOfPeptides = peptides.size();
 			THashMap<String, TDoubleList> intensitiesByExperiment = new THashMap<String, TDoubleList>();
 			Iterator<QuantifiedPeptideInterface> iterator = peptides.iterator();
@@ -264,7 +270,9 @@ public class QuantCompare2PCQInputTSV {
 					continue;
 				}
 			}
+			firePropertyChange("progress", null, "Filtering done.");
 			peptidesValid = peptides.size();
+			firePropertyChange(NUM_VALID_PEPTIDES, null, peptidesValid);
 			log.info(peptidesDiscardedByWrongProtein + " peptides discarded because they do not belong to protein "
 					+ this.proteinOfInterestACC);
 			log.info(peptidesDiscardedByNotHavingMotifs
@@ -276,6 +284,8 @@ public class QuantCompare2PCQInputTSV {
 					+ " intensities discarded because they do not pass intensity threshold of '" + intensityThreshold
 					+ "'");
 			log.info(peptides.size() + " peptides valid for analysis out of " + initialNumberOfPeptides);
+			firePropertyChange("progress", null,
+					peptides.size() + " peptides valid for analysis out of " + initialNumberOfPeptides);
 			if (peptidesValid == 0) {
 				throw new IllegalArgumentException("None valid peptides on input file");
 			}
@@ -322,6 +332,11 @@ public class QuantCompare2PCQInputTSV {
 			}
 		}
 
+	}
+
+	@Override
+	protected File doInBackground() throws Exception {
+		return runConversion();
 	}
 
 }

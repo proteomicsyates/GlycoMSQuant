@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 
-public class HIVPTMAnalyzerIterator {
+public class GlycoPTMAnalyzerIterator {
 
 	private static final int MAX_ITERATIONS = 20;
 
@@ -16,7 +16,7 @@ public class HIVPTMAnalyzerIterator {
 			fw = new FileWriter(
 					new File("C:\\Users\\salvador\\Desktop\\HIV project\\HighMan_500ng_HFX_labelfree\\iterations.txt"));
 			Double maxAverageOf_203 = -Double.MAX_VALUE;
-
+			boolean calculateProportionsByPeptidesFirst = true;
 			int numIterations = 0;
 			double intensityThrehold = 1;
 			double optimalThreshold = intensityThrehold;
@@ -24,7 +24,7 @@ public class HIVPTMAnalyzerIterator {
 			while (numIterations < MAX_ITERATIONS) {
 				try {
 					intensityThrehold = intensityThrehold * 10;
-					HIVPTMAnalyzer analyzer = runAnalysis(intensityThrehold);
+					GlycoPTMAnalyzer analyzer = runAnalysis(intensityThrehold, calculateProportionsByPeptidesFirst);
 					double average = analyzer.getAveragePercentage(PTMCode._203);
 
 					double d = average - maxAverageOf_203;
@@ -60,7 +60,8 @@ public class HIVPTMAnalyzerIterator {
 		}
 	}
 
-	private static HIVPTMAnalyzer runAnalysis(double intensityThreshold) throws IOException {
+	private static GlycoPTMAnalyzer runAnalysis(double intensityThreshold, boolean calculateProportionsByPeptidesFirst)
+			throws IOException {
 		System.out.println("Running analysis with threshold=" + intensityThreshold);
 		File inputFile = new File(
 				"C:\\Users\\salvador\\Desktop\\HIV project\\HighMan_500ng_HFX_labelfree\\HighMan_500ng_HFX_labelfree.txt");
@@ -68,12 +69,13 @@ public class HIVPTMAnalyzerIterator {
 				"C:\\Users\\salvador\\Desktop\\HIV project\\IP2_claired_database__UniProt_Bos_Taurus_BG505_SOSIP_gp140_01-20-2015_reversed.fasta");
 		String prefix = "HighMan_500ng_HFX_labelfree";
 		String suffix = "";
-		String proteinOfInterestACC = HIVPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST;
+		String proteinOfInterestACC = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST;
 		boolean normalizeExperimentsByProtein = true;
-		HIVPTMAnalyzer analyzer = new HIVPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, 0.1234, prefix, suffix,
-				intensityThreshold, AmountType.INTENSITY, normalizeExperimentsByProtein);
+
+		GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, 0.1234, prefix, suffix,
+				intensityThreshold, AmountType.INTENSITY, normalizeExperimentsByProtein,
+				calculateProportionsByPeptidesFirst);
 		analyzer.run();
-		analyzer.deletePCQRunFolder();
 		return analyzer;
 
 	}

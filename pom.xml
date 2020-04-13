@@ -54,8 +54,7 @@
          </plugin>
          <plugin>
             <artifactId>maven-dependency-plugin</artifactId>
-            <version>3.0.2</version>
-            <executions>
+             <executions>
                <execution>
                   <id>copy-dependencies</id>
                   <phase>package</phase>
@@ -115,11 +114,6 @@
   		<groupId>edu.scripps.yates</groupId>
   		<artifactId>quant</artifactId>
   		<version>1.0.1-SNAPSHOT</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>edu.scripps.yates</groupId>
-  		<artifactId>ProtClusterQuant</artifactId>
-  		<version>1.107-SNAPSHOT</version>
   	</dependency>
   	<dependency>
   		<groupId>org.proteored</groupId>

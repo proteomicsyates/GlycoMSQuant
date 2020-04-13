@@ -10,12 +10,16 @@ import edu.scripps.yates.utilities.properties.PropertiesUtil;
 public class AppDefaults {
 	private static AppDefaults instance;
 	private static final String FASTA_PROPERTY = "fasta";
-	private static final String INPUT_FOLDER_PROPERTY = "input_folder";
+	private static final String INPUT_FILE_PROPERTY = "input_file";
+	private static final String PROTEIN_PROPERTY = "protein";
 	private static final String PROPERTIES_FILE = "HIVPTMAnalyzer_defaults.properties";
+	private static final String RUN_NAME = "run_name";
 	private String fasta;
-	private String inputFolder;
+	private String inputFile;
 	private Properties properties;
 	private File propertiesFile;
+	private String protein;
+	private String runName;
 	private final static String comments = "# properties file from HIVPTMAnalyzer";
 
 	private AppDefaults() {
@@ -26,17 +30,23 @@ public class AppDefaults {
 				if (properties.containsKey(FASTA_PROPERTY)) {
 					this.fasta = properties.getProperty(FASTA_PROPERTY);
 				}
-				if (properties.containsKey(INPUT_FOLDER_PROPERTY)) {
-					this.inputFolder = properties.getProperty(INPUT_FOLDER_PROPERTY);
+				if (properties.containsKey(INPUT_FILE_PROPERTY)) {
+					this.inputFile = properties.getProperty(INPUT_FILE_PROPERTY);
+				}
+				if (properties.containsKey(PROTEIN_PROPERTY)) {
+					this.protein = properties.getProperty(PROTEIN_PROPERTY);
+				}
+				if (properties.containsKey(RUN_NAME)) {
+					this.runName = properties.getProperty(RUN_NAME);
 				}
 			} else {
 				// create file
-				FileWriter fw = new FileWriter(propertiesFile);
+				final FileWriter fw = new FileWriter(propertiesFile);
 				fw.write(comments);
 				fw.close();
 				properties = PropertiesUtil.getProperties(propertiesFile);
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -46,23 +56,44 @@ public class AppDefaults {
 		properties.put(FASTA_PROPERTY, fasta);
 		try {
 			savePropetiesFile();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void setInputFolder(String inputFolder) {
-		this.inputFolder = inputFolder;
-		properties.put(INPUT_FOLDER_PROPERTY, inputFolder);
+	public void setInputFile(String inputFile) {
+		this.inputFile = inputFile;
+		properties.put(INPUT_FILE_PROPERTY, inputFile);
 		try {
 			savePropetiesFile();
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
 	}
 
-	private void savePropetiesFile() throws IOException {
+	public void setProteinOfInterest(String protein) {
+		this.protein = protein;
+		properties.put(PROTEIN_PROPERTY, protein);
+		try {
+			savePropetiesFile();
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public void setRunName(String runName) {
+		this.runName = runName;
+		properties.put(RUN_NAME, runName);
+		try {
+			savePropetiesFile();
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private synchronized void savePropetiesFile() throws IOException {
 		properties.store(new FileWriter(this.propertiesFile), comments);
 	}
 
@@ -77,7 +108,15 @@ public class AppDefaults {
 		return fasta;
 	}
 
-	public String getInputFolder() {
-		return inputFolder;
+	public String getInputFile() {
+		return inputFile;
+	}
+
+	public String getProteinOfInterest() {
+		return protein;
+	}
+
+	public String getRunName() {
+		return runName;
 	}
 }
