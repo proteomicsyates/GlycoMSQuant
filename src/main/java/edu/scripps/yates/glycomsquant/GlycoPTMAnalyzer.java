@@ -35,7 +35,11 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final double fakePTM;
 	private final String name;
 	private final double intensityThreshold;
-	private TObjectDoubleMap<PTMCode> averagePercentages = new TObjectDoubleHashMap<PTMCode>();
+	/*
+	 * the average of the percentages across all the {@link GlycoSite} for that
+	 * {@link PTMCode}
+	 */
+	private TObjectDoubleMap<PTMCode> averagePercentagesByPTMCode = new TObjectDoubleHashMap<PTMCode>();
 	private GlycoPTMResultGenerator resultGenerator;
 	private int peptidesValid;
 	private final AmountType amountType;
@@ -222,18 +226,18 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		resultGenerator = new GlycoPTMResultGenerator(inputFile.getParentFile(), name, hivPositions,
 				this.calculateProportionsByPeptidesFirst);
 		resultGenerator.generateResults();
-		this.averagePercentages = getAveragePercentages(hivPositions);
+		this.averagePercentagesByPTMCode = calculateAveragePercentagesByPTMCode(hivPositions);
 
 		log.info("Everything OK");
 	}
 
-	private TObjectDoubleMap<PTMCode> getAveragePercentages(List<GlycoSite> hivPositions) {
+	private TObjectDoubleMap<PTMCode> calculateAveragePercentagesByPTMCode(List<GlycoSite> hivPositions) {
 		final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
 
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList list = new TDoubleArrayList();
 			for (final GlycoSite hivPosition : hivPositions) {
-				list.add(hivPosition.getPercentageOfAveragesByPTMCode(ptmCode));
+				list.add(hivPosition.getPercentageByPTMCode(ptmCode, isCalculateProportionsByPeptidesFirst()));
 			}
 			ret.put(ptmCode, Maths.mean(list));
 
@@ -281,8 +285,15 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		System.exit(-1);
 	}
 
+	/**
+	 * Gets the average of the percentages across all the {@link GlycoSite} for that
+	 * {@link PTMCode}
+	 * 
+	 * @param ptmCode
+	 * @return
+	 */
 	public double getAveragePercentage(PTMCode ptmCode) {
-		return averagePercentages.get(ptmCode);
+		return averagePercentagesByPTMCode.get(ptmCode);
 	}
 
 	public void deleteGraphs() {

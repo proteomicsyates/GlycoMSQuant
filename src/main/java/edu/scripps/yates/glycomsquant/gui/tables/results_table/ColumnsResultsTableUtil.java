@@ -69,14 +69,14 @@ public class ColumnsResultsTableUtil {
 				ret.add(glycoSite.getAverageIntensityByPTMCode(PTMCode._0));
 				break;
 			case PEPTIDES_2:
-				ret.add(glycoSite.getNumPeptidesByPTMCode(PTMCode._2));
+				ret.add(glycoSite.getPeptidesByPTMCode(PTMCode._2).size());
 				break;
 
 			case PEPTIDES_203:
-				ret.add(glycoSite.getNumPeptidesByPTMCode(PTMCode._203));
+				ret.add(glycoSite.getPeptidesByPTMCode(PTMCode._203).size());
 				break;
 			case PEPTIDES_NoPTM:
-				ret.add(glycoSite.getNumPeptidesByPTMCode(PTMCode._0));
+				ret.add(glycoSite.getPeptidesByPTMCode(PTMCode._0).size());
 				break;
 			case PERCENT_2:
 				ret.add(glycoSite.getPercentageByPTMCode(PTMCode._2, calculateProportionsByPeptidesFirst));

@@ -9,6 +9,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 import org.apache.log4j.Logger;
 
+import edu.scripps.yates.glycomsquant.gui.GuiUtils;
 import edu.scripps.yates.glycomsquant.gui.tables.run_table.ColumnsRunTableUtil;
 
 public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
@@ -21,23 +22,35 @@ public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
 			int row, int column) {
-
-		final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-		final Color defaultColor = getColor(row);
-		c.setBackground(defaultColor);
-		String defaultToolTip = null;
-		if (value == null)
-			value = "";
+		int columnIndex = -1;
+		ColumnsResultsTable selectedColumn = null;
 		try {
 			for (final ColumnsResultsTable tableColumn : ColumnsResultsTable.values()) {
-				final int columnIndex = table.getColumnModel().getColumnIndex(tableColumn.toString());
-				if (columnIndex > 0 && columnIndex == column) {
-					defaultToolTip = getToolTip(value.toString(), tableColumn);
+				final int columnIndexTMP = table.getColumnModel().getColumnIndex(tableColumn.toString());
+				if (columnIndexTMP >= 0 && columnIndexTMP == column) {
+					columnIndex = columnIndexTMP;
+					selectedColumn = tableColumn;
+					break;
 				}
 			}
 
 		} catch (final IllegalArgumentException e) {
 			e.printStackTrace();
+		}
+
+		String defaultToolTip = null;
+		if (value == null) {
+			value = "";
+		}
+		if (selectedColumn != null && selectedColumn.getColumnClass().equals(Double.class)) {
+			if (selectedColumn == ColumnsResultsTable.AVG_203) {
+				log.info(value);
+			}
+
+			value = GuiUtils.formatDouble((double) value, selectedColumn.isPercentage());
+		}
+		if (columnIndex > 0 && columnIndex == column) {
+			defaultToolTip = getToolTip(value.toString(), selectedColumn);
 		}
 
 		try {
@@ -66,6 +79,9 @@ public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
 		} else {
 			this.setForeground(Color.BLACK);
 		}
+		final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+		final Color defaultColor = getColor(row);
+		c.setBackground(defaultColor);
 		return c;
 	}
 
@@ -73,7 +89,9 @@ public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
 		if (value == null || "".equals(value)) {
 			return "";
 		}
-		value = column.getDescription() + ":" + ColumnsRunTableUtil.VALUE_SEPARATOR + "<b>" + value + "</b>";
+		if (column != null) {
+			value = column.getDescription() + ":" + ColumnsRunTableUtil.VALUE_SEPARATOR + "<b>" + value + "</b>";
+		}
 		String[] splited = null;
 		if (value.contains(ColumnsRunTableUtil.VALUE_SEPARATOR)) {
 			splited = value.split(ColumnsRunTableUtil.VALUE_SEPARATOR);

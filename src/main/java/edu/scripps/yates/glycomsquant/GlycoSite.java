@@ -1,6 +1,7 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -148,11 +149,11 @@ public class GlycoSite {
 		return position;
 	}
 
-	public TDoubleList getPeptideIntensitiesByPTMCode(PTMCode ptmCode) {
+	private TDoubleList getPeptideIntensitiesByPTMCode(PTMCode ptmCode) {
 		return peptideIntensitiesByPTMCode.get(ptmCode);
 	}
 
-	public Map<PTMCode, TDoubleList> getPeptideIntensitiesByPTMCode() {
+	private Map<PTMCode, TDoubleList> getPeptideIntensitiesByPTMCode() {
 		return this.peptideIntensitiesByPTMCode;
 	}
 
@@ -161,6 +162,13 @@ public class GlycoSite {
 		return "HIVPosition [position=" + position + ", value=" + getValuesString() + "]";
 	}
 
+	/**
+	 * Get the average of the intensities of all peptides across all replicates for
+	 * this {@link GlycoSite}
+	 * 
+	 * @param ptmCode
+	 * @return
+	 */
 	public double getAverageIntensityByPTMCode(PTMCode ptmCode) {
 		if (peptideIntensitiesByPTMCode.containsKey(ptmCode)) {
 			return Maths.mean(peptideIntensitiesByPTMCode.get(ptmCode));
@@ -205,7 +213,7 @@ public class GlycoSite {
 	 * @param ptmCode
 	 * @return
 	 */
-	public double getPercentageBySecondMethod(PTMCode ptmCode) {
+	private double getProportionsByPTMCodeByPeptidesFirstMethod(PTMCode ptmCode) {
 
 		if (!avgPercentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
 
@@ -213,9 +221,6 @@ public class GlycoSite {
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
 				final THashMap<PTMCode, TDoubleList> percentagesToAverageInReplicates = new THashMap<PTMCode, TDoubleList>();
 				for (final String replicate : replicates) {
-					if (this.getPosition() == 52) {
-						log.info("asdf");
-					}
 
 					// for each peptide, in each replicate, we calculate the percentages for each
 					// PTMCode
@@ -295,9 +300,6 @@ public class GlycoSite {
 			}
 			// MEAN
 			if (!valuesPerPTMCode.isEmpty()) {
-				if (valuesPerPTMCode.size() > 1) {
-					log.info("asddf");
-				}
 				ret.put(ptmCode, Maths.mean(valuesPerPTMCode));
 			}
 			// TODO it could be summing
@@ -351,28 +353,30 @@ public class GlycoSite {
 
 	public double getPercentageByPTMCode(PTMCode ptmCode, boolean calculateProportionsByPeptidesFirst) {
 		if (calculateProportionsByPeptidesFirst) {
-			return getPercentageBySecondMethod(ptmCode);
+			return getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
 		} else {
-			return getPercentageOfAveragesByPTMCode(ptmCode);
+			return getPercentageByPTMCodeByAverageIntensitiesFirstMethod(ptmCode);
 		}
 	}
 
 	public double getSTDEVPercentageByPTMCode(PTMCode ptmCode) {
 
-		getPercentageBySecondMethod(ptmCode);
+		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
 		return this.stdPercentageBySecondMethodByPTMCode.get(ptmCode);
 	}
 
 	public double getSEMPercentageByPTMCode(PTMCode ptmCode) {
 
-		getPercentageBySecondMethod(ptmCode);
+		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
 		return this.semPercentageBySecondMethodByPTMCode.get(ptmCode);
 	}
 
-	public double getPercentageOfAveragesByPTMCode(PTMCode ptmCode) {
+	private double getPercentageByPTMCodeByAverageIntensitiesFirstMethod(PTMCode ptmCode) {
 		double averagePTMCodeOfInterest = 0.0;
 		final TDoubleList averages = new TDoubleArrayList();
 		for (final PTMCode ptmCode2 : PTMCode.values()) {
+			// per peptide (sequence+charge), we average all the intensities across
+			// replicates and we calculate the proportions with that
 			final double averageByPTMCode = getAverageIntensityByPTMCode(ptmCode2);
 			averages.add(averageByPTMCode);
 			if (ptmCode2 == ptmCode) {
@@ -403,12 +407,12 @@ public class GlycoSite {
 		return psms.size();
 	}
 
-	public int getNumPeptidesByPTMCode(PTMCode ptmCode) {
+	public List<QuantifiedPeptideInterface> getPeptidesByPTMCode(PTMCode ptmCode) {
 		if (!peptidesByPTMCode.containsKey(ptmCode)) {
-			return 0;
+			return Collections.emptyList();
 		}
 		final List<QuantifiedPeptideInterface> peptides = peptidesByPTMCode.get(ptmCode);
-		return peptides.size();
+		return peptides;
 
 	}
 

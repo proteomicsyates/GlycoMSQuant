@@ -18,12 +18,12 @@ class MyResultsTableModel extends DefaultTableModel {
 		return false;
 	}
 
-	@Override
-	public Class<?> getColumnClass(int columnIndex) {
-		final ColumnsResultsTable column = ColumnsResultsTable.getColumns(calculateProportionsByPeptidesFirst)
-				.get(columnIndex);
-		return column.getColumnClass();
-
-	}
+//	@Override
+//	public Class<?> getColumnClass(int columnIndex) {
+//		final ColumnsResultsTable column = ColumnsResultsTable.getColumns(calculateProportionsByPeptidesFirst)
+//				.get(columnIndex);
+//		return column.getColumnClass();
+//
+//	}
 
 }
