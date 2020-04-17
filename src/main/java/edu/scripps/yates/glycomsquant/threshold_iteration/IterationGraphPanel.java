@@ -29,11 +29,11 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.proteored.pacom.analysis.charts.LineCategoryChart;
-import org.proteored.pacom.utils.ComponentEnableStateKeeper;
 
 import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.gui.GuiUtils;
+import edu.scripps.yates.glycomsquant.gui.charts.LineCategoryChart;
+import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
 import gnu.trove.map.hash.THashMap;
 
 public class IterationGraphPanel extends JPanel {

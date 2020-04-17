@@ -21,10 +21,10 @@ import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.general.DefaultPieDataset;
 import org.jfree.data.general.PieDataset;
-import org.proteored.pacom.analysis.charts.PieChart;
 
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.PTMCode;
+import edu.scripps.yates.glycomsquant.gui.charts.PieChart;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 

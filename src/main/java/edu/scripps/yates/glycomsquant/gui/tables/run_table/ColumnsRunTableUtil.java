@@ -13,7 +13,6 @@ import javax.swing.JScrollPane;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
-import org.proteored.miapeapi.exceptions.IllegalMiapeArgumentException;
 
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
 
@@ -53,7 +52,7 @@ public class ColumnsRunTableUtil {
 
 		final List<Object> ret = new ArrayList<Object>();
 		if (runPath == null)
-			throw new IllegalMiapeArgumentException("runPath is null");
+			throw new IllegalArgumentException("runPath is null");
 
 		for (final ColumnsRunTable column : list) {
 

@@ -12,4 +12,8 @@ public class ColorsUtil {
 	public static Paint getColorByPTMCode(PTMCode ptmCode) {
 		return DEFAULT_COLORS[ptmCode.ordinal()];
 	}
+
+	public static Paint getBlack() {
+		return Color.black;
+	}
 }

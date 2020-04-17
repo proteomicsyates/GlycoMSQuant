@@ -11,7 +11,6 @@ import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 
 import org.apache.log4j.Logger;
-import org.proteored.miapeapi.exceptions.IllegalMiapeArgumentException;
 
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.PTMCode;
@@ -51,7 +50,7 @@ public class ColumnsResultsTableUtil {
 
 		final List<Object> ret = new ArrayList<Object>();
 		if (glycoSite == null)
-			throw new IllegalMiapeArgumentException("glycoSite is null");
+			throw new IllegalArgumentException("glycoSite is null");
 
 		for (final ColumnsResultsTable column : list) {
 

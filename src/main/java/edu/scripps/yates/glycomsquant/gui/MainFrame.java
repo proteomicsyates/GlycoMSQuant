@@ -51,7 +51,6 @@ import org.apache.commons.collections.list.SynchronizedList;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 import org.jfree.chart.ChartPanel;
-import org.proteored.pacom.utils.ComponentEnableStateKeeper;
 
 import com.compomics.dbtoolkit.io.implementations.FASTADBLoader;
 import com.compomics.util.protein.Protein;
@@ -77,6 +76,7 @@ import edu.scripps.yates.glycomsquant.threshold_iteration.IterativeThresholdAnal
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
+import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
 import uk.ac.ebi.pride.utilities.pridemod.ModReader;
 
 public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDialog

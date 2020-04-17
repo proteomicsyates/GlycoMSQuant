@@ -11,14 +11,18 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.census.read.model.interfaces.QuantParser;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
-import edu.scripps.yates.census.read.util.QuantKeyUtils;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
+import edu.scripps.yates.utilities.proteomicsmodel.PTM;
+import edu.scripps.yates.utilities.proteomicsmodel.PTMSite;
+import edu.scripps.yates.utilities.proteomicsmodel.utils.ModelUtils;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.THashSet;
@@ -33,9 +37,7 @@ public class GlycoSite {
 	// there will be multiple peptides from the same sequence, but different ptms on
 	// them
 	private final Map<String, List<QuantifiedPeptideInterface>> peptidesByNoPTMPeptideKey = new THashMap<String, List<QuantifiedPeptideInterface>>();
-	private final TObjectDoubleMap<PTMCode> avgPercentageBySecondMethodByPTMCode = new TObjectDoubleHashMap<PTMCode>();
-	private final TObjectDoubleMap<PTMCode> semPercentageBySecondMethodByPTMCode = new TObjectDoubleHashMap<PTMCode>();
-	private final TObjectDoubleMap<PTMCode> stdPercentageBySecondMethodByPTMCode = new TObjectDoubleHashMap<PTMCode>();
+	private final Map<PTMCode, TDoubleList> percentageBySecondMethodByPTMCode = new THashMap<PTMCode, TDoubleList>();
 	private final String protein;
 	private Integer totalSPC;
 	private final Set<String> replicates = new THashSet<String>();
@@ -118,16 +120,46 @@ public class GlycoSite {
 //		if (!peptidesByPTMCode.get(ptmCode).contains(peptide)) {
 		peptidesByPTMCode.get(ptmCode).add(peptide);
 //		}
-		final QuantifiedPSMInterface aPSM = peptide.getQuantifiedPSMs().iterator().next();
 		// group peptides by their sequence + peptide, but not PTMs
 		final boolean distinguishModifiedPeptides = false;
 		final boolean chargeStateSensible = MainFrame.getInstance().isChargeStateSensible();
-		final String peptideKey = QuantKeyUtils.getInstance().getSequenceChargeKey(aPSM, false, chargeStateSensible);
-		final String key = peptide.getKey();
-		if (!peptidesByNoPTMPeptideKey.containsKey(peptideKey)) {
-			peptidesByNoPTMPeptideKey.put(peptideKey, new ArrayList<QuantifiedPeptideInterface>());
+		// we use the peptideKey with no PTMs of interest but keeping the rest of
+		// potential PTMs to calculate proportions per peptideKey
+		final String peptideSequence = peptide.getSequence();
+		final List<PTM> ptmsForKey = new ArrayList<PTM>();
+		for (final PTM ptm : peptide.getPTMs()) {
+			final String ptmCodeString = String.valueOf(ptm.getMassShift());
+			final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCodeString);
+			if (ptmCodeObj != null) {
+				continue; // we dont include it in the key
+			}
+			ptmsForKey.add(ptm);
 		}
-		final boolean added = peptidesByNoPTMPeptideKey.get(peptideKey).add(peptide);
+		final TIntObjectMap<PTM> ptmsByPosition = new TIntObjectHashMap<PTM>();
+		for (final PTM ptm : ptmsForKey) {
+			for (final PTMSite site : ptm.getPTMSites()) {
+				ptmsByPosition.put(site.getPosition(), ptm);
+			}
+		}
+		final StringBuilder peptideKeyBuilder = new StringBuilder();
+		for (int position = 1; position <= peptideSequence.length(); position++) {
+			peptideKeyBuilder.append(peptideSequence.charAt(position - 1));
+			if (ptmsByPosition.containsKey(position)) {
+				peptideKeyBuilder.append(
+						"(" + ModelUtils.getPtmFormatter().format(ptmsByPosition.get(position).getMassShift()) + ")");
+
+			}
+		}
+		// add the charge
+		peptideKeyBuilder.append("-" + peptide.getPSMs().get(0).getChargeState());
+//		final String peptideKey = QuantKeyUtils.getInstance().getSequenceChargeKey(aPSM, distinguishModifiedPeptides,
+//				chargeStateSensible);
+
+		final String key = peptideKeyBuilder.toString();
+		if (!peptidesByNoPTMPeptideKey.containsKey(key)) {
+			peptidesByNoPTMPeptideKey.put(key, new ArrayList<QuantifiedPeptideInterface>());
+		}
+		final boolean added = peptidesByNoPTMPeptideKey.get(key).add(peptide);
 
 		// reset total SPC to force to calculate it
 		totalSPC = null;
@@ -215,72 +247,96 @@ public class GlycoSite {
 	 */
 	private double getProportionsByPTMCodeByPeptidesFirstMethod(PTMCode ptmCode) {
 
-		if (!avgPercentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
+		if (!percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
 
-			final THashMap<PTMCode, TDoubleList> percentagesToAverage = new THashMap<PTMCode, TDoubleList>();
+			final THashMap<PTMCode, TDoubleList> percentagesOfPeptidesToAverage = new THashMap<PTMCode, TDoubleList>();
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
-				final THashMap<PTMCode, TDoubleList> percentagesToAverageInReplicates = new THashMap<PTMCode, TDoubleList>();
+				// for each peptide key we average all intensities and then calculate the
+				// percentages
+
 				for (final String replicate : replicates) {
 
 					// for each peptide, in each replicate, we calculate the percentages for each
 					// PTMCode
 					final List<QuantifiedPeptideInterface> peptides = peptidesByNoPTMPeptideKey.get(peptideKey);
 					// these peptides have the same sequence+charge, but different PTMs
-					final TObjectDoubleMap<PTMCode> intensityByPTMCode = getSignalPerPTMCodeInReplicate(peptides,
-							replicate);
-					final TObjectDoubleMap<PTMCode> percentageByPTMCode = getPercentages(intensityByPTMCode);
 
-					for (final PTMCode ptmCode2 : percentageByPTMCode.keySet()) {
-						if (!percentagesToAverageInReplicates.containsKey(ptmCode2)) {
-							percentagesToAverageInReplicates.put(ptmCode2, new TDoubleArrayList());
+					final Map<PTMCode, TDoubleList> peptideIntensitiesByPTMCodeInReplicate = getIntensitiesPerPTMCodeInReplicate(
+							peptides, replicate);
+					final TObjectDoubleMap<PTMCode> avgPeptideIntensityInReplicateByPTMCode = new TObjectDoubleHashMap<PTMCode>();
+					for (final PTMCode ptmCode2 : peptideIntensitiesByPTMCodeInReplicate.keySet()) {
+						final double avgIntensityOfPeptide = Maths
+								.mean(peptideIntensitiesByPTMCodeInReplicate.get(ptmCode2));
+						avgPeptideIntensityInReplicateByPTMCode.put(ptmCode2, avgIntensityOfPeptide);
+					}
+					final TObjectDoubleMap<PTMCode> peptidePercentagesInReplicateByPTMCode = getPercentages(
+							avgPeptideIntensityInReplicateByPTMCode);
+
+					for (final PTMCode ptmCode2 : peptidePercentagesInReplicateByPTMCode.keySet()) {
+						if (!percentagesOfPeptidesToAverage.containsKey(ptmCode2)) {
+							percentagesOfPeptidesToAverage.put(ptmCode2, new TDoubleArrayList());
 						}
-						percentagesToAverageInReplicates.get(ptmCode2).add(percentageByPTMCode.get(ptmCode2));
+						percentagesOfPeptidesToAverage.get(ptmCode2)
+								.add(peptidePercentagesInReplicateByPTMCode.get(ptmCode2));
 					}
+
 				}
-				for (final PTMCode ptmCode2 : PTMCode.values()) {
-					if (!percentagesToAverageInReplicates.containsKey(ptmCode2)) {
-						continue;
-					}
-					if (!percentagesToAverage.containsKey(ptmCode2)) {
-						percentagesToAverage.put(ptmCode2, new TDoubleArrayList());
-					}
-					percentagesToAverage.get(ptmCode2).add(Maths.mean(percentagesToAverageInReplicates.get(ptmCode2)));
-				}
+
 			}
 			for (final PTMCode ptmCode2 : PTMCode.values()) {
-				avgPercentageBySecondMethodByPTMCode.put(ptmCode2, Maths.mean(percentagesToAverage.get(ptmCode2)));
-				stdPercentageBySecondMethodByPTMCode.put(ptmCode2, Maths.stddev(percentagesToAverage.get(ptmCode2)));
-				semPercentageBySecondMethodByPTMCode.put(ptmCode2, Maths.sem(percentagesToAverage.get(ptmCode2)));
+				if (percentagesOfPeptidesToAverage.containsKey(ptmCode2)) {
+					percentageBySecondMethodByPTMCode.put(ptmCode2, percentagesOfPeptidesToAverage.get(ptmCode2));
+				}
 			}
 
 		}
-		return avgPercentageBySecondMethodByPTMCode.get(ptmCode);
+		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
+			if (this.getPosition() == 105 && ptmCode == PTMCode._0) {
+				log.info("asdf " + Maths.mean(percentageBySecondMethodByPTMCode.get(ptmCode)));
+			}
+			return Maths.mean(percentageBySecondMethodByPTMCode.get(ptmCode));
+		}
+		return 0.0;
 	}
 
-	private TObjectDoubleMap<PTMCode> getPercentages(TObjectDoubleMap<PTMCode> intensityByPTMCode) {
+	/**
+	 * Calculates the percentages from the averages intensities of a peptide per
+	 * PTMCode
+	 * 
+	 * @param avgPeptideIntensityByPTMCode
+	 * @return
+	 */
+	private TObjectDoubleMap<PTMCode> getPercentages(TObjectDoubleMap<PTMCode> avgPeptideIntensityByPTMCode) {
 		final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
-		if (intensityByPTMCode.isEmpty()) {
+		if (avgPeptideIntensityByPTMCode.isEmpty()) {
 			return ret;
 		}
-		final double sum = Maths.sum(intensityByPTMCode.values());
+		final double sum = Maths.sum(avgPeptideIntensityByPTMCode.values());
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			final double percentage = intensityByPTMCode.get(ptmCode) / sum;
+			final double percentage = avgPeptideIntensityByPTMCode.get(ptmCode) / sum;
 			ret.put(ptmCode, percentage);
 		}
 		return ret;
 	}
 
 	/**
+	 * Gets the intensities that a peptide (seq+z) (represented by multiple peptides
+	 * because PTMs are separated) have per PTMCode. It can have multiple
+	 * intensities per PTMCode because sometimes we have here the peptide with an
+	 * additional different PTMCodes and the peptide without it.
 	 * 
 	 * @param peptides  should have the same sequence+charge, they may have
-	 *                  different PTMs
+	 *                  different PTMs. So basically is the same peptide.
 	 * @param replicate
 	 * @return
 	 */
-	private TObjectDoubleMap<PTMCode> getSignalPerPTMCodeInReplicate(List<QuantifiedPeptideInterface> peptides,
+	private Map<PTMCode, TDoubleList> getIntensitiesPerPTMCodeInReplicate(List<QuantifiedPeptideInterface> peptides,
 			String replicate) {
-		final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
+		final Map<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();
 		for (final PTMCode ptmCode : PTMCode.values()) {
+			if (this.getPosition() == 60 && ptmCode == PTMCode._2) {
+				log.info("");
+			}
 			final TDoubleList valuesPerPTMCode = new TDoubleArrayList();
 			// reduce list to have unique hashcodes
 			final TIntSet hashCodes = new TIntHashSet();
@@ -289,6 +345,7 @@ public class GlycoSite {
 					continue;
 				}
 				hashCodes.add(peptide.hashCode());
+				// if the peptide has that ptmCode:
 				if (peptidesByPTMCode.containsKey(ptmCode) && peptidesByPTMCode.get(ptmCode).contains(peptide)) {
 					final double intensityFromPeptideInReplicate = getIntensityFromPeptideInReplicate(peptide,
 							replicate);
@@ -298,9 +355,19 @@ public class GlycoSite {
 					}
 				}
 			}
-			// MEAN
+
 			if (!valuesPerPTMCode.isEmpty()) {
-				ret.put(ptmCode, Maths.mean(valuesPerPTMCode));
+				if (!ret.containsKey(ptmCode)) {
+					ret.put(ptmCode, new TDoubleArrayList());
+				}
+				if (valuesPerPTMCode.size() > 1) {
+					// it really can be more than one because a peptide for a PTMCode can have or
+					// not another PTMCode in other site of the sequence
+					// (I wrote this code in purpose)
+					ret.get(ptmCode).addAll(valuesPerPTMCode);
+				} else {
+					ret.get(ptmCode).add(valuesPerPTMCode.get(0));
+				}
 			}
 			// TODO it could be summing
 //			ret.put(ptmCode, valuesPerPTMCode.sum());
@@ -359,16 +426,26 @@ public class GlycoSite {
 		}
 	}
 
+	public TDoubleList getIndividualPeptidePercentagesByPTMCode(PTMCode ptmCode) {
+		return this.percentageBySecondMethodByPTMCode.get(ptmCode);
+	}
+
 	public double getSTDEVPercentageByPTMCode(PTMCode ptmCode) {
 
 		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
-		return this.stdPercentageBySecondMethodByPTMCode.get(ptmCode);
+		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
+			return Maths.stddev(this.percentageBySecondMethodByPTMCode.get(ptmCode));
+		}
+		return 0.0;
 	}
 
 	public double getSEMPercentageByPTMCode(PTMCode ptmCode) {
 
 		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
-		return this.semPercentageBySecondMethodByPTMCode.get(ptmCode);
+		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
+			return Maths.sem(this.percentageBySecondMethodByPTMCode.get(ptmCode));
+		}
+		return 0.0;
 	}
 
 	private double getPercentageByPTMCodeByAverageIntensitiesFirstMethod(PTMCode ptmCode) {
