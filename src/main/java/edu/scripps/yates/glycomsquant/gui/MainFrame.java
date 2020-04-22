@@ -25,7 +25,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +49,6 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileFilter;
 
-import org.apache.commons.collections.list.SynchronizedList;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 import org.jfree.chart.ChartPanel;
@@ -77,6 +78,7 @@ import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
+import edu.scripps.yates.utilities.util.Pair;
 import uk.ac.ebi.pride.utilities.pridemod.ModReader;
 
 public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDialog
@@ -91,15 +93,16 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private static MainFrame instance;
 	private final ComponentEnableStateKeeper componentStateKeeper = new ComponentEnableStateKeeper(true);
 	private JButton separateChartsButton;
-	private final List loadedCharts = SynchronizedList.decorate(new ArrayList<JComponent>());
-	private final List<JFrame> chartDialogs = new ArrayList<JFrame>();
+	private final List<JComponent> chartsInMainPanel = new ArrayList<JComponent>();
+	private final List<JFrame> popupCharts = new ArrayList<JFrame>();
 	private List<GlycoSite> currentGlycoSites;
 	private JButton btnShowResultsTable;
 	private JCheckBox iterativeThresholdAnalysisCheckBox;
 	private JCheckBox intensityThresholdCheckBox;
+	private JButton btnCloseCharts;
+	private ProteinSequenceDialog proteinSequenceDialog;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
-	private final static String CLOSE_CHARTS = "Close charts";
 
 	public static MainFrame getInstance() {
 		if (instance == null) {
@@ -272,7 +275,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				showSequenceDialog(proteinOfInterestText.getText());
+				if (currentGlycoSites == null || currentGlycoSites.isEmpty()) {
+					showSequenceDialog2(getProteinOfInterestACC());
+				} else {
+					showSequenceDialog(getProteinOfInterestACC(), currentGlycoSites);
+				}
 			}
 		});
 		accessionPanel.add(showProteinSequenceButton);
@@ -320,10 +327,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JPanel panel = new JPanel();
 		intensityThresholdPanel.add(panel);
 		panel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
-		intensityThresholdCheckBox = new JCheckBox("Intensity threshold:");
+		intensityThresholdCheckBox = new JCheckBox("Peak area threshold:");
 		panel.add(intensityThresholdCheckBox);
 		intensityThresholdCheckBox.setToolTipText(
-				"Click to enable or disable the application of intensity threshold over the intensities in the input data file.");
+				"Click to enable or disable the application of the peak area threshold over the peak areas in the input data file.");
 		intensityThresholdCheckBox.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -417,7 +424,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		nameTextField = new JTextField();
 		nameTextField.setToolTipText("Prefix that will be added to all the output files");
 		namePanel.add(nameTextField);
-		nameTextField.setColumns(10);
+		nameTextField.setColumns(20);
 		nameTextField.addKeyListener(new KeyListener() {
 
 			@Override
@@ -446,18 +453,23 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		separateChartsButton.setEnabled(false);
 		separateChartsButton.setToolTipText("Click to show or close graphs in separate resizable dialogs");
 		outputPanel.add(separateChartsPanel);
+
+		btnCloseCharts = new JButton("Close charts");
+		btnCloseCharts.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				closeCharts();
+			}
+		});
+		btnCloseCharts.setToolTipText("Click here to close all charts that have been openend on independent windows.");
+		btnCloseCharts.setEnabled(false);
+		separateChartsPanel.add(btnCloseCharts);
 		separateChartsButton.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				if (separateChartsButton.getText().equals(POPUP_CHARTS)) {
-					separateCharts(true);
-					separateChartsButton.setText(CLOSE_CHARTS);
-				} else {
-					separateCharts(false);
-					separateChartsButton.setText(POPUP_CHARTS);
-				}
+				separateCharts();
 
 			}
 		});
@@ -560,6 +572,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
 	}
 
+	protected void closeCharts() {
+		for (final JFrame frame : popupCharts) {
+			frame.dispose();
+		}
+	}
+
 	protected void iterativeThresholdAnalysisClicked(boolean selected) {
 		this.intensityThresholdIntervalLabel.setEnabled(selected);
 		this.intensityThresholdIntervalTextField.setEnabled(selected);
@@ -584,33 +602,31 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	 *                 yet closed and will set the graphs in the main graph panel of
 	 *                 the app.
 	 */
-	protected void separateCharts(boolean separate) {
-		if (separate) {
-			for (final Object chartPanel : loadedCharts) {
-				showChartDialog((JComponent) chartPanel);
-			}
-		} else {
-			for (final JFrame jframe : chartDialogs) {
-				jframe.dispose();
-			}
-			chartDialogs.clear();
-			if (loadedCharts.size() == 1) {
-				showChartsInMainPanel(loadedCharts.get(0));
-			} else {
-				showChartsInMainPanel(loadedCharts);
-			}
+	protected void separateCharts() {
+		final Iterator<JComponent> iterator = chartsInMainPanel.iterator();
+		while (iterator.hasNext()) {
+			final JComponent component = iterator.next();
+			// remove from chartsInMainPanel
+			iterator.remove();
+			// show in dialog
+			showChartDialog(component);
 		}
+		chartPanel.updateUI();
+		this.separateChartsButton.setEnabled(false);
 	}
+
+	private static final Random random = new Random(new Date().getTime());
 
 	private void showChartDialog(JComponent component) {
 		final java.awt.Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 		String title = "";
 		if (component instanceof ChartPanel) {
 			final ChartPanel chartPanel = (ChartPanel) component;
-			title = chartPanel.getChart().getTitle().getText();
+			title = " - " + chartPanel.getChart().getTitle().getText();
 		}
-		final JFrame frame = new JFrame(title);
-		chartDialogs.add(frame);
+		final JFrame frame = new JFrame(getName() + title);
+		popupCharts.add(frame);
+
 		frame.setPreferredSize(new Dimension(screenSize.width / 2, screenSize.height / 2));
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.getContentPane().setLayout(new BorderLayout(10, 10));
@@ -622,23 +638,33 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		frame.pack();
 
 		final java.awt.Dimension dialogSize = frame.getSize();
-		frame.setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
+		final int x = (screenSize.width - dialogSize.width) / 2;
+		final int y = (screenSize.height - dialogSize.height) / 2;
+		final double offsetScreenPercent = 0.10;
+		// make each one randomly position with an offset across the x and y axis that
+		// will be from -10% to 10% of the screen
+		final int maxOffsetX = Double.valueOf(offsetScreenPercent * screenSize.width).intValue();
+		final int maxOffsetY = Double.valueOf(offsetScreenPercent * screenSize.height).intValue();
+		final int offsetX = x + random.nextInt(maxOffsetX) - maxOffsetX;
+		final int offsetY = y + random.nextInt(maxOffsetY) - maxOffsetY;
+		frame.setLocation(offsetX, offsetY);
 		final WindowAdapter listener = new WindowAdapter() {
 
 			@Override
 			public void windowClosing(WindowEvent e) {
 
-				// remove thge chart dialog from the list
-				chartDialogs.remove(frame);
-				// and check if it is empty, meaning there is no more to close, and in that
-				// case, we change the button of close charts to pop-up charts
-				if (chartDialogs.isEmpty()) {
-					separateChartsButton.setText(POPUP_CHARTS);
+				// remove the chart dialog from the list
+				popupCharts.remove(frame);
+				if (popupCharts.isEmpty()) {
+					btnCloseCharts.setEnabled(false);
 				}
+				// add to main panel
+				showChartsInMainPanel(component);
 
 			}
 		};
 		frame.addWindowListener(listener);
+		btnCloseCharts.setEnabled(true);
 	}
 
 	protected void refreshRuns() {
@@ -658,9 +684,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				checkValidityInputDataForIterativeAnalysis();
 				final int selectedOption = JOptionPane.showConfirmDialog(this,
 						"<html>Do you want to start an iterative analysis of the intensity threshold?<br>"
-								+ "This will analyze the dataset with the choosen settings except for the intensity threshold, which will be increased every iteration until there is no more peptides passing the filter or until a max number of interations ("
-								+ IterativeThresholdAnalysis.MAX_ITERATIONS + ").<br>"
-								+ "Every iteration a chart will be updated with the average proportions (%) of each modification type and with the number of peptides passing the intensity threshold filter.</html>",
+								+ "This will analyze the dataset with the choosen settings except for the intensity threshold,<br>"
+								+ "which will be increased every iteration until there is no more peptides passing the filter<br>"
+								+ "or until a max number of interations (" + IterativeThresholdAnalysis.MAX_ITERATIONS
+								+ ").<br>"
+								+ "Every iteration a chart will be updated with the average proportions (%) of each modification<br>"
+								+ " type and with the number of peptides passing the intensity threshold filter.</html>",
 						"Iterative analysis of intensity threshold", JOptionPane.YES_NO_CANCEL_OPTION,
 						JOptionPane.QUESTION_MESSAGE);
 				if (selectedOption == JOptionPane.YES_OPTION) {
@@ -814,7 +843,17 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	}
 
-	protected void showSequenceDialog(String proteinOfInterest) {
+	protected void showSequenceDialog(String proteinOfInterest, List<GlycoSite> glycoSites) {
+		getProteinSequence();
+		if (proteinSequence == null) {
+			showError("Error getting protein sequence from protein '" + proteinOfInterest + "'");
+			return;
+		}
+		proteinSequenceDialog = new ProteinSequenceDialog(proteinOfInterest, proteinSequence, glycoSites);
+		proteinSequenceDialog.setVisible(true);
+	}
+
+	protected void showSequenceDialog2(String proteinOfInterest) {
 		getProteinSequence();
 		if (proteinSequence == null) {
 			showError("Error getting protein sequence from protein '" + proteinOfInterest + "'");
@@ -1056,6 +1095,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setInputDataFile(getInputFile());
 		resultsProperties.setIntensityThreshold(getIntensityThreshold());
 		resultsProperties.setNormalizeReplicates(isNormalizeReplicates());
+		resultsProperties.setCalculatePeptideProportionsFirst(isCalculateProportionsByPeptidesFirst());
 		resultsProperties.setProteinOfInterest(getProteinOfInterestACC());
 	}
 
@@ -1103,7 +1143,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				resultsProperties.setFastaFile(getFastaFile());
 
 				final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(newIndividualResultFolder,
-						getName(), currentGlycoSites, isCalculateProportionsByPeptidesFirst());
+						currentGlycoSites, this);
 				resultGenerator.setGenerateGraph(true);
 				resultGenerator.setGenerateTable(true);
 				resultGenerator.setSaveGraphsToFiles(true);
@@ -1141,8 +1181,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			showMessage("Error loading results: " + evt.getNewValue());
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_FINISHED)) {
-			this.currentGlycoSites = (List<GlycoSite>) evt.getNewValue();
-			final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(currentGlycoSites);
+			final Pair<List<GlycoSite>, Boolean> pair = (Pair<List<GlycoSite>, Boolean>) evt.getNewValue();
+			this.currentGlycoSites = pair.getFirstelement();
+			this.calculateProportionsByPeptidesFirstCheckBox.setSelected(pair.getSecondElement());
+			final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(currentGlycoSites, this);
 			resultGenerator.addPropertyChangeListener(this);
 			resultGenerator.setGenerateGraph(true);
 			resultGenerator.setGenerateTable(false);
@@ -1154,30 +1196,37 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	private void updateIterativeAnalysis(List<GlycoSite> glycoSites) {
-		// if it is an iterative analysis, we keep the data
-		if (iterativeThresholdAnalysis == null) {
-			iterativeThresholdAnalysis = new IterativeThresholdAnalysis(getIntensityThreshold(),
-					Double.valueOf(this.intensityThresholdIntervalTextField.getText()),
-					isCalculateProportionsByPeptidesFirst());
-		}
-		if (iterativeThresholdAnalysis.hasErrors()) {
-			// stop here
-			return;
-		}
-		// we add new iteration data
-		iterativeThresholdAnalysis.addIterationData(getIntensityThreshold(), glycoSites);
-		// we launch background process to generate the graph
-		final IterationGraphGenerator graphGenerator = new IterationGraphGenerator(
-				iterativeThresholdAnalysis.getIterationsData());
-		graphGenerator.addPropertyChangeListener(this);
-		graphGenerator.execute();
+		try {
+			// if it is an iterative analysis, we keep the data
+			if (iterativeThresholdAnalysis == null) {
+				// we clear the glycoSites that are static
+				IterationGraphPanel.clearSites();
+				iterativeThresholdAnalysis = new IterativeThresholdAnalysis(getIntensityThreshold(),
+						Double.valueOf(this.intensityThresholdIntervalTextField.getText()),
+						isCalculateProportionsByPeptidesFirst());
+			}
+			if (iterativeThresholdAnalysis.hasErrors()) {
+				// stop here
+				return;
+			}
+			// we add new iteration data
+			iterativeThresholdAnalysis.addIterationData(getIntensityThreshold(), glycoSites);
+			// we launch background process to generate the graph
+			final IterationGraphGenerator graphGenerator = new IterationGraphGenerator(
+					iterativeThresholdAnalysis.getIterationsData(), glycoSites);
+			graphGenerator.addPropertyChangeListener(this);
+			graphGenerator.execute();
 
-		// we dont make another iteration if the glycosites are empty or if it the last
-		// iteration already
-		if (!iterativeThresholdAnalysis.isLastIteration() && !glycoSites.isEmpty()) {
-			// then we run it again after incrementing threshold
-			this.intensityThresholdText.setText(String.valueOf(iterativeThresholdAnalysis.getNextThreshold()));
-			readInputData();
+			// we dont make another iteration if the glycosites are empty or if it the last
+			// iteration already
+			if (!iterativeThresholdAnalysis.isLastIteration() && !glycoSites.isEmpty()) {
+				// then we run it again after incrementing threshold
+				this.intensityThresholdText.setText(String.valueOf(iterativeThresholdAnalysis.getNextThreshold()));
+				readInputData();
+			}
+		} catch (final Exception e) {
+			e.printStackTrace();
+			componentStateKeeper.setToPreviousState(this);
 		}
 	}
 
@@ -1205,7 +1254,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					final GridBagConstraints c = new GridBagConstraints();
 					c.fill = GridBagConstraints.HORIZONTAL;
 					c.gridx = 0;
-					c.gridy = -1;
+					c.gridy = chartsInMainPanel.size() - 1;
 					separateChartsButton.setEnabled(true);
 					btnShowResultsTable.setEnabled(true);
 					if (object instanceof IterationGraphPanel) {
@@ -1216,16 +1265,16 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 						chartPanel.add(iterationGraphPanel, c);
 						iterationGraphPanel.updateUI();
 						// remove the charts that were stored because they are from previous iteration
-						loadedCharts.clear();
-						loadedCharts.add(iterationGraphPanel);
+						chartsInMainPanel.clear();
+						chartsInMainPanel.add(iterationGraphPanel);
 
-					} else if (object instanceof ProportionsPieChartsPanel) {
-						final ProportionsPieChartsPanel piePanel = (ProportionsPieChartsPanel) object;
+					} else if (object instanceof AbstractProportionsChartsPanel) {
+						final AbstractProportionsChartsPanel proportionsChartPanel = (AbstractProportionsChartsPanel) object;
 						c.gridy++;
 						c.weighty = 100;
-						chartPanel.add(piePanel, c);
-						piePanel.updateUI();
-						loadedCharts.add(piePanel);
+						chartPanel.add(proportionsChartPanel, c);
+						proportionsChartPanel.updateUI();
+						chartsInMainPanel.add(proportionsChartPanel);
 					} else if (object instanceof JComponent) {
 						// this.jPanelChart.setGraphicPanel((JComponent) object);
 						final JComponent jComponent = (JComponent) object;
@@ -1234,8 +1283,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 						chartPanel.add(jComponent, c);
 						if (jComponent instanceof ChartPanel) {
 							final ChartPanel chartPanel = (ChartPanel) jComponent;
-							if (!loadedCharts.contains(chartPanel)) {
-								loadedCharts.add(chartPanel);
+							if (!chartsInMainPanel.contains(chartPanel)) {
+								chartsInMainPanel.add(chartPanel);
 							}
 							chartPanel.updateUI();
 						} else {
@@ -1265,14 +1314,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 								if (jPanel instanceof ChartPanel) {
 									final ChartPanel chartPanel = (ChartPanel) jPanel;
-									if (!loadedCharts.contains(jPanel)) {
-										loadedCharts.add(chartPanel);
+									if (!chartsInMainPanel.contains(jPanel)) {
+										chartsInMainPanel.add(chartPanel);
 									}
 									chartPanel.updateUI();
-								} else if (jPanel instanceof ProportionsPieChartsPanel) {
-									final ProportionsPieChartsPanel piePanel = (ProportionsPieChartsPanel) jPanel;
+								} else if (jPanel instanceof AbstractProportionsChartsPanel) {
+									final AbstractProportionsChartsPanel piePanel = (AbstractProportionsChartsPanel) jPanel;
 									piePanel.updateUI();
-									loadedCharts.add(piePanel);
+									chartsInMainPanel.add(piePanel);
 								} else {
 									if (jPanel.getComponent(0) instanceof JComponent) {
 										((JComponent) jPanel.getComponent(0)).updateUI();
@@ -1376,7 +1425,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	public void clearGraphs() {
 		this.chartPanel.removeAll();
-		loadedCharts.clear();
+		chartsInMainPanel.clear();
 
 	}
 }

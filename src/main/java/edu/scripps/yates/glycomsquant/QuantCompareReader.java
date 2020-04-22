@@ -17,6 +17,8 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
+import edu.scripps.yates.utilities.proteomicsmodel.PTM;
+import edu.scripps.yates.utilities.proteomicsmodel.PTMSite;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.AmountEx;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.PTMEx;
@@ -148,21 +150,35 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 				iterator.remove();
 				continue;
 			}
-
+			if (peptide.getFullSequence().equals("CVPTDPN(+2.988)PQEIHLENVTEEFNM(+15.995)WKNNMVEQ")) {
+//				log.info("asdf");
+			}
 			// Modify sequence to include the fake PTM in the non modified motifs
 			modifySequence(peptide);
 			// filter out peptides with no motifs or not ptms
 			final List<PTMInPeptide> ptmsInPeptide = peptide.getPTMsInPeptide();
 			boolean valid = false;
+			boolean hasAPTMCode = false;
 			for (final PTMInPeptide ptmInPeptide : ptmsInPeptide) {
 				final String ptmCode = String.valueOf(ptmInPeptide.getDeltaMass());
 				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCode);
 				if (ptmCodeObj != null) {
-					valid = true;
-					break;
+					hasAPTMCode = true;
+					// check whether the +2 is an T or S
+					final int position = ptmInPeptide.getPosition();
+					if (position <= peptide.getSequence().length() - 2) {
+						final char charAt = peptide.getSequence().charAt(position + 2 - 1);
+						if (charAt == 'S' || charAt == 'T') {
+							valid = true;
+							break;
+						}
+					}
 				}
 			}
 			if (!valid) {
+				if (hasAPTMCode) {
+//					log.info("asdf");
+				}
 				peptidesDiscardedByNotHavingMotifs++;
 				iterator.remove();
 				continue;
@@ -256,13 +272,15 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 	}
 
 	/**
-	 * Modify sequence to include the fake PTM in the non modified motifs
+	 * Modify sequence to include the fake PTM in the non modified motifs when
+	 * having non modified N followed by anything in the next position (+1) and an S
+	 * or an T in the following position (+2)
 	 * 
 	 * @param peptide
 	 * @return
 	 */
 	private void modifySequence(QuantifiedPeptideInterface peptide) {
-		final String sequence = peptide.getFullSequence();
+		final String sequence = peptide.getSequence();
 		int index = 0;
 		String triplet = null;
 		int position = 1;
@@ -272,10 +290,26 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 			if (triplet.charAt(0) == '(') {
 				isPTM = true;
 			}
-			if (triplet.charAt(0) == 'N' && triplet.charAt(1) != '.'
+			if (triplet.charAt(0) == 'N' // && triplet.charAt(1) != '.'
 					&& (triplet.charAt(2) == 'S' || triplet.charAt(2) == 'T')) {
-				final PTMEx newPtm = new PTMEx(fakePTM, "N", position);
-				peptide.addPTM(newPtm);
+				// only if peptide has no PTM already in that position
+				boolean valid = true;
+				final List<PTM> ptMs = peptide.getPTMs();
+				if (ptMs != null) {
+					for (final PTM ptm : ptMs) {
+						final List<PTMSite> ptmSites = ptm.getPTMSites();
+						for (final PTMSite ptmSite : ptmSites) {
+							if (ptmSite.getPosition() == position) {
+								valid = false;
+								break;
+							}
+						}
+					}
+				}
+				if (valid) {
+					final PTMEx newPtm = new PTMEx(fakePTM, "N", position);
+					peptide.addPTM(newPtm);
+				}
 			}
 			index++;
 			if (!isPTM) {

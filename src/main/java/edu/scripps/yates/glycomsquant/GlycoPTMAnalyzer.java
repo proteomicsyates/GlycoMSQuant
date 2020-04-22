@@ -223,8 +223,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getHIVPositions();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
-		resultGenerator = new GlycoPTMResultGenerator(inputFile.getParentFile(), name, hivPositions,
-				this.calculateProportionsByPeptidesFirst);
+		resultGenerator = new GlycoPTMResultGenerator(inputFile.getParentFile(), hivPositions, this);
 		resultGenerator.generateResults();
 		this.averagePercentagesByPTMCode = calculateAveragePercentagesByPTMCode(hivPositions);
 

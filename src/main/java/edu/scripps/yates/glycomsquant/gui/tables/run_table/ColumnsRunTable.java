@@ -8,8 +8,10 @@ enum ColumnsRunTable {
 	RUN_PATH("Path", 30, "Path of the results", String.class), //
 	NAME("Name", 10, "Name set when results were created", String.class),
 	THRESHOLD("Int threshold", 10, "Intensity threshold", Double.class),
-	INPUT_DATA_FILE("Input file", 30, "Input data file", String.class), NORMALIZE_REPLICATES("Normalize replicates", 10,
-			"Normalize the intensity of the replicates by dividing by the total sum of intensities", Boolean.class)
+	INPUT_DATA_FILE("Input file", 30, "Input data file", String.class), //
+	NORMALIZE_REPLICATES("Normalize replicates", 10,
+			"Normalize the intensity of the replicates by dividing by the total sum of intensities", Boolean.class),
+	CALCULATE_PEPTIDE_PROPORTIONS_FIRST("Pep proportions", 10, "Calculate proportions per peptide", Boolean.class)
 	// RESEARCHER("researcher", 20, "Researcher name (internal data for the
 	// Spanish HPP consortium)"), //
 	// GENE_CLASSIFICATION("gene class", 15, "Gene classification (internal data

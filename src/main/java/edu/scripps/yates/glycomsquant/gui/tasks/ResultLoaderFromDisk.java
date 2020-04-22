@@ -14,6 +14,7 @@ import edu.scripps.yates.census.read.QuantCompareParser;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
+import edu.scripps.yates.utilities.util.Pair;
 
 public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 	public static final String RESULT_LOADER_FROM_DISK_STARTED = "resultLoaderStarted";
@@ -37,6 +38,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 
 			final File dataFile = ResultsProperties.getResultsProperties(individualResultsFolder)
 					.getGlycoSitesTableFile();
+
 			if (dataFile == null || !dataFile.exists()) {
 				throw new IllegalArgumentException("GlycoSite file in result folder '"
 						+ individualResultsFolder.getAbsolutePath() + "' is not found");
@@ -53,7 +55,11 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			parser.setDistinguishModifiedSequences(MainFrame.getInstance().isDistinguishModifiedSequences());
 			parser.setIgnoreTaxonomies(MainFrame.getInstance().isIgnoreTaxonomies());
 			final List<GlycoSite> glycoSites = readDataFile(dataFile, parser);
-			firePropertyChange(RESULT_LOADER_FROM_DISK_FINISHED, null, glycoSites);
+			final Boolean calculatePeptideProportionsFirst = ResultsProperties
+					.getResultsProperties(this.individualResultsFolder).getCalculatePeptideProportionsFirst();
+			final Pair<List<GlycoSite>, Boolean> pair = new Pair<List<GlycoSite>, Boolean>(glycoSites,
+					calculatePeptideProportionsFirst);
+			firePropertyChange(RESULT_LOADER_FROM_DISK_FINISHED, null, pair);
 		} catch (final Exception e) {
 			e.printStackTrace();
 			firePropertyChange(RESULT_LOADER_FROM_DISK_ERROR, null, e.getMessage());
@@ -75,6 +81,11 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 				}
 			}
 			sb.append(line + "\n");
+		}
+		if (!"".equals(sb.toString())) {
+			final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser);
+			ret.add(glycoSite);
+			sb = new StringBuilder();
 		}
 		log.info(ret.size() + " glycosites read from data file");
 		return ret;

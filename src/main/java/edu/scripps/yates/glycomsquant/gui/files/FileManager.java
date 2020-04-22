@@ -13,6 +13,10 @@ import org.apache.log4j.Logger;
 
 import com.google.common.io.Files;
 
+import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.InputParameters;
+import edu.scripps.yates.glycomsquant.gui.charts.ErrorType;
+
 public class FileManager {
 	private final static Logger log = Logger.getLogger(FileManager.class);
 	private static File resultRootFolder;
@@ -43,7 +47,7 @@ public class FileManager {
 
 		final File[] listFiles = folder.listFiles();
 		for (final File file : listFiles) {
-			if (FilenameUtils.getBaseName(file.getName()).contains("_resultTable_")) {
+			if (FilenameUtils.getBaseName(file.getName()).contains("resultsTable")) {
 				if (FilenameUtils.getExtension(file.getAbsolutePath()).equals("txt")) {
 					return true;
 				}
@@ -108,6 +112,61 @@ public class FileManager {
 		Files.copy(inputDataFile, to);
 		log.info("Input data file copied to : " + to.getAbsolutePath());
 		ResultsProperties.getResultsProperties(resultsFolder).setInputDataFile(inputDataFile);
+	}
+
+	public static String getGraphFileNameForScatterPlot(File individualResultsFolder, InputParameters inputParameters,
+			GlycoSite site) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "Site_" + site.getPosition()
+				+ "_scatterPlot" + getRunName(inputParameters) + ".png";
+	}
+
+	public static String getGraphFileNameForPieChart(File individualResultsFolder, InputParameters inputParameters,
+			GlycoSite site) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "Site_" + site.getPosition() + "_pieChart"
+				+ getRunName(inputParameters) + ".png";
+	}
+
+	private static String getRunName(InputParameters inputParameters) {
+		if (inputParameters.getName() != null && !"".equals(inputParameters.getName())) {
+			return "_" + inputParameters.getName();
+		}
+		return "";
+	}
+
+	public static String DATA_TABLE_INFIX = "_data_";
+
+	public static String getDataTableFileName(File individualResultsFolder, InputParameters inputParameters) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "dataTable" + getRunName(inputParameters)
+				+ ".dat";
+	}
+
+	public static String getGraphFileNameForIntensitiesErrorBarChart(File individualResultsFolder, ErrorType errorType,
+			InputParameters inputParameters) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "intensities_" + errorType
+				+ getRunName(inputParameters) + ".png";
+	}
+
+	public static String getResultsTableFileName(File individualResultsFolder, InputParameters inputParameters) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "resultsTable" + getRunName(inputParameters)
+				+ ".txt";
+	}
+
+	public static String getGraphFileNameForBoxWhiskerPeptideProportions(File individualResultsFolder,
+			InputParameters inputParameters) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "Box-Whisker_pep_proportions"
+				+ getRunName(inputParameters) + ".png";
+	}
+
+	public static String getGraphFileNameForProportionsErrorBarChart(File individualResultsFolder, ErrorType errorType,
+			InputParameters inputParameters) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "proportions_" + errorType
+				+ getRunName(inputParameters) + ".png";
+	}
+
+	public static String getGraphFileNameForProportionsStackedBarChart(File individualResultsFolder,
+			InputParameters inputParameters) {
+		return individualResultsFolder.getAbsolutePath() + File.separator + "proportions_stacked"
+				+ getRunName(inputParameters) + ".png";
 	}
 
 }

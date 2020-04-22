@@ -29,22 +29,25 @@ public class GuiUtils {
 	private final static DecimalFormat threeDecimalsFormatter = new DecimalFormat("#.###");
 	private final static DecimalFormat percentageFormatter = new DecimalFormat("0.0%");
 
-	public static String formatDouble(double threshold) {
-		return formatDouble(threshold, false);
+	public static String formatDouble(double value) {
+		return formatDouble(value, false);
 	}
 
-	public static String formatDouble(double threshold, boolean asPercentage) {
-		if (asPercentage) {
-			return percentageFormatter.format(threshold);
+	public static String formatDouble(double value, boolean asPercentage) {
+		if (Double.isNaN(value)) {
+			return "-";
 		}
-		String formattedNum = scientificFormatter.format(Maths.max(1.0, threshold));
-		if (threshold <= 100) {
-			formattedNum = String.valueOf(threshold);
-			if (threshold - Double.valueOf(threshold).intValue() == 0.0) {
-				formattedNum = String.valueOf(Double.valueOf(threshold).intValue());
+		if (asPercentage) {
+			return percentageFormatter.format(value);
+		}
+		String formattedNum = scientificFormatter.format(Maths.max(1.0, value));
+		if (value <= 100) {
+			formattedNum = String.valueOf(value);
+			if (value - Double.valueOf(value).intValue() == 0.0) {
+				formattedNum = String.valueOf(Double.valueOf(value).intValue());
 			} else {
 				// 3 decimals
-				formattedNum = threeDecimalsFormatter.format(threshold);
+				formattedNum = threeDecimalsFormatter.format(value);
 			}
 		}
 		return formattedNum;
@@ -52,7 +55,7 @@ public class GuiUtils {
 
 	public static String translateCode(String code) {
 		if (PTMCode._0.getCode().equals(code)) {
-			return "NonPTM";
+			return "No-PTM";
 		}
 		return code;
 	}

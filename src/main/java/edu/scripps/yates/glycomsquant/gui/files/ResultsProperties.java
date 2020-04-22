@@ -19,6 +19,7 @@ public class ResultsProperties {
 	private static final String NAME = "run_name";
 	private static final String INTENSITY_THRESHOLD = "intensity_threshold";
 	private static final String NORMALIZE_REPLICATES = "normalize_replicates";
+	private static final String CALCULATE_PEPTIDES_PROPORTIONS_FIRST = "calculate_peptides_proportions_first";
 	private static final String GLYCO_SITE_TABLE_FILE = "glyco_sites_table_file";
 	private static final String FASTA_FILE = "fasta_file";
 	private static final String PROTEIN_OF_INTEREST = "protein_of_interest";
@@ -35,6 +36,7 @@ public class ResultsProperties {
 	private File glycoSitesTableFile;
 	private File fastaFile;
 	private String proteinOfInterest;
+	private Boolean calculatePeptideProportionsFirst;
 
 	public static ResultsProperties getResultsProperties(File individualResultsFolder) {
 		if (!individualResultsFolder.equals(currentIndividualFolder)) {
@@ -94,6 +96,10 @@ public class ResultsProperties {
 				}
 				if (properties.containsKey(NORMALIZE_REPLICATES)) {
 					this.normalizeReplicates = Boolean.valueOf(properties.getProperty(NORMALIZE_REPLICATES));
+				}
+				if (properties.containsKey(CALCULATE_PEPTIDES_PROPORTIONS_FIRST)) {
+					this.calculatePeptideProportionsFirst = Boolean
+							.valueOf(properties.getProperty(CALCULATE_PEPTIDES_PROPORTIONS_FIRST));
 				}
 				if (properties.containsKey(GLYCO_SITE_TABLE_FILE)) {
 					this.glycoSitesTableFile = new File(individualResultsFolder.getAbsolutePath() + File.separator
@@ -180,6 +186,10 @@ public class ResultsProperties {
 			if (normalizeReplicates != null) {
 				properties.put(NORMALIZE_REPLICATES, String.valueOf(this.normalizeReplicates));
 			}
+			if (calculatePeptideProportionsFirst != null) {
+				properties.put(CALCULATE_PEPTIDES_PROPORTIONS_FIRST,
+						String.valueOf(this.calculatePeptideProportionsFirst));
+			}
 			final FileWriter writer = new FileWriter(propertiesFile);
 			properties.store(writer, "Properties of the GlycoMSAnalyzer run performed on "
 					+ dateFormatter.format(FileManager.getDateFromFolderName(individualResultsFolder)));
@@ -210,6 +220,11 @@ public class ResultsProperties {
 		updateProperties();
 	}
 
+	public void setCalculatePeptideProportionsFirst(Boolean calculatePeptideProportionsFirst) {
+		this.calculatePeptideProportionsFirst = calculatePeptideProportionsFirst;
+		updateProperties();
+	}
+
 	public Double getIntensityThreshold() {
 		loadProperties();
 		return intensityThreshold;
@@ -232,5 +247,10 @@ public class ResultsProperties {
 
 	public String getProteinOfInterest() {
 		return proteinOfInterest;
+	}
+
+	public Boolean getCalculatePeptideProportionsFirst() {
+		loadProperties();
+		return this.calculatePeptideProportionsFirst;
 	}
 }

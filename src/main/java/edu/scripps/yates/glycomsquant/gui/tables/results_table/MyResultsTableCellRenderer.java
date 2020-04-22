@@ -65,7 +65,7 @@ public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
 			defaultToolTip = value.toString();
 		}
 		setToolTipText(defaultToolTip);
-		final Color defaultColor = getColor(row);
+		final Color defaultColor = getColor(row, selectedColumn);
 		this.setBackground(defaultColor);
 		if (isSelected) {
 			this.setForeground(Color.RED);
@@ -79,6 +79,7 @@ public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
 
 		} else {
 			this.setForeground(Color.BLACK);
+
 		}
 		final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
@@ -120,10 +121,20 @@ public class MyResultsTableCellRenderer extends DefaultTableCellRenderer {
 		return ret;
 	}
 
-	private Color getColor(int row) {
+	private Color getColor(int row, ColumnsResultsTable selectedColumn) {
+		Color color = null;
+		if (selectedColumn != null) {
+			color = selectedColumn.getColor();
+		}
 		if (row % 2 == 1) { // impar
+			if (color != null) {
+				return new Color(color.getRed() - 23, color.getGreen() - 8, color.getBlue() - 3);
+			}
 			return new Color(233, 248, 253);
 		} else { // par
+			if (color != null) {
+				return color;
+			}
 			return Color.white;
 		}
 	}

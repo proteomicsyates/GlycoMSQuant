@@ -44,6 +44,9 @@ public class GlycoSite {
 
 	public GlycoSite(int position, String protein) {
 		super();
+		if (position == 52) {
+			log.info("asdf");
+		}
 		this.position = position;
 		this.protein = protein;
 
@@ -76,6 +79,7 @@ public class GlycoSite {
 			throw new IllegalArgumentException(string + " is not readable as a Glycosite");
 		}
 		try {
+			final Map<String, QuantifiedPeptideInterface> peptideMap = quantParser.getPeptideMap();
 			for (final String line : lines) {
 				final String[] split = line.split("\t");
 				if (ret == null && line.startsWith(GLYCOSITE)) {
@@ -91,8 +95,12 @@ public class GlycoSite {
 					for (int i = 1; i < split.length; i = i + 2) {
 						final double intensity = Double.valueOf(split[i]);
 						final String peptideKey = split[i + 1];
-						final QuantifiedPeptideInterface peptide = quantParser.getPeptideMap().get(peptideKey);
-						ret.addValue(ptmCode, intensity, peptide);
+						if (peptideMap.containsKey(peptideKey)) {
+							final QuantifiedPeptideInterface peptide = peptideMap.get(peptideKey);
+							ret.addValue(ptmCode, intensity, peptide);
+						} else {
+							log.error("asdf");
+						}
 					}
 				}
 
@@ -127,13 +135,15 @@ public class GlycoSite {
 		// potential PTMs to calculate proportions per peptideKey
 		final String peptideSequence = peptide.getSequence();
 		final List<PTM> ptmsForKey = new ArrayList<PTM>();
-		for (final PTM ptm : peptide.getPTMs()) {
-			final String ptmCodeString = String.valueOf(ptm.getMassShift());
-			final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCodeString);
-			if (ptmCodeObj != null) {
-				continue; // we dont include it in the key
+		if (peptide.getPTMs() != null) {
+			for (final PTM ptm : peptide.getPTMs()) {
+				final String ptmCodeString = String.valueOf(ptm.getMassShift());
+				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCodeString);
+				if (ptmCodeObj != null) {
+					continue; // we dont include it in the key
+				}
+				ptmsForKey.add(ptm);
 			}
-			ptmsForKey.add(ptm);
 		}
 		final TIntObjectMap<PTM> ptmsByPosition = new TIntObjectHashMap<PTM>();
 		for (final PTM ptm : ptmsForKey) {
@@ -291,9 +301,6 @@ public class GlycoSite {
 
 		}
 		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
-			if (this.getPosition() == 105 && ptmCode == PTMCode._0) {
-				log.info("asdf " + Maths.mean(percentageBySecondMethodByPTMCode.get(ptmCode)));
-			}
 			return Maths.mean(percentageBySecondMethodByPTMCode.get(ptmCode));
 		}
 		return 0.0;
@@ -334,9 +341,6 @@ public class GlycoSite {
 			String replicate) {
 		final Map<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			if (this.getPosition() == 60 && ptmCode == PTMCode._2) {
-				log.info("");
-			}
 			final TDoubleList valuesPerPTMCode = new TDoubleArrayList();
 			// reduce list to have unique hashcodes
 			final TIntSet hashCodes = new TIntHashSet();
