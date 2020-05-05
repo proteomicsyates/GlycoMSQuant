@@ -135,8 +135,8 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 			final boolean makeLog = false;
 			title = "SEM of Intensities";
 			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.SEM, makeLog));
-			title = "STDEV of Intensities";
-			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.STDEV, makeLog));
+//			title = "STDEV of Intensities";
+//			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.STDEV, makeLog));
 		}
 		// pie charts with averaged proportions
 		final ProportionsPieChartsPanel pieCharts = new ProportionsPieChartsPanel(glycoSites, resultsFolder,
@@ -160,8 +160,8 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 	private File writeIntensitiesErrorBarChart(String title, String subtitle, boolean psms, ErrorType errorType,
 			boolean makeLog) throws IOException {
 
-		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForSites(glycoSites, title, subtitle, psms,
-				makeLog, errorType);
+		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForSites(glycoSites, title, subtitle,
+				psms, makeLog, errorType);
 
 		this.charts.add(chartPanel);
 		if (saveGraphsToFiles) {
