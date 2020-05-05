@@ -33,9 +33,9 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.PTMCode;
-import edu.scripps.yates.glycomsquant.gui.ColorsUtil;
-import edu.scripps.yates.glycomsquant.gui.GuiUtils;
 import edu.scripps.yates.glycomsquant.gui.charts.LineCategoryChart;
+import edu.scripps.yates.glycomsquant.util.ColorsUtil;
+import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;

@@ -22,4 +22,6 @@ public interface InputParameters {
 	public boolean isNormalizeReplicates();
 
 	public boolean isCalculateProportionsByPeptidesFirst();
+
+	public String getMotifRegexp();
 }

@@ -1,7 +1,8 @@
 package edu.scripps.yates.glycomsquant;
 
 public enum PTMCode {
-	_0("0.123"), _2("2.988"), _203("203.079");
+	_0("0.0"), _2("2.988"), _203("203.079");
+
 	private final String code;
 
 	private PTMCode(String code) {
@@ -13,7 +14,7 @@ public enum PTMCode {
 	}
 
 	public static PTMCode getByValue(String ptmCode) {
-		for (PTMCode ptmCode2 : values()) {
+		for (final PTMCode ptmCode2 : values()) {
 			if (ptmCode2.getCode().equals(ptmCode)) {
 				return ptmCode2;
 			}

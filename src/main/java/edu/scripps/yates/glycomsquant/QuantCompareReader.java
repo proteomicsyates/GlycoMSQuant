@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
@@ -15,6 +16,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.census.read.QuantCompareParser;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
+import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
 import edu.scripps.yates.utilities.proteomicsmodel.PTM;
@@ -22,7 +24,6 @@ import edu.scripps.yates.utilities.proteomicsmodel.PTMSite;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.AmountEx;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.PTMEx;
-import edu.scripps.yates.utilities.sequence.PTMInPeptide;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.map.TObjectDoubleMap;
@@ -48,9 +49,7 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 	private final static Logger log = Logger.getLogger(QuantCompareReader.class);
 	private final File inputFile;
 	private final String proteinOfInterestACC;
-	public final static double DEFAULT_FAKE_PTM = 0.123;
 	private final static DecimalFormat formatter = new DecimalFormat("+#.###");
-	private final static String DEFAULT_PROTEIN_OF_INTEREST = "BG505_SOSIP_gp140";
 	public static final String INPUT_DATA_READER_FINISHED = "Conversion_finished";
 	public static final String NUM_VALID_PEPTIDES = "Num_valid_peptides";
 	public static final String INPUT_DATA_READER_ERROR = "input data error";
@@ -61,6 +60,9 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 	private final boolean normalizeExperimentsByProtein;
 	private List<QuantifiedPeptideInterface> peptides;
 	private final Map<File, QuantCompareParser> parsersByFile = new THashMap<File, QuantCompareParser>();
+	private final String motifRegexp;
+	private Pattern pattern;
+	private final String proteinOfInterestSequence;
 
 	/**
 	 * Constructor in which the proteinOfInterestACC is the default
@@ -69,9 +71,10 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 	 * @param file
 	 */
 	public QuantCompareReader(File file, double intensityThreshold, AmountType amountType,
-			boolean normalizeExperimentsByProtein) {
-		this(file, DEFAULT_PROTEIN_OF_INTEREST, DEFAULT_FAKE_PTM, intensityThreshold, amountType,
-				normalizeExperimentsByProtein);
+			boolean normalizeExperimentsByProtein, String motifRegexp) {
+		this(file, GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST, GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST_SEQUENCE,
+				GlycoPTMAnalyzer.DEFAULT_FAKE_PTM, intensityThreshold, amountType, normalizeExperimentsByProtein,
+				motifRegexp);
 	}
 
 	/**
@@ -80,31 +83,35 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 	 * 
 	 * @param inputDataFile
 	 * @param proteinOfInterestACC
+	 * @param proteinOfInterestSequence
 	 * @param fakePTM
 	 * @param intensityThreshold
 	 * @param amountType
-	 * @param normalizeReplicates  if true, the intensities will be normalized by
-	 *                             dividing by the sum of all intensities of the
-	 *                             protein of interest and multiplying by the
-	 *                             average of the intensities of the protein of
-	 *                             interest
+	 * @param normalizeReplicates       if true, the intensities will be normalized
+	 *                                  by dividing by the sum of all intensities of
+	 *                                  the protein of interest and multiplying by
+	 *                                  the average of the intensities of the
+	 *                                  protein of interest
 	 */
-	public QuantCompareReader(File inputDataFile, String proteinOfInterestACC, Double fakePTM,
-			double intensityThreshold, AmountType amountType, boolean normalizeReplicates) {
+	public QuantCompareReader(File inputDataFile, String proteinOfInterestACC, String proteinOfInterestSequence,
+			Double fakePTM, double intensityThreshold, AmountType amountType, boolean normalizeReplicates,
+			String motifRegexp) {
+		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
 		if (proteinOfInterestACC != null && !"".equals(proteinOfInterestACC)) {
 			this.proteinOfInterestACC = proteinOfInterestACC;
 		} else {
-			this.proteinOfInterestACC = DEFAULT_PROTEIN_OF_INTEREST;
+			this.proteinOfInterestACC = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST;
 		}
 		if (fakePTM != null) {
 			this.fakePTM = fakePTM;
 		} else {
-			this.fakePTM = DEFAULT_FAKE_PTM;
+			this.fakePTM = GlycoPTMAnalyzer.DEFAULT_FAKE_PTM;
 		}
 		this.intensityThreshold = intensityThreshold;
 		this.amountType = amountType;
 		this.normalizeExperimentsByProtein = normalizeReplicates;
+		this.proteinOfInterestSequence = proteinOfInterestSequence;
 	}
 
 	/**
@@ -119,6 +126,7 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 			reader = parsersByFile.get(inputFile);
 		} else {
 			reader = new QuantCompareParser(inputFile);
+			// charge state sensible and ptm sensible
 			reader.setChargeSensible(MainFrame.getInstance().isChargeStateSensible());
 			reader.setDistinguishModifiedSequences(MainFrame.getInstance().isDistinguishModifiedSequences());
 			reader.setIgnoreTaxonomies(MainFrame.getInstance().isIgnoreTaxonomies());
@@ -150,39 +158,40 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 				iterator.remove();
 				continue;
 			}
-			if (peptide.getFullSequence().equals("CVPTDPN(+2.988)PQEIHLENVTEEFNM(+15.995)WKNNMVEQ")) {
-//				log.info("asdf");
-			}
-			// Modify sequence to include the fake PTM in the non modified motifs
-			modifySequence(peptide);
-			// filter out peptides with no motifs or not ptms
-			final List<PTMInPeptide> ptmsInPeptide = peptide.getPTMsInPeptide();
-			boolean valid = false;
-			boolean hasAPTMCode = false;
-			for (final PTMInPeptide ptmInPeptide : ptmsInPeptide) {
-				final String ptmCode = String.valueOf(ptmInPeptide.getDeltaMass());
-				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCode);
-				if (ptmCodeObj != null) {
-					hasAPTMCode = true;
-					// check whether the +2 is an T or S
-					final int position = ptmInPeptide.getPosition();
-					if (position <= peptide.getSequence().length() - 2) {
-						final char charAt = peptide.getSequence().charAt(position + 2 - 1);
-						if (charAt == 'S' || charAt == 'T') {
-							valid = true;
-							break;
-						}
-					}
-				}
-			}
-			if (!valid) {
-				if (hasAPTMCode) {
-//					log.info("asdf");
-				}
+
+			// discard if doesn't have a motif of interest
+
+			final boolean hasMotif = !GlycoPTMAnalyzerUtil.hasMotif(peptide, proteinOfInterestSequence, motifRegexp)
+					.isEmpty();
+
+//			final TIntArrayList allPositionsOf = StringUtils.allPositionsOf(sequence, 'N');
+//			if (!allPositionsOf.isEmpty()) {
+//				for (final int position : allPositionsOf.toArray()) {
+//					if (position + 2 <= sequence.length()) {
+//						final char charAt = sequence.charAt(position + 2 - 1);
+//						if (charAt == 'S' || charAt == 'T') {
+//							hasMotif = true;
+//						}
+//					}
+//				}
+//			}
+//
+//			
+			if (!hasMotif) {
+//				if (hasMotif(extendedSequence)) {
+//					log.info("ASDF");
+//				}
 				peptidesDiscardedByNotHavingMotifs++;
 				iterator.remove();
 				continue;
+			} else {
+//				if (!hasMotif(extendedSequence)) {
+//					log.info("ASDF");
+//				}
 			}
+			// Modify sequence to include the fake PTM in the non modified motifs
+//			modifySequence(peptide);
+
 			if (normalizeExperimentsByProtein) {
 				final List<Amount> intensities = peptide.getAmounts().stream()
 						.filter(a -> a.getAmountType() == amountType).collect(Collectors.toList());

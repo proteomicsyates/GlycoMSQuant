@@ -74,6 +74,15 @@ public class FileManager {
 		return resultRootFolder;
 	}
 
+	public static String removeAppRootFolderString(String path) {
+		final String root = getResultRootFolder().getAbsolutePath();
+		if (path.contains(root)) {
+			final String substring = path.substring(path.indexOf(root) + root.length() + 1);
+			return substring;
+		}
+		return null;
+	}
+
 	public static void setRootFolder(File resultFolder) {
 		FileManager.resultRootFolder = resultFolder;
 	}
@@ -111,7 +120,7 @@ public class FileManager {
 				+ FilenameUtils.getName(inputDataFile.getAbsolutePath()));
 		Files.copy(inputDataFile, to);
 		log.info("Input data file copied to : " + to.getAbsolutePath());
-		ResultsProperties.getResultsProperties(resultsFolder).setInputDataFile(inputDataFile);
+		new ResultsProperties(resultsFolder).setInputDataFile(inputDataFile);
 	}
 
 	public static String getGraphFileNameForScatterPlot(File individualResultsFolder, InputParameters inputParameters,
@@ -167,6 +176,16 @@ public class FileManager {
 			InputParameters inputParameters) {
 		return individualResultsFolder.getAbsolutePath() + File.separator + "proportions_stacked"
 				+ getRunName(inputParameters) + ".png";
+	}
+
+	public static void removeRunFolder(String runName) throws IOException {
+		final File folder = new File(getResultRootFolder().getAbsolutePath() + File.separator + runName);
+		if (folder.exists()) {
+			log.info("Removing folder '" + folder.getAbsolutePath() + "'");
+
+			Files.deleteRecursively(folder);
+
+		}
 	}
 
 }

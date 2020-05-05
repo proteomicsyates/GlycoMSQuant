@@ -1,9 +1,6 @@
 package edu.scripps.yates.glycomsquant;
 
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Paint;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,36 +13,25 @@ import javax.swing.SwingWorker;
 
 import org.apache.log4j.Logger;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.ChartUtils;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.CategoryAxis;
-import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
-import org.jfree.chart.labels.BoxAndWhiskerToolTipGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.renderer.category.BoxAndWhiskerRenderer;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
-import org.jfree.chart.title.TextTitle;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.statistics.BoxAndWhiskerCategoryDataset;
-import org.jfree.data.statistics.DefaultBoxAndWhiskerCategoryDataset;
 import org.jfree.data.statistics.DefaultStatisticalCategoryDataset;
 
-import edu.scripps.yates.glycomsquant.gui.ColorsUtil;
-import edu.scripps.yates.glycomsquant.gui.GuiUtils;
 import edu.scripps.yates.glycomsquant.gui.ProportionsPeptidesScatterPlotChartsPanel;
 import edu.scripps.yates.glycomsquant.gui.ProportionsPieChartsPanel;
 import edu.scripps.yates.glycomsquant.gui.charts.BarChart;
-import edu.scripps.yates.glycomsquant.gui.charts.ChartProperties;
+import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.charts.ErrorType;
 import edu.scripps.yates.glycomsquant.gui.charts.StackedBarChart;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
-import edu.scripps.yates.utilities.maths.Maths;
-import gnu.trove.list.TDoubleList;
+import edu.scripps.yates.glycomsquant.util.ColorsUtil;
+import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
 /**
  * Writes table and/or graph
@@ -96,11 +82,12 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		if (generateTable) {
 			final File tableFile = writeResultTable(inputParameters.isCalculateProportionsByPeptidesFirst());
 			// update property
-			ResultsProperties.getResultsProperties(resultsFolder).setResultsTableFile(tableFile);
+			final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
+			resultsProperties.setResultsTableFile(tableFile);
 			// generate glycoSiteDataTable
 			final File dataTableFile = writeDataTable();
 			// update property
-			ResultsProperties.getResultsProperties(resultsFolder).setGlycoSitesTableFile(dataTableFile);
+			resultsProperties.setGlycoSitesTableFile(dataTableFile);
 		}
 		if (generateGraph) {
 			firePropertyChange("progress", null, "Generating charts...");
@@ -128,12 +115,10 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		if (name != null) {
 			subtitle = name;
 		}
-		if (!"".equals(subtitle) && name != null) {
-			subtitle += "_" + name;
-		}
+
 		// with PSMs on the names
 		String title = "Site % abundaces";
-		final boolean psms = true;
+		final boolean psms = false;
 		generatedImages.add(writeStackedChartOfPercentages(title, subtitle, psms));
 
 		if (inputParameters.isCalculateProportionsByPeptidesFirst()) {
@@ -174,31 +159,16 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 
 	private File writeIntensitiesErrorBarChart(String title, String subtitle, boolean psms, ErrorType errorType,
 			boolean makeLog) throws IOException {
-		String psmsString = "spc";
-		if (!psms) {
-			psmsString = "peps";
-		}
 
-		final DefaultStatisticalCategoryDataset datasetWithErrors = createIntensityErrorDataset(psms, makeLog,
-				errorType);
-		String logInsideString = "(log2) ";
-		if (!makeLog) {
-			logInsideString = "";
-		}
-		final BarChart chart = new BarChart(title, subtitle, "site # (" + psmsString + ")",
-				"Averaged " + logInsideString + "intensity and " + errorType, datasetWithErrors,
-				PlotOrientation.VERTICAL);
-//		chart.getChartPanel().setSize(new Dimension(DEFAULT_GRAPH_SIZE, DEFAULT_GRAPH_SIZE));
-		// do not separate the bars on each site
-		chart.getRenderer().setItemMargin(0);
-		chart.getRenderer().setDefaultItemLabelsVisible(false);
-		chart.setSeriesPaint(ColorsUtil.getDefaultColorsSortedByPTMCode());
-		this.charts.add(chart.getChartPanel());
+		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForSites(glycoSites, title, subtitle, psms,
+				makeLog, errorType);
+
+		this.charts.add(chartPanel);
 		if (saveGraphsToFiles) {
 			final File file = new File(
 					FileManager.getGraphFileNameForIntensitiesErrorBarChart(resultsFolder, errorType, inputParameters));
 
-			ChartUtils.saveChartAsPNG(file, chart.getChartPanel().getChart(), 1024, 600);
+			org.jfree.chart.ChartUtils.saveChartAsPNG(file, chartPanel.getChart(), 1024, 600);
 			log.info("Chart generated and saved at '" + file.getAbsolutePath() + "'");
 			return file;
 		}
@@ -206,43 +176,13 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 	}
 
 	private File writeProportionsBoxAndWhiskerChart(String title, String subtitle, boolean psms) throws IOException {
-		String psmsString = "spc";
-		if (!psms) {
-			psmsString = "peps";
-		}
-
-		final BoxAndWhiskerCategoryDataset dataset = createPercentErrorDatasetBoxAndWhisker(psms);
-		final BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer();
-		renderer.setFillBox(true);
-		renderer.setDefaultToolTipGenerator(new BoxAndWhiskerToolTipGenerator());
-		for (int i = 0; i < ColorsUtil.getDefaultColorsSortedByPTMCode().length; i++) {
-			final Paint paint = ColorsUtil.getDefaultColorsSortedByPTMCode()[i];
-			renderer.setSeriesFillPaint(i, paint);
-			renderer.setSeriesPaint(i, paint);
-			renderer.setSeriesOutlinePaint(i, ColorsUtil.getBlack());
-		}
-		final CategoryAxis xAxis = new CategoryAxis("site #");
-		xAxis.setCategoryLabelPositions(CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 6.0));
-
-		final NumberAxis yAxis = new NumberAxis("% proportion");
-		final CategoryPlot plot = new CategoryPlot(dataset, xAxis, yAxis, renderer);
-		plot.setBackgroundPaint(Color.white);
-		final JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, true);
-		if (subtitle != null) {
-			final TextTitle textSubtitle = new TextTitle(subtitle);
-			chart.addSubtitle(textSubtitle);
-		}
-
-		final ChartPanel chartPanel = new ChartPanel(chart);
-		final Dimension dimension = new Dimension(ChartProperties.DEFAULT_CHART_WIDTH,
-				ChartProperties.DEFAULT_CHART_HEIGHT);
-		chartPanel.setPreferredSize(dimension);
-		chartPanel.setSize(dimension);
+		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGlycoSites(glycoSites, title,
+				subtitle, psms);
 		this.charts.add(chartPanel);
 		if (saveGraphsToFiles) {
 			final File file = new File(
 					FileManager.getGraphFileNameForBoxWhiskerPeptideProportions(this.resultsFolder, inputParameters));
-			ChartUtils.saveChartAsPNG(file, chart, 1024, 600);
+			org.jfree.chart.ChartUtils.saveChartAsPNG(file, chartPanel.getChart(), 1024, 600);
 			log.info("Chart generated and saved at '" + file.getAbsolutePath() + "'");
 			return file;
 		}
@@ -287,7 +227,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		if (saveGraphsToFiles) {
 			final File file = new File(FileManager.getGraphFileNameForProportionsErrorBarChart(this.resultsFolder,
 					errorType, inputParameters));
-			ChartUtils.saveChartAsPNG(file, chart.getChartPanel().getChart(), 1024, 600);
+			org.jfree.chart.ChartUtils.saveChartAsPNG(file, chart.getChartPanel().getChart(), 1024, 600);
 			log.info("Chart generated and saved at '" + file.getAbsolutePath() + "'");
 			return file;
 		}
@@ -328,7 +268,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		if (saveGraphsToFiles) {
 			final File file = new File(
 					FileManager.getGraphFileNameForProportionsStackedBarChart(this.resultsFolder, inputParameters));
-			ChartUtils.saveChartAsPNG(file, chart.getChartPanel().getChart(), 1024, 600);
+			org.jfree.chart.ChartUtils.saveChartAsPNG(file, chart.getChartPanel().getChart(), 1024, 600);
 			log.info("Chart generated and saved at '" + file.getAbsolutePath() + "'");
 			return file;
 		}
@@ -362,77 +302,6 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 
 		return dataset;
 
-	}
-
-	private DefaultStatisticalCategoryDataset createIntensityErrorDataset(boolean psms, boolean makeLog,
-			ErrorType errorType) {
-		final DefaultStatisticalCategoryDataset dataset = new DefaultStatisticalCategoryDataset();
-
-		for (final GlycoSite hivPosition : glycoSites) {
-			String columnKey = null;
-			if (psms) {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getSPCByPTMCode(PTMCode._0) + "/"
-						+ hivPosition.getSPCByPTMCode(PTMCode._2) + "/" + hivPosition.getSPCByPTMCode(PTMCode._203)
-						+ ")";
-			} else {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getPeptidesByPTMCode(PTMCode._0).size() + "/"
-						+ hivPosition.getPeptidesByPTMCode(PTMCode._2).size() + "/"
-						+ hivPosition.getPeptidesByPTMCode(PTMCode._203).size() + ")";
-			}
-
-			for (final PTMCode ptmCode : PTMCode.values()) {
-				double average = hivPosition.getAverageIntensityByPTMCode(ptmCode);
-				if (makeLog && Double.compare(0.0, average) != 0) {
-					average = Maths.log(average, 2);
-				}
-				double error = 0.0;
-				switch (errorType) {
-				case SEM:
-					error = hivPosition.getSEMIntensityByPTMCode(ptmCode);
-					break;
-				case STDEV:
-					error = hivPosition.getSTDEVIntensityByPTMCode(ptmCode);
-					break;
-				default:
-					break;
-				}
-
-				if (makeLog && Double.compare(0.0, error) != 0) {
-					error = Maths.log(error, 2);
-				}
-				dataset.add(average, error, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
-			}
-		}
-
-		return dataset;
-	}
-
-	private BoxAndWhiskerCategoryDataset createPercentErrorDatasetBoxAndWhisker(boolean psms) {
-		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
-
-		for (final GlycoSite hivPosition : glycoSites) {
-			String columnKey = null;
-			if (psms) {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getSPCByPTMCode(PTMCode._0) + "/"
-						+ hivPosition.getSPCByPTMCode(PTMCode._2) + "/" + hivPosition.getSPCByPTMCode(PTMCode._203)
-						+ ")";
-			} else {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getPeptidesByPTMCode(PTMCode._0).size() + "/"
-						+ hivPosition.getPeptidesByPTMCode(PTMCode._2).size() + "/"
-						+ hivPosition.getPeptidesByPTMCode(PTMCode._203).size() + ")";
-			}
-
-			for (final PTMCode ptmCode : PTMCode.values()) {
-				final TDoubleList doublelist = hivPosition.getIndividualPeptidePercentagesByPTMCode(ptmCode);
-				final List<Double> list = new ArrayList<Double>();
-				for (final double double1 : doublelist.toArray()) {
-					list.add(double1);
-				}
-				dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
-			}
-		}
-
-		return dataset;
 	}
 
 	private DefaultStatisticalCategoryDataset createProportionsErrorDataset(boolean psms, ErrorType errorType) {

@@ -28,7 +28,12 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final static Logger log = Logger.getLogger(GlycoPTMAnalyzer.class);
 	private static Options options;
 	private static AppVersion version;
-	public static String DEFAULT_PROTEIN_OF_INTEREST = "BG505_SOSIP_gp140";
+	public static final String DEFAULT_PROTEIN_OF_INTEREST = "BG505_SOSIP_gp140";
+	public static final double DEFAULT_FAKE_PTM = 0.123;
+	public static final String DEFAULT_PROTEIN_OF_INTEREST_SEQUENCE = "TGAENLWVTVYYGVPVWKDAETTLFCASDAKAYETEKHNVWATHACVPTDPNPQEIHLENVTEEFNMWKNNMVEQMHTDIISLWDQSLKPCVKLTPLCVTLQCTNVTNNITDDMRGELKNCSFNMTTELRDKKQKVYSLFYRLDVVQINENQGNRSNNSNKEYRLINCNTSAITQACPKVSFEPIPIHYCAPAGFAILKCKDKKFNGTGPCPSVSTVQCTHGIKPVVSTQLLLNGSLAEEEVMIRSENITNNAKNILVQFNTPVQINCTRPNNNTRKSIRIGPGQAFYATGDIIGDIRQAHCNVSKATWNETLGKVVKQLRKHFGNNTIIRFANSSGGDLEVTTHSFNCGGEFFYCNTSGLFNSTWISNTSVQGSNSTGSNDSITLPCRIKQIINMWQRIGQAMYAPPIQGVIRCVSNITGLILTRDGGSTNSTTETFRPGGGDMRDNWRSELYKYKVVKIEPLGVAPTRCKRRVVGRRRRRRAVGIGAVFLGFLGAAGSTMGAASMTLTVQARNLLSGIVQQQSNLLRAPEAQQHLLKLTVWGIKQLQARVLAVERYLRDQQLLGIWGCSGKLICCTNVPWNSSWSNRNLSEIWDNMTWLQWDKEISNYTQIIYGLLEESQNQQEKNEQDLLALDGTKHHHHHH";
+// 	public static final String NEW_DEFAULT_MOTIF_REGEXP = "\\w*(N[^P][S|T])\\w*";
+	public static final String NEW_DEFAULT_MOTIF_REGEXP = "(N[^P][S|T])";
+
 	private final File inputFile;
 	private final String proteinOfInterestACC;
 	private final File fastaFile;
@@ -45,9 +50,9 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final AmountType amountType;
 	private final boolean normalizeReplicates;
 	private final boolean calculateProportionsByPeptidesFirst;
+	private final String motifRegexp;
 
 	private static final DecimalFormat f = new DecimalFormat("#.#E0");
-	public static final String DEFAULT_PROTEIN_OF_INTEREST_SEQUENCE = "TGAENLWVTVYYGVPVWKDAETTLFCASDAKAYETEKHNVWATHACVPTDPNPQEIHLENVTEEFNMWKNNMVEQMHTDIISLWDQSLKPCVKLTPLCVTLQCTNVTNNITDDMRGELKNCSFNMTTELRDKKQKVYSLFYRLDVVQINENQGNRSNNSNKEYRLINCNTSAITQACPKVSFEPIPIHYCAPAGFAILKCKDKKFNGTGPCPSVSTVQCTHGIKPVVSTQLLLNGSLAEEEVMIRSENITNNAKNILVQFNTPVQINCTRPNNNTRKSIRIGPGQAFYATGDIIGDIRQAHCNVSKATWNETLGKVVKQLRKHFGNNTIIRFANSSGGDLEVTTHSFNCGGEFFYCNTSGLFNSTWISNTSVQGSNSTGSNDSITLPCRIKQIINMWQRIGQAMYAPPIQGVIRCVSNITGLILTRDGGSTNSTTETFRPGGGDMRDNWRSELYKYKVVKIEPLGVAPTRCKRRVVGRRRRRRAVGIGAVFLGFLGAAGSTMGAASMTLTVQARNLLSGIVQQQSNLLRAPEAQQHLLKLTVWGIKQLQARVLAVERYLRDQQLLGIWGCSGKLICCTNVPWNSSWSNRNLSEIWDNMTWLQWDKEISNYTQIIYGLLEESQNQQEKNEQDLLALDGTKHHHHHH";
 
 	public GlycoPTMAnalyzer(InputParameters inputParams) {
 		CurrentInputParameters.getInstance().setInputParameters(inputParams);
@@ -60,12 +65,13 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.amountType = inputParams.getAmountType();
 		this.normalizeReplicates = inputParams.isNormalizeReplicates();
 		this.calculateProportionsByPeptidesFirst = inputParams.isCalculateProportionsByPeptidesFirst();
+		this.motifRegexp = inputParams.getMotifRegexp();
 		printWelcome();
 	}
 
 	public GlycoPTMAnalyzer(File inputFile, String proteinOfInterestACC, File fastaFile, double fakePTM, String prefix,
 			String suffix, double intensityThreshold, AmountType amountType, boolean normalizeExperimentsByProtein,
-			boolean calculateProportionsByPeptidesFirst) {
+			boolean calculateProportionsByPeptidesFirst, String motifRegexp) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
@@ -74,7 +80,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.intensityThreshold = intensityThreshold;
 		this.amountType = amountType;
 		this.normalizeReplicates = normalizeExperimentsByProtein;
-
+		this.motifRegexp = motifRegexp;
 		this.calculateProportionsByPeptidesFirst = calculateProportionsByPeptidesFirst;
 		printWelcome();
 
@@ -147,7 +153,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 
 			final File fastaFile = new File(cmd.getOptionValue("fas"));
 
-			final double fakePTM = QuantCompare2PCQInputTSV.DEFAULT_FAKE_PTM;
+			final double fakePTM = DEFAULT_FAKE_PTM;
 
 			String prefix = "";
 			if (cmd.hasOption("pre")) {
@@ -172,9 +178,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("pep")) {
 				normalizeExperimentsByProtein = Boolean.valueOf(cmd.getOptionValue("pep"));
 			}
-
+			final String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
 			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, fakePTM,
-					prefix, suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, analysisByPeptides);
+					prefix, suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, analysisByPeptides,
+					motifRegexp);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {
@@ -201,8 +208,9 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	public void run(boolean generateTable, boolean generateGraphs) throws IOException {
 		List<QuantifiedPeptideInterface> peptides = null;
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		final QuantCompareReader q = new QuantCompareReader(inputFile, proteinOfInterestACC, fakePTM,
-				intensityThreshold, amountType, normalizeReplicates);
+		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
+		final QuantCompareReader q = new QuantCompareReader(inputFile, proteinOfInterestACC, proteinSequence, fakePTM,
+				intensityThreshold, amountType, normalizeReplicates, this.motifRegexp);
 		try {
 			peptides = q.runReader();
 		} catch (final IOException e) {
@@ -219,7 +227,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 
 		log.info("Now analyzing the " + peptides.size() + " peptides...");
 		final GlycoPTMPeptideAnalyzer glycoPTMPeptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
-				proteinOfInterestACC, fastaFile, amountType);
+				proteinOfInterestACC, fastaFile, amountType, this.motifRegexp);
 		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getHIVPositions();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
@@ -342,5 +350,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	@Override
 	public boolean isCalculateProportionsByPeptidesFirst() {
 		return this.calculateProportionsByPeptidesFirst;
+	}
+
+	@Override
+	public String getMotifRegexp() {
+		return motifRegexp;
 	}
 }

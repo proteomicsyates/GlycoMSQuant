@@ -9,6 +9,8 @@ import java.util.Properties;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 
+import edu.scripps.yates.glycomsquant.AppDefaults;
+import edu.scripps.yates.glycomsquant.GlycoPTMAnalyzer;
 import edu.scripps.yates.utilities.properties.PropertiesUtil;
 
 public class ResultsProperties {
@@ -23,8 +25,6 @@ public class ResultsProperties {
 	private static final String GLYCO_SITE_TABLE_FILE = "glyco_sites_table_file";
 	private static final String FASTA_FILE = "fasta_file";
 	private static final String PROTEIN_OF_INTEREST = "protein_of_interest";
-	private static File currentIndividualFolder;
-	private static ResultsProperties instance;
 	public final static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private final File individualResultsFolder;
 	private File inputDataFile;
@@ -37,14 +37,6 @@ public class ResultsProperties {
 	private File fastaFile;
 	private String proteinOfInterest;
 	private Boolean calculatePeptideProportionsFirst;
-
-	public static ResultsProperties getResultsProperties(File individualResultsFolder) {
-		if (!individualResultsFolder.equals(currentIndividualFolder)) {
-			instance = new ResultsProperties(individualResultsFolder);
-			currentIndividualFolder = individualResultsFolder;
-		}
-		return instance;
-	}
 
 	/**
 	 * 
@@ -88,8 +80,14 @@ public class ResultsProperties {
 				this.name = properties.getProperty(NAME);
 				this.proteinOfInterest = properties.getProperty(PROTEIN_OF_INTEREST);
 				if (properties.containsKey(FASTA_FILE)) {
-					this.fastaFile = new File(individualResultsFolder.getAbsolutePath() + File.separator
-							+ properties.getProperty(FASTA_FILE));
+					final String fastaFileName = properties.getProperty(FASTA_FILE);
+					// if it is the default, point to the internal fasta file
+					if (fastaFileName.equals(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST + ".fasta")) {
+						this.fastaFile = AppDefaults.getDefaultProteinOfInterestInternalFastaFile();
+					} else {
+						this.fastaFile = new File(
+								individualResultsFolder.getAbsolutePath() + File.separator + fastaFileName);
+					}
 				}
 				if (properties.containsKey(INTENSITY_THRESHOLD)) {
 					this.intensityThreshold = Double.valueOf(properties.getProperty(INTENSITY_THRESHOLD));

@@ -1,8 +1,6 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,15 +10,16 @@ import java.util.stream.Collectors;
 
 import javax.swing.SwingWorker;
 
-import edu.scripps.yates.annotations.uniprot.UniprotFastaRetriever;
+import org.apache.log4j.Logger;
+
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedProteinInterface;
-import edu.scripps.yates.utilities.annotations.uniprot.xml.Entry;
-import edu.scripps.yates.utilities.proteomicsmodel.PTM;
-import edu.scripps.yates.utilities.proteomicsmodel.PTMSite;
+import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
+import edu.scripps.yates.utilities.sequence.PTMInPeptide;
 import edu.scripps.yates.utilities.sequence.PTMInProtein;
 import edu.scripps.yates.utilities.strings.StringUtils;
+import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -32,23 +31,24 @@ import gnu.trove.map.hash.TIntObjectHashMap;
  *
  */
 public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object> {
-
+	private final static Logger log = Logger.getLogger(GlycoPTMPeptideAnalyzer.class);
 	public static final String HIVPOSITIONS_CALCULATED = "HIVPositions_calculated";
 	public static final String HIVPOSITIONS_ERROR = "HIVPositions_error";
 
 	private final List<QuantifiedPeptideInterface> peptideNodes;
 	private final String proteinOfInterestACC;
 //	private final static 
-	private String proteinSequence;
-	private final File fastaFile;
+	private final String proteinSequence;
 	private final AmountType amountType;
+	private final String motifRegexp;
 
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
-			File fastaFile, AmountType amountType) {
+			File fastaFile, AmountType amountType, String motifRegexp) {
 		this.peptideNodes = peptideNodes;
 		this.proteinOfInterestACC = proteinOfInterestACC;
-		this.fastaFile = fastaFile;
+		this.proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
 		this.amountType = amountType;
+		this.motifRegexp = motifRegexp;
 	}
 
 	public List<GlycoSite> getHIVPositions() {
@@ -105,80 +105,56 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 
 	private List<PTMInProtein> getPositionsInProtein(QuantifiedPeptideInterface peptide) {
 		final String sequence = peptide.getSequence();
-		final String proteinSequence = getProteinSequence();
-		final TIntArrayList positions = StringUtils.allPositionsOf(proteinSequence, sequence);
-		if (positions.size() > 1) {
+		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence, sequence);
+		if (positionsOfPeptideInProtein.size() > 1) {
 			firePropertyChange("progress", null,
-					"Peptide '" + sequence + "' can be found " + positions.size() + " times in protein '"
-							+ proteinOfInterestACC + "'. ONLY first ocurrence at position '" + positions.get(0)
-							+ "' will be reported.");
+					"Peptide '" + sequence + "' can be found " + positionsOfPeptideInProtein.size()
+							+ " times in protein '" + proteinOfInterestACC + "'. ONLY first ocurrence at position '"
+							+ positionsOfPeptideInProtein.get(0) + "' will be reported.");
 		}
-		if (positions.isEmpty()) {
+		if (positionsOfPeptideInProtein.isEmpty()) {
 			throw new IllegalArgumentException(
 					"Peptide '" + sequence + "' can NOT be found in protein '" + proteinOfInterestACC + "'");
 		}
-		final List<PTMInProtein> ret = new ArrayList<PTMInProtein>();
-		final int positionOfPeptideInProtein = positions.get(0);
-		for (final PTM ptm : peptide.getPTMs()) {
-			if (PTMCode.getByValue(String.valueOf(ptm.getMassShift())) == null) {
-				continue;
-			}
-			for (final PTMSite ptmSite : ptm.getPTMSites()) {
-				final int positionInPeptide = ptmSite.getPosition();
-				final int positionInProtein = positionInPeptide + positionOfPeptideInProtein - 1;
-				final char charAt = proteinSequence.charAt(positionInProtein - 1);
-				// check whether the position + 2 is a t or S
-				if (positionInPeptide + 2 <= peptide.getSequence().length()) {
-					if (peptide.getSequence().charAt(positionInPeptide + 2 - 1) != 'S'
-							&& peptide.getSequence().charAt(positionInPeptide + 2 - 1) != 'T') {
-						// this PTM is not valid. The peptide should have another valid one
-						continue;
-					}
-					if (charAt != ptmSite.getAA().charAt(0)) {
-						throw new IllegalArgumentException("Some error calculating positions here!");
-					}
-					final PTMInProtein ptmInProtein = new PTMInProtein(positionInProtein, ptmSite.getAA().charAt(0),
-							proteinOfInterestACC, ptm.getMassShift());
-					ret.add(ptmInProtein);
 
+		final TIntList motifsPositions = GlycoPTMAnalyzerUtil.hasMotif(peptide, this.proteinSequence, motifRegexp);
+
+		final List<PTMInProtein> ret = new ArrayList<PTMInProtein>();
+		for (final int positionOfPeptideInProtein : positionsOfPeptideInProtein.toArray()) {
+
+			for (final int positionInPeptide : motifsPositions.toArray()) {
+				final int positionInProtein = positionInPeptide + positionOfPeptideInProtein - 1;
+				final PTMInPeptide ptm = getPTMAtPosition(peptide, positionInPeptide);
+				Double deltaMass = 0.0;
+				if (ptm != null) {
+					deltaMass = ptm.getDeltaMass();
+				} else {
+					// if ptm not found, it is because is a non-PTM
 				}
+
+				final PTMInProtein ptmInProtein = new PTMInProtein(positionInProtein,
+						sequence.charAt(positionInPeptide - 1), proteinOfInterestACC, deltaMass);
+				ret.add(ptmInProtein);
+
 			}
+
 		}
 		return ret;
 	}
 
-	private String getProteinSequence() {
-		if (proteinSequence == null) {
-			if (proteinOfInterestACC.equals(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST)) {
-				proteinSequence = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST_SEQUENCE;
-			} else {
-				try {
-					final Entry fastaEntry = UniprotFastaRetriever.getFastaEntry(proteinOfInterestACC);
-					if (fastaEntry != null) {
-						proteinSequence = fastaEntry.getSequence().getValue();
-					} else {
-						throw new IllegalArgumentException("Sequence from " + proteinOfInterestACC
-								+ " not found in UniprotKB. Implement getting it from FASTA if available!");
-					}
-				} catch (final URISyntaxException e) {
-					e.printStackTrace();
-				} catch (final IOException e) {
-					e.printStackTrace();
-				} catch (final InterruptedException e) {
-					e.printStackTrace();
-				}
-				proteinSequence = getProteinSequenceFromFastaFile();
-				if (proteinSequence == null) {
-					throw new IllegalArgumentException("Sequence from " + proteinOfInterestACC
-							+ " not found in UniprotKB. Implement getting it from FASTA if available!");
-				}
+	/**
+	 * Looks for a PTM in the peptide that is in a certain position
+	 * 
+	 * @param peptide
+	 * @param positionInPeptide
+	 * @return
+	 */
+	private PTMInPeptide getPTMAtPosition(QuantifiedPeptideInterface peptide, int positionInPeptide) {
+		for (final PTMInPeptide ptmInPeptide : peptide.getPTMsInPeptide()) {
+			if (ptmInPeptide.getPosition() == positionInPeptide) {
+				return ptmInPeptide;
 			}
 		}
-		return proteinSequence;
-	}
-
-	private String getProteinSequenceFromFastaFile() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

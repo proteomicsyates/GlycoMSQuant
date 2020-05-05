@@ -119,4 +119,10 @@ public class AppDefaults {
 	public String getRunName() {
 		return runName;
 	}
+
+	public static File getDefaultProteinOfInterestInternalFastaFile() {
+		final String name = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST + ".fasta";
+		final File targetFile = new File(System.getProperty("user.dir") + File.separator + name);
+		return targetFile;
+	}
 }

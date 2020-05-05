@@ -48,7 +48,7 @@ public class IterationData {
 					}
 					percentagesBySite.get(glycoSite.getPosition()).put(ptmCode, sitePercentageByPTMCode);
 
-					final List<QuantifiedPeptideInterface> sitePeptidesByPTMCode = glycoSite
+					final Set<QuantifiedPeptideInterface> sitePeptidesByPTMCode = glycoSite
 							.getPeptidesByPTMCode(ptmCode);
 					peptides.addAll(sitePeptidesByPTMCode);
 					if (!peptidesBySite.containsKey(glycoSite.getPosition())) {

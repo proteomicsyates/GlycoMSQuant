@@ -23,13 +23,13 @@
             </includes>
             <outputDirectory>${assembly.output.folder}/${lib.dir}</outputDirectory>
         </fileSet>
-        <fileSet>
-            <directory>metadata_templates</directory>
-            <includes>
-                <include>*.xml</include>
-            </includes>
-            <outputDirectory>${assembly.output.folder}/user_data/ms_metadata_templates</outputDirectory>
-        </fileSet>
+<!--         <fileSet> -->
+<!--             <directory>metadata_templates</directory> -->
+<!--             <includes> -->
+<!--                 <include>*.xml</include> -->
+<!--             </includes> -->
+<!--             <outputDirectory>${assembly.output.folder}/user_data/ms_metadata_templates</outputDirectory> -->
+<!--         </fileSet> -->
         <fileSet>
         	<directory></directory>
             <includes>
@@ -48,16 +48,17 @@
         	<directory></directory>
             <includes>
                 <include>README.txt</include>
+                <include>LICENSE</include>
             </includes>
             <outputDirectory>${assembly.output.folder}</outputDirectory>
         </fileSet>
-        <fileSet>
-        	<directory></directory>
-            <includes>
-                <include>Batch_Import_*.txt</include>
-            </includes>
-            <outputDirectory>${assembly.output.folder}</outputDirectory>
-        </fileSet>
+<!--         <fileSet> -->
+<!--         	<directory></directory> -->
+<!--             <includes> -->
+<!--                 <include>Batch_Import_*.txt</include> -->
+<!--             </includes> -->
+<!--             <outputDirectory>${assembly.output.folder}</outputDirectory> -->
+<!--         </fileSet> -->
         
     </fileSets>
 

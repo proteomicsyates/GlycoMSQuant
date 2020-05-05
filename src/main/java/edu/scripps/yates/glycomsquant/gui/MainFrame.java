@@ -8,7 +8,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
@@ -53,32 +52,31 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 import org.jfree.chart.ChartPanel;
 
-import com.compomics.dbtoolkit.io.implementations.FASTADBLoader;
-import com.compomics.util.protein.Protein;
-
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.AppDefaults;
 import edu.scripps.yates.glycomsquant.CurrentInputParameters;
 import edu.scripps.yates.glycomsquant.GlycoPTMAnalyzer;
 import edu.scripps.yates.glycomsquant.GlycoPTMPeptideAnalyzer;
 import edu.scripps.yates.glycomsquant.GlycoPTMResultGenerator;
+import edu.scripps.yates.glycomsquant.GlycoPTMRunComparator;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.InputParameters;
-import edu.scripps.yates.glycomsquant.QuantCompare2PCQInputTSV;
+import edu.scripps.yates.glycomsquant.ProteinSequences;
 import edu.scripps.yates.glycomsquant.QuantCompareReader;
+import edu.scripps.yates.glycomsquant.RunComparisonResult;
+import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedRunsDialog;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
-import edu.scripps.yates.glycomsquant.gui.secondary_frame.AbstractJFrameWithAttachedHelpAndAttachedRunsDialog;
-import edu.scripps.yates.glycomsquant.gui.tables.results_table.ResultsTableDialog;
+import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.PeptidesTableDialog;
+import edu.scripps.yates.glycomsquant.gui.tables.sites.SitesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tasks.IterationGraphGenerator;
 import edu.scripps.yates.glycomsquant.gui.tasks.ResultLoaderFromDisk;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterationGraphPanel;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterativeThresholdAnalysis;
-import edu.scripps.yates.utilities.fasta.FastaParser;
-import edu.scripps.yates.utilities.maths.Maths;
+import edu.scripps.yates.glycomsquant.util.GuiUtils;
+import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
-import edu.scripps.yates.utilities.util.Pair;
 import uk.ac.ebi.pride.utilities.pridemod.ModReader;
 
 public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDialog
@@ -87,7 +85,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JFileChooser fileChooserFASTA;
 	private JTextArea statusTextArea;
 	private JFileChooser fileChooserInputFile;
-	private String proteinSequence;
 	private JPanel chartPanel;
 	private final static SimpleDateFormat format = new SimpleDateFormat("yyy-MM-dd HH:mm:ss:SSS");
 	private static MainFrame instance;
@@ -101,6 +98,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JCheckBox intensityThresholdCheckBox;
 	private JButton btnCloseCharts;
 	private ProteinSequenceDialog proteinSequenceDialog;
+	private String proteinSequence;
+	private JButton btnShowPeptidesTable;
+	private boolean isCalculateProportionsByPeptidesFirstFromLoadedResults;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
@@ -112,7 +112,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	private MainFrame() {
-		super(400);
+		super(300);
 		setMaximumSize(GuiUtils.getScreenDimension());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle("GlycoMSQuant");
@@ -122,7 +122,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				| IllegalAccessException e) {
 			e.printStackTrace();
 		}
-		initComponents();
+
+		String proteinOfInterest = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST;
+		if (AppDefaults.getInstance().getProteinOfInterest() != null && !GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST
+				.equals(AppDefaults.getInstance().getProteinOfInterest())) {
+			proteinOfInterest = AppDefaults.getInstance().getProteinOfInterest();
+
+		}
+
+		initComponents(proteinOfInterest);
 		loadResources();
 	}
 
@@ -132,8 +140,19 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			@Override
 			public void run() {
-				ModReader.getInstance();
-				showMessage("Resources loaded.");
+
+				componentStateKeeper.keepEnableStates(MainFrame.this);
+				try {
+					componentStateKeeper.disable(MainFrame.this);
+
+					ModReader.getInstance();
+					final String motifRegexp = getMotifRegexp();
+					final File fastaFile = getFastaFile();
+					ProteinSequences.getInstance(fastaFile, motifRegexp).getProteinSequence(getProteinOfInterestACC());
+					showMessage("Resources loaded.");
+				} finally {
+					componentStateKeeper.setToPreviousState(MainFrame.this);
+				}
 			}
 
 		});
@@ -141,29 +160,38 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	}
 
-	private void initComponents() {
+	private void initComponents(String proteinOfInterest) {
 		final JPanel menusPanel = new JPanel();
 		getContentPane().add(menusPanel, BorderLayout.NORTH);
 		final GridBagLayout gbl_menusPanel = new GridBagLayout();
-		gbl_menusPanel.columnWidths = new int[] { 10, 0 };
-		gbl_menusPanel.rowHeights = new int[] { 10, 0, 0 };
-		gbl_menusPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gbl_menusPanel.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+		gbl_menusPanel.columnWidths = new int[] { 0 };
+		gbl_menusPanel.rowHeights = new int[] { 0 };
+		gbl_menusPanel.columnWeights = new double[] { 1.0 };
+		gbl_menusPanel.rowWeights = new double[] { 0.0, 0.0 };
 		menusPanel.setLayout(gbl_menusPanel);
 
 		final JPanel inputPanel = new JPanel();
 		inputPanel.setBorder(new TitledBorder(null, "Input", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		final GridBagConstraints gbc_inputPanel = new GridBagConstraints();
-		gbc_inputPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_inputPanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_inputPanel.anchor = GridBagConstraints.NORTHWEST;
+		gbc_inputPanel.insets = new Insets(0, 0, 5, 0);
 		gbc_inputPanel.gridx = 0;
 		gbc_inputPanel.gridy = 0;
 		menusPanel.add(inputPanel, gbc_inputPanel);
-		inputPanel.setLayout(new GridLayout(3, 0, 0, 0));
+		final GridBagLayout gbl_inputPanel = new GridBagLayout();
+		gbl_inputPanel.columnWidths = new int[] { 0 };
+		gbl_inputPanel.rowHeights = new int[] { 0 };
+		gbl_inputPanel.columnWeights = new double[] { 0.0 };
+		gbl_inputPanel.rowWeights = new double[] { 0.0, 0.0, 0.0 };
+		inputPanel.setLayout(gbl_inputPanel);
 
 		final JPanel dataFilePanel = new JPanel();
-		inputPanel.add(dataFilePanel);
+		final GridBagConstraints gbc_dataFilePanel = new GridBagConstraints();
+		gbc_dataFilePanel.anchor = GridBagConstraints.WEST;
+		gbc_dataFilePanel.insets = new Insets(0, 0, 5, 0);
+		gbc_dataFilePanel.gridx = 0;
+		gbc_dataFilePanel.gridy = 0;
+		inputPanel.add(dataFilePanel, gbc_dataFilePanel);
 		dataFilePanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
 		final JLabel lblInputFile = new JLabel("Input file:");
@@ -175,14 +203,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				"Full path to the input file as a text TAB-separated file with census quant compare format");
 		dataFilePanel.add(dataFileText);
 		dataFileText.setColumns(80);
-		if (AppDefaults.getInstance().getInputFile() != null) {
-			final File previousInputFile = new File(AppDefaults.getInstance().getInputFile());
-			if (previousInputFile.exists()) {
-				dataFileText.setText(previousInputFile.getAbsolutePath());
-			} else if (previousInputFile.getParentFile().exists()) {
-				dataFileText.setText(previousInputFile.getParentFile().getAbsolutePath());
-			}
-		}
 		final JButton selectInputFileButton = new JButton("Select");
 		selectInputFileButton.addActionListener(new ActionListener() {
 			@Override
@@ -194,7 +214,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		dataFilePanel.add(selectInputFileButton);
 
 		final JPanel fastaFilePanel = new JPanel();
-		inputPanel.add(fastaFilePanel);
+		final GridBagConstraints gbc_fastaFilePanel = new GridBagConstraints();
+		gbc_fastaFilePanel.anchor = GridBagConstraints.WEST;
+		gbc_fastaFilePanel.insets = new Insets(0, 0, 5, 0);
+		gbc_fastaFilePanel.gridx = 0;
+		gbc_fastaFilePanel.gridy = 1;
+		inputPanel.add(fastaFilePanel, gbc_fastaFilePanel);
 		fastaFilePanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
 		lblFastaFile = new JLabel("Fasta file:");
@@ -224,27 +249,17 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JPanel accessionPanel = new JPanel();
 		final FlowLayout flowLayout = (FlowLayout) accessionPanel.getLayout();
 		flowLayout.setAlignment(FlowLayout.LEFT);
-		inputPanel.add(accessionPanel);
+		final GridBagConstraints gbc_accessionPanel = new GridBagConstraints();
+		gbc_accessionPanel.anchor = GridBagConstraints.WEST;
+		gbc_accessionPanel.gridx = 0;
+		gbc_accessionPanel.gridy = 2;
+		inputPanel.add(accessionPanel, gbc_accessionPanel);
 
 		final JLabel lblProteinOfInterest = new JLabel("Protein of interest:");
 		lblProteinOfInterest.setToolTipText(
 				"Accession of the protein of interest. This should be the accession that is present in input file and FASTA file.");
 		accessionPanel.add(lblProteinOfInterest);
-
-		String proteinOfInterest = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST;
-		if (AppDefaults.getInstance().getProteinOfInterest() != null && !GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST
-				.equals(AppDefaults.getInstance().getProteinOfInterest())) {
-			proteinOfInterest = AppDefaults.getInstance().getProteinOfInterest();
-
-		}
 		proteinOfInterestText = new JTextField(proteinOfInterest);
-		if (AppDefaults.getInstance().getProteinOfInterest() != null && !GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST
-				.equals(AppDefaults.getInstance().getProteinOfInterest())) {
-			if (AppDefaults.getInstance().getFasta() != null) {
-				fastaFileText.setText(AppDefaults.getInstance().getFasta());
-				updateProteinOfInterestAndRelatedControls();
-			}
-		}
 		proteinOfInterestText.addKeyListener(new KeyListener() {
 
 			@Override
@@ -268,67 +283,56 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				"Accession of the protein of interest. This should be the accession that is present in input file and FASTA file.");
 		accessionPanel.add(proteinOfInterestText);
 		proteinOfInterestText.setColumns(20);
-
-		showProteinSequenceButton = new JButton("Show protein sequence");
-		showProteinSequenceButton.setToolTipText("Click to visualize the protein of interest sequence");
-		showProteinSequenceButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (currentGlycoSites == null || currentGlycoSites.isEmpty()) {
-					showSequenceDialog2(getProteinOfInterestACC());
-				} else {
-					showSequenceDialog(getProteinOfInterestACC(), currentGlycoSites);
-				}
+		if (AppDefaults.getInstance().getInputFile() != null) {
+			final File previousInputFile = new File(AppDefaults.getInstance().getInputFile());
+			if (previousInputFile.exists()) {
+				dataFileText.setText(previousInputFile.getAbsolutePath());
+			} else if (previousInputFile.getParentFile().exists()) {
+				dataFileText.setText(previousInputFile.getParentFile().getAbsolutePath());
 			}
-		});
-		accessionPanel.add(showProteinSequenceButton);
+		}
+
+		if (AppDefaults.getInstance().getProteinOfInterest() != null && !GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST
+				.equals(AppDefaults.getInstance().getProteinOfInterest())) {
+			if (AppDefaults.getInstance().getFasta() != null) {
+				fastaFileText.setText(AppDefaults.getInstance().getFasta());
+				updateProteinOfInterestAndRelatedControls();
+			}
+		}
 
 		final JPanel analysisPanel = new JPanel();
 		analysisPanel.setBorder(null);
 		final GridBagConstraints gbc_analysisPanel = new GridBagConstraints();
-		gbc_analysisPanel.anchor = GridBagConstraints.NORTH;
-		gbc_analysisPanel.fill = GridBagConstraints.HORIZONTAL;
+		gbc_analysisPanel.anchor = GridBagConstraints.NORTHWEST;
 		gbc_analysisPanel.gridx = 0;
 		gbc_analysisPanel.gridy = 1;
 		menusPanel.add(analysisPanel, gbc_analysisPanel);
 		final GridBagLayout gbl_analysisPanel = new GridBagLayout();
-		gbl_analysisPanel.columnWidths = new int[] { 291, 291, 0, 0 };
-		gbl_analysisPanel.rowHeights = new int[] { 164, 0 };
-		gbl_analysisPanel.columnWeights = new double[] { 1.0, 0.0, 0.0, Double.MIN_VALUE };
-		gbl_analysisPanel.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
+		gbl_analysisPanel.columnWidths = new int[] { 0 };
+		gbl_analysisPanel.rowHeights = new int[] { 0 };
+		gbl_analysisPanel.columnWeights = new double[] { 1.0, 0.0, 0.0 };
+		gbl_analysisPanel.rowWeights = new double[] { 0.0 };
 		analysisPanel.setLayout(gbl_analysisPanel);
 
-		final JPanel analysisParametersPanel = new JPanel();
+		final JPanel analysisParametersPanel = new JPanel(new GridBagLayout());
 		analysisParametersPanel.setBorder(
 				new TitledBorder(null, "Analysis parameters", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+
 		final GridBagConstraints gbc_analysisParametersPanel = new GridBagConstraints();
-		gbc_analysisParametersPanel.fill = GridBagConstraints.BOTH;
-		gbc_analysisParametersPanel.insets = new Insets(0, 0, 0, 5);
-		gbc_analysisParametersPanel.gridx = 0;
-		gbc_analysisParametersPanel.gridy = 0;
+		gbc_analysisParametersPanel.fill = GridBagConstraints.VERTICAL;
 		analysisPanel.add(analysisParametersPanel, gbc_analysisParametersPanel);
-		final GridBagLayout gbl_analysisParametersPanel = new GridBagLayout();
-		gbl_analysisParametersPanel.columnWidths = new int[] { 279, 0 };
-		gbl_analysisParametersPanel.rowHeights = new int[] { 66, 33, 33, 0 };
-		gbl_analysisParametersPanel.columnWeights = new double[] { 0.0, Double.MIN_VALUE };
-		gbl_analysisParametersPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, Double.MIN_VALUE };
-		analysisParametersPanel.setLayout(gbl_analysisParametersPanel);
 
 		final JPanel intensityThresholdPanel = new JPanel();
-		final GridBagConstraints gbc_intensityThresholdPanel = new GridBagConstraints();
-		gbc_intensityThresholdPanel.fill = GridBagConstraints.BOTH;
-		gbc_intensityThresholdPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_intensityThresholdPanel.gridx = 0;
-		gbc_intensityThresholdPanel.gridy = 0;
-		analysisParametersPanel.add(intensityThresholdPanel, gbc_intensityThresholdPanel);
-		intensityThresholdPanel.setLayout(new GridLayout(2, 1, 0, 0));
+		final GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.BOTH;
+		c.insets = new Insets(0, 0, 0, 5);
+		c.gridx = 0;
+		c.gridy = 0;
+		analysisParametersPanel.add(intensityThresholdPanel, c);
 
-		final JPanel panel = new JPanel();
-		intensityThresholdPanel.add(panel);
-		panel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
+		intensityThresholdPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 		intensityThresholdCheckBox = new JCheckBox("Peak area threshold:");
-		panel.add(intensityThresholdCheckBox);
+		intensityThresholdPanel.add(intensityThresholdCheckBox);
 		intensityThresholdCheckBox.setToolTipText(
 				"Click to enable or disable the application of the peak area threshold over the peak areas in the input data file.");
 		intensityThresholdCheckBox.addActionListener(new ActionListener() {
@@ -339,16 +343,19 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		});
 
 		intensityThresholdText = new JTextField();
-		panel.add(intensityThresholdText);
+		intensityThresholdPanel.add(intensityThresholdText);
 		intensityThresholdText.setEnabled(false);
 		intensityThresholdText.setToolTipText(
 				"If enabled and > 0.0, an intensity threshold will be applied over the intensities in the input data file. Any peptide with an intensity below this value, will be discarded.");
 		intensityThresholdText.setColumns(10);
 
-		final JPanel panel_1 = new JPanel();
-		final FlowLayout flowLayout_7 = (FlowLayout) panel_1.getLayout();
-		flowLayout_7.setAlignment(FlowLayout.LEFT);
-		intensityThresholdPanel.add(panel_1);
+		final JPanel iterativeAnalysisPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c2 = new GridBagConstraints();
+		c2.fill = GridBagConstraints.BOTH;
+		c2.insets = new Insets(0, 0, 0, 5);
+		c2.gridx = 0;
+		c2.gridy = 1;
+		analysisParametersPanel.add(iterativeAnalysisPanel, c2);
 
 		iterativeThresholdAnalysisCheckBox = new JCheckBox("Iterative Threshold Analysis");
 		iterativeThresholdAnalysisCheckBox.addActionListener(new ActionListener() {
@@ -359,11 +366,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		});
 		iterativeThresholdAnalysisCheckBox.setToolTipText(
 				"<html>If this option is activated, different intensity thresholds will be calculated <b>iterativelly</b>, and the averaged proportion of each PTM across all glyco-sites will be shown in a graph vs the number of peptides that pass the threshold.<br>\r\nThis may help to decide the optimal threshold.</html>");
-		panel_1.add(iterativeThresholdAnalysisCheckBox);
+		iterativeAnalysisPanel.add(iterativeThresholdAnalysisCheckBox);
 
 		intensityThresholdIntervalLabel = new JLabel("Factor:");
 		intensityThresholdIntervalLabel.setEnabled(false);
-		panel_1.add(intensityThresholdIntervalLabel);
+		iterativeAnalysisPanel.add(intensityThresholdIntervalLabel);
 		intensityThresholdIntervalLabel.setToolTipText(
 				"If the iterative threshold analysis is activated, this parameter will determine the factor by which the intensity threshold will be multiplied in every iteration.");
 
@@ -371,31 +378,30 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		intensityThresholdIntervalTextField.setEnabled(false);
 		intensityThresholdIntervalTextField.setToolTipText(
 				"If the iterative threshold analysis is activated, this parameter will determine the factor by which the intensity threshold will be multiplied in every iteration.");
-		panel_1.add(intensityThresholdIntervalTextField);
+		iterativeAnalysisPanel.add(intensityThresholdIntervalTextField);
 		intensityThresholdIntervalTextField.setColumns(5);
 
-		final JPanel normalizeIntensityPanel = new JPanel();
-		final GridBagConstraints gbc_normalizeIntensityPanel = new GridBagConstraints();
-		gbc_normalizeIntensityPanel.fill = GridBagConstraints.BOTH;
-		gbc_normalizeIntensityPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_normalizeIntensityPanel.gridx = 0;
-		gbc_normalizeIntensityPanel.gridy = 1;
-		analysisParametersPanel.add(normalizeIntensityPanel, gbc_normalizeIntensityPanel);
-		final FlowLayout flowLayout_2 = (FlowLayout) normalizeIntensityPanel.getLayout();
-		flowLayout_2.setAlignment(FlowLayout.LEFT);
+		final JPanel normalizeIntensityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c3 = new GridBagConstraints();
+		c3.fill = GridBagConstraints.BOTH;
+		c3.insets = new Insets(0, 0, 0, 5);
+		c3.gridx = 0;
+		c3.gridy = 2;
+		analysisParametersPanel.add(normalizeIntensityPanel, c3);
+
 		normalizeIntensityCheckBox = new JCheckBox("Normalize replicates");
 		normalizeIntensityCheckBox.setToolTipText(
 				"Click to enable or disable the application of the normalization of the intensities in the input data file by replicates.");
 		normalizeIntensityPanel.add(normalizeIntensityCheckBox);
 
-		final JPanel analysisPerPeptidePanel = new JPanel();
-		final FlowLayout flowLayout_3 = (FlowLayout) analysisPerPeptidePanel.getLayout();
-		flowLayout_3.setAlignment(FlowLayout.LEFT);
-		final GridBagConstraints gbc_analysisPerPeptidePanel = new GridBagConstraints();
-		gbc_analysisPerPeptidePanel.fill = GridBagConstraints.BOTH;
-		gbc_analysisPerPeptidePanel.gridx = 0;
-		gbc_analysisPerPeptidePanel.gridy = 2;
-		analysisParametersPanel.add(analysisPerPeptidePanel, gbc_analysisPerPeptidePanel);
+		final JPanel analysisPerPeptidePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c4 = new GridBagConstraints();
+		c4.fill = GridBagConstraints.BOTH;
+		c4.insets = new Insets(0, 0, 0, 5);
+		c4.gridx = 0;
+		c4.gridy = 3;
+
+		analysisParametersPanel.add(analysisPerPeptidePanel, c4);
 
 		calculateProportionsByPeptidesFirstCheckBox = new JCheckBox("Calculate proportions per peptide");
 		calculateProportionsByPeptidesFirstCheckBox.setToolTipText(
@@ -405,17 +411,27 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel outputPanel = new JPanel();
 		final GridBagConstraints gbc_outputPanel = new GridBagConstraints();
-		gbc_outputPanel.fill = GridBagConstraints.BOTH;
+		gbc_outputPanel.anchor = GridBagConstraints.NORTH;
 		gbc_outputPanel.insets = new Insets(0, 0, 0, 5);
 		gbc_outputPanel.gridx = 1;
 		gbc_outputPanel.gridy = 0;
 		analysisPanel.add(outputPanel, gbc_outputPanel);
 		outputPanel.setBorder(new TitledBorder(null, "Output", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		outputPanel.setLayout(new GridLayout(3, 1, 0, 0));
+		final GridBagLayout gbl_outputPanel = new GridBagLayout();
+		gbl_outputPanel.columnWidths = new int[] { 0 };
+		gbl_outputPanel.rowHeights = new int[] { 0, 0, 0, 0 };
+		gbl_outputPanel.columnWeights = new double[] { 1.0 };
+		gbl_outputPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 1.0 };
+		outputPanel.setLayout(gbl_outputPanel);
 		final JPanel namePanel = new JPanel();
 		final FlowLayout flowLayout_4 = (FlowLayout) namePanel.getLayout();
 		flowLayout_4.setAlignment(FlowLayout.LEFT);
-		outputPanel.add(namePanel);
+		final GridBagConstraints gbc_namePanel = new GridBagConstraints();
+		gbc_namePanel.fill = GridBagConstraints.BOTH;
+		gbc_namePanel.insets = new Insets(0, 0, 5, 0);
+		gbc_namePanel.gridx = 0;
+		gbc_namePanel.gridy = 0;
+		outputPanel.add(namePanel, gbc_namePanel);
 
 		final JLabel lblNameForOutput = new JLabel("Name for output files:");
 		lblNameForOutput.setToolTipText("Prefix that will be added to all the output files");
@@ -442,9 +458,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			}
 		});
-		if (AppDefaults.getInstance().getRunName() != null) {
-			nameTextField.setText(AppDefaults.getInstance().getRunName());
-		}
 		final JPanel separateChartsPanel = new JPanel();
 		final FlowLayout flowLayout_5 = (FlowLayout) separateChartsPanel.getLayout();
 		flowLayout_5.setAlignment(FlowLayout.LEFT);
@@ -452,7 +465,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		separateChartsPanel.add(separateChartsButton);
 		separateChartsButton.setEnabled(false);
 		separateChartsButton.setToolTipText("Click to show or close graphs in separate resizable dialogs");
-		outputPanel.add(separateChartsPanel);
+		final GridBagConstraints gbc_separateChartsPanel = new GridBagConstraints();
+		gbc_separateChartsPanel.fill = GridBagConstraints.BOTH;
+		gbc_separateChartsPanel.insets = new Insets(0, 0, 5, 0);
+		gbc_separateChartsPanel.gridx = 0;
+		gbc_separateChartsPanel.gridy = 1;
+		outputPanel.add(separateChartsPanel, gbc_separateChartsPanel);
 
 		btnCloseCharts = new JButton("Close charts");
 		btnCloseCharts.addActionListener(new ActionListener() {
@@ -474,30 +492,87 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		});
 		final JPanel showResultsPanel = new JPanel();
-		final FlowLayout flowLayout_6 = (FlowLayout) showResultsPanel.getLayout();
-		flowLayout_6.setAlignment(FlowLayout.LEFT);
-		btnShowResultsTable = new JButton("Show results table");
+		showResultsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+
+		showProteinSequenceButton = new JButton("Advanced results inspection");
+		showProteinSequenceButton.setEnabled(false);
+		showResultsPanel.add(showProteinSequenceButton);
+		showProteinSequenceButton.setToolTipText("Click to visualize the results overlayed on the protein sequence");
+		showProteinSequenceButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				showSequenceDialog(getProteinOfInterestACC(), currentGlycoSites, currentPeptides);
+
+			}
+		});
+
+		final GridBagConstraints gbc_showResultsPanel = new GridBagConstraints();
+		gbc_showResultsPanel.anchor = GridBagConstraints.WEST;
+		gbc_showResultsPanel.insets = new Insets(0, 0, 5, 0);
+		gbc_showResultsPanel.fill = GridBagConstraints.VERTICAL;
+		gbc_showResultsPanel.gridx = 0;
+		gbc_showResultsPanel.gridy = 2;
+		outputPanel.add(showResultsPanel, gbc_showResultsPanel);
+
+		final JPanel panel = new JPanel();
+		final GridBagConstraints gbc_panel = new GridBagConstraints();
+		gbc_panel.anchor = GridBagConstraints.WEST;
+		gbc_panel.fill = GridBagConstraints.VERTICAL;
+		gbc_panel.gridx = 0;
+		gbc_panel.gridy = 3;
+		outputPanel.add(panel, gbc_panel);
+		btnShowResultsTable = new JButton("Show sites table");
+		panel.add(btnShowResultsTable);
 		btnShowResultsTable.setToolTipText("Click to open a table with all the results of the analysis");
 		btnShowResultsTable.setEnabled(false);
+		btnShowPeptidesTable = new JButton("Show peptides table");
+		panel.add(btnShowPeptidesTable);
+		btnShowPeptidesTable.setToolTipText(
+				"Click to open a table with all the measurements per peptide and how they map to the sites in the protein");
+		btnShowPeptidesTable.setEnabled(false);
+		btnShowPeptidesTable.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				showPeptidesResultsTableDialog();
+			}
+		});
 		btnShowResultsTable.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				showResultsTableDialog();
+				showSitesResultsTableDialog();
 			}
 		});
-		showResultsPanel.add(btnShowResultsTable);
-		outputPanel.add(showResultsPanel);
+		if (AppDefaults.getInstance().getRunName() != null) {
+			nameTextField.setText(AppDefaults.getInstance().getRunName());
+		}
 
 		final JPanel startButtonPanel = new JPanel();
 		startButtonPanel
 				.setBorder(new TitledBorder(null, "Control", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		final GridBagConstraints gbc_startButtonPanel = new GridBagConstraints();
-		gbc_startButtonPanel.fill = GridBagConstraints.VERTICAL;
+		gbc_startButtonPanel.anchor = GridBagConstraints.NORTH;
 		gbc_startButtonPanel.gridx = 2;
 		gbc_startButtonPanel.gridy = 0;
 		analysisPanel.add(startButtonPanel, gbc_startButtonPanel);
+		final GridBagLayout gbl_startButtonPanel = new GridBagLayout();
+		gbl_startButtonPanel.columnWidths = new int[] { 0 };
+		gbl_startButtonPanel.rowHeights = new int[] { 0, 0 };
+		gbl_startButtonPanel.columnWeights = new double[] { 0.0 };
+		gbl_startButtonPanel.rowWeights = new double[] { 0.0, 0.0 };
+		startButtonPanel.setLayout(gbl_startButtonPanel);
+
+		final JPanel panel_1 = new JPanel();
+		final GridBagConstraints gbc_panel_1 = new GridBagConstraints();
+		gbc_panel_1.anchor = GridBagConstraints.NORTHWEST;
+		gbc_panel_1.insets = new Insets(0, 0, 0, 5);
+		gbc_panel_1.gridx = 0;
+		gbc_panel_1.gridy = 0;
+		startButtonPanel.add(panel_1, gbc_panel_1);
 
 		final JButton startButton_1 = new JButton("START");
+		panel_1.add(startButton_1);
 		startButton_1.setFont(new Font("Tahoma", Font.BOLD, 14));
 		startButton_1.setForeground(SystemColor.desktop);
 		startButton_1.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -507,28 +582,43 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				startAnalysis();
 			}
 		});
-		final FlowLayout fl_startButtonPanel = new FlowLayout(FlowLayout.CENTER, 5, 5);
-		startButtonPanel.setLayout(fl_startButtonPanel);
 		startButton_1.setToolTipText("Click to start the analysis");
-		startButtonPanel.add(startButton_1);
 
-		final JButton btnShowRuns = new JButton("Show Runs");
-		btnShowRuns.addActionListener(new ActionListener() {
+		compareRunsButton = new JButton("Compare runs");
+		compareRunsButton.setToolTipText("Click to compare two (or more) runs");
+		compareRunsButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				showRunsDialog();
+				compareExperiments();
 			}
 		});
-		startButtonPanel.add(btnShowRuns);
+		panel_1.add(compareRunsButton);
+		compareRunsButton.setEnabled(false);
+
+		final JPanel panel_2 = new JPanel();
+		final GridBagConstraints gbc_panel_2 = new GridBagConstraints();
+		gbc_panel_2.anchor = GridBagConstraints.WEST;
+		gbc_panel_2.gridx = 0;
+		gbc_panel_2.gridy = 1;
+		startButtonPanel.add(panel_2, gbc_panel_2);
+
+		final JButton btnShowRuns = new JButton("Show Runs");
+		panel_2.add(btnShowRuns);
 
 		final JButton btnRefreshRunsFolder = new JButton("Refresh runs");
+		panel_2.add(btnRefreshRunsFolder);
 		btnRefreshRunsFolder.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				refreshRuns();
 			}
 		});
-		startButtonPanel.add(btnRefreshRunsFolder);
+		btnShowRuns.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				showRunsDialog();
+			}
+		});
 
 		final JPanel panelForCharts = new JPanel();
 		panelForCharts.setPreferredSize(new Dimension(10, 400));
@@ -572,6 +662,21 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
 	}
 
+	protected void compareExperiments() {
+		final List<String> selectedRuns = getRunsAttachedDialog().getSelectedRuns();
+		final StringBuilder sb = new StringBuilder();
+		for (final String string : selectedRuns) {
+			sb.append("\t" + string);
+		}
+		showMessage("Comparing: " + sb.toString());
+
+		componentStateKeeper.keepEnableStates(this);
+		componentStateKeeper.disable(this);
+		final GlycoPTMRunComparator comparator = new GlycoPTMRunComparator(selectedRuns);
+		comparator.addPropertyChangeListener(this);
+		comparator.execute();
+	}
+
 	protected void closeCharts() {
 		for (final JFrame frame : popupCharts) {
 			frame.dispose();
@@ -585,13 +690,27 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		this.intensityThresholdCheckBox.setEnabled(!selected);
 	}
 
-	protected void showResultsTableDialog() {
+	protected void showSitesResultsTableDialog() {
 		if (currentGlycoSites == null || currentGlycoSites.isEmpty()) {
-			showError("Start a new analysis or load a GlycoMSQuant run to load its resuls.");
+			showError("Start a new analysis or load a GlycoMSQuant run to have sites to show.");
 			return;
 		}
-		final ResultsTableDialog tableDialog = new ResultsTableDialog();
+		final SitesTableDialog tableDialog = new SitesTableDialog();
 		tableDialog.loadResultTable(currentGlycoSites, isCalculateProportionsByPeptidesFirst());
+		tableDialog.setVisible(true);
+	}
+
+	protected void showPeptidesResultsTableDialog() {
+		if (currentGlycoSites == null || currentGlycoSites.isEmpty()) {
+			showError("Start a new analysis or load a GlycoMSQuant run to have peptides to show.");
+			return;
+		}
+		if (currentPeptides == null || currentPeptides.isEmpty()) {
+			showError("Start a new analysis or load a GlycoMSQuant run to have peptides to show.");
+			return;
+		}
+		final PeptidesTableDialog tableDialog = new PeptidesTableDialog();
+		tableDialog.loadResultTable(currentPeptides, currentGlycoSites, getProteinSequence());
 		tableDialog.setVisible(true);
 	}
 
@@ -627,7 +746,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JFrame frame = new JFrame(getName() + title);
 		popupCharts.add(frame);
 
-		frame.setPreferredSize(new Dimension(screenSize.width / 2, screenSize.height / 2));
+//		frame.setPreferredSize(new Dimension(screenSize.width / 2, screenSize.height / 2));
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.getContentPane().setLayout(new BorderLayout(10, 10));
 
@@ -781,14 +900,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		fastaFileText.setEnabled(b);
 		lblFastaFile.setEnabled(b);
 		selectFastaFileButton.setEnabled(b);
-		if (!b) {// if it is not the default one
-			// we check if the fasta is provided
-			if ("".equals(fastaFileText.getText()) || !new File(fastaFileText.getText()).exists()) {
-				showProteinSequenceButton.setEnabled(false);
-			} else if (new File(fastaFileText.getText()).exists()) {
-				showProteinSequenceButton.setEnabled(true);
-			}
-		}
 
 	}
 
@@ -824,6 +935,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			if (selectedFile.exists()) {
 				AppDefaults.getInstance().setFasta(selectedFile.getAbsolutePath());
 				this.fastaFileText.setText(selectedFile.getAbsolutePath());
+				// setup the proteinsequences
+				ProteinSequences.getInstance(selectedFile, getMotifRegexp());
 			} else {
 				showError("Error selecting file that doesn't exist: " + selectedFile.getAbsolutePath());
 			}
@@ -843,80 +956,25 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	}
 
-	protected void showSequenceDialog(String proteinOfInterest, List<GlycoSite> glycoSites) {
+	protected void showSequenceDialog(String proteinOfInterest, List<GlycoSite> glycoSites,
+			List<QuantifiedPeptideInterface> peptides) {
 		getProteinSequence();
 		if (proteinSequence == null) {
 			showError("Error getting protein sequence from protein '" + proteinOfInterest + "'");
 			return;
 		}
-		proteinSequenceDialog = new ProteinSequenceDialog(proteinOfInterest, proteinSequence, glycoSites);
+		proteinSequenceDialog = new ProteinSequenceDialog(proteinOfInterest, proteinSequence, glycoSites, peptides,
+				isCalculateProportionsByPeptidesFirstFromLoadedResults());
 		proteinSequenceDialog.setVisible(true);
 	}
 
-	protected void showSequenceDialog2(String proteinOfInterest) {
-		getProteinSequence();
-		if (proteinSequence == null) {
-			showError("Error getting protein sequence from protein '" + proteinOfInterest + "'");
-			return;
-		}
-		final java.awt.Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
-
-		final JFrame frame = new JFrame("Protein sequence of '" + proteinOfInterest + "'");
-
-		frame.setPreferredSize(new Dimension(screenSize.width / 2, screenSize.height / 2));
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frame.getContentPane().setLayout(new BorderLayout(10, 10));
-
-		int rows = 0;
-		int i = 0;
-		while (i < this.proteinSequence.length()) {
-			rows++;
-			final int endLine = Float.valueOf(Maths.min(i + 80, proteinSequence.length() - 1)).intValue();
-			i = endLine + 1;
-		}
-		final JTextArea textArea = new JTextArea(rows + 1, 80);
-		final JScrollPane scroll = new JScrollPane(textArea);
-
-		frame.getContentPane().add(scroll, BorderLayout.CENTER);
-		i = 0;
-		while (i < this.proteinSequence.length()) {
-			final int endLine = Float.valueOf(Maths.min(i + 80, proteinSequence.length() - 1)).intValue();
-			textArea.append("\n" + proteinSequence.substring(i, endLine));
-			i = endLine + 1;
-		}
-		frame.setVisible(true);
-		frame.pack();
-
-		final java.awt.Dimension dialogSize = frame.getSize();
-		frame.setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
+	private boolean isCalculateProportionsByPeptidesFirstFromLoadedResults() {
+		return isCalculateProportionsByPeptidesFirstFromLoadedResults;
 	}
 
 	private String getProteinSequence() {
 		if (proteinSequence == null) {
-			if (proteinOfInterestText.getText().equalsIgnoreCase(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST)) {
-				proteinSequence = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST_SEQUENCE;
-			} else {
-				try {
-					final FASTADBLoader loader = new FASTADBLoader();
-					final String fastaPath = this.fastaFileText.getText();
-					if (loader.canReadFile(new File(fastaPath))) {
-						loader.load(fastaPath);
-						Protein protein;
-						protein = loader.nextProtein();
-						while (protein != null) {
-							final String acc = FastaParser.getACC(protein.getHeader().getRawHeader()).getAccession();
-							if (acc.equalsIgnoreCase(proteinOfInterestText.getText())) {
-								proteinSequence = protein.getSequence().getSequence();
-								loader.close();
-								break;
-							}
-							protein = loader.nextProtein();
-						}
-					}
-				} catch (final IOException e) {
-					e.printStackTrace();
-				}
-			}
+			proteinSequence = ProteinSequences.getInstance().getProteinSequence(getProteinOfInterestACC());
 		}
 		return proteinSequence;
 	}
@@ -959,6 +1017,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			if (selectedFile.exists()) {
 				AppDefaults.getInstance().setInputFile(selectedFile.getAbsolutePath());
 				this.dataFileText.setText(selectedFile.getAbsolutePath());
+				// set name as the file name
+				final String experimentName = FilenameUtils.getBaseName(selectedFile.getAbsolutePath());
+				this.nameTextField.setText(experimentName);
 			} else {
 				showError("Error selecting file that doesn't exist: " + selectedFile.getAbsolutePath());
 			}
@@ -985,6 +1046,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JLabel intensityThresholdIntervalLabel;
 	private JTextField intensityThresholdIntervalTextField;
 	private IterativeThresholdAnalysis iterativeThresholdAnalysis;
+	private List<QuantifiedPeptideInterface> currentPeptides;
+	private JButton compareRunsButton;
 
 	public static void main(String[] args) {
 		final MainFrame frame = MainFrame.getInstance();
@@ -1013,19 +1076,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		}
 		if (getProteinOfInterestACC().equals(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST)) {
-			final String name = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST + ".fasta";
-
-			final File targetFile = new File(System.getProperty("user.dir") + File.separator + name);
-
-			return targetFile;
-
+			return AppDefaults.getDefaultProteinOfInterestInternalFastaFile();
 		}
 		return null;
 	}
 
 	@Override
 	public double getFakePTM() {
-		return QuantCompare2PCQInputTSV.DEFAULT_FAKE_PTM;
+		return GlycoPTMAnalyzer.DEFAULT_FAKE_PTM;
 	}
 
 	@Override
@@ -1068,9 +1126,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final AmountType amountType = getAmountType();
 		final boolean normalizeExperimentsByProtein = isNormalizeReplicates();
 		final double intensityThreshold = getIntensityThreshold();
+		final String motifRegexp = getMotifRegexp();
+
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		inputDataReader = new QuantCompareReader(inputFile, proteinOfInterestACC, fakePTM, intensityThreshold,
-				amountType, normalizeExperimentsByProtein);
+		inputDataReader = new QuantCompareReader(inputFile, proteinOfInterestACC, getProteinSequence(), fakePTM,
+				intensityThreshold, amountType, normalizeExperimentsByProtein, motifRegexp);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}
@@ -1090,7 +1150,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		}
 
-		final ResultsProperties resultsProperties = ResultsProperties.getResultsProperties(resultsFolder);
+		final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
 		resultsProperties.setName(getName());
 		resultsProperties.setInputDataFile(getInputFile());
 		resultsProperties.setIntensityThreshold(getIntensityThreshold());
@@ -1104,12 +1164,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		if (evt.getPropertyName().equals("progress")) {
 			showMessage(evt.getNewValue());
 		} else if (evt.getPropertyName().equals(QuantCompareReader.INPUT_DATA_READER_FINISHED)) {
-			final List<QuantifiedPeptideInterface> peptides = (List<QuantifiedPeptideInterface>) evt.getNewValue();
-			if (peptides != null && !peptides.isEmpty()) {
-				showMessage(peptides.size() + " peptides read from input file ");
+			currentPeptides = (List<QuantifiedPeptideInterface>) evt.getNewValue();
+			if (currentPeptides != null && !currentPeptides.isEmpty()) {
+				showMessage(currentPeptides.size() + " peptides read from input file ");
 				log.info("Analyzing peptides...");
-				final GlycoPTMPeptideAnalyzer peptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
-						getProteinOfInterestACC(), getFastaFile(), getAmountType());
+				final GlycoPTMPeptideAnalyzer peptideAnalyzer = new GlycoPTMPeptideAnalyzer(currentPeptides,
+						getProteinOfInterestACC(), getFastaFile(), getAmountType(), getMotifRegexp());
 				peptideAnalyzer.addPropertyChangeListener(this);
 				peptideAnalyzer.execute();
 			} else {
@@ -1138,15 +1198,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				final File newIndividualResultFolder = FileManager.getNewIndividualResultFolder();
 				// now that we have the new results folder, we can update the properties
 				updateProperties(newIndividualResultFolder);
-				final ResultsProperties resultsProperties = ResultsProperties
-						.getResultsProperties(newIndividualResultFolder);
+				final ResultsProperties resultsProperties = new ResultsProperties(newIndividualResultFolder);
 				resultsProperties.setFastaFile(getFastaFile());
 
 				final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(newIndividualResultFolder,
 						currentGlycoSites, this);
 				resultGenerator.setGenerateGraph(true);
 				resultGenerator.setGenerateTable(true);
-				resultGenerator.setSaveGraphsToFiles(true);
+				resultGenerator.setSaveGraphsToFiles(false);
 				resultGenerator.addPropertyChangeListener(this);
 				resultGenerator.execute();
 			} else {
@@ -1161,13 +1220,18 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(GlycoPTMResultGenerator.RESULTS_GENERATOR_FINISHED)) {
 			refreshRuns();
+			isCalculateProportionsByPeptidesFirstFromLoadedResults = isCalculateProportionsByPeptidesFirst();
 			this.componentStateKeeper.setToPreviousState(this);
+			this.showProteinSequenceButton.setEnabled(true);
+
 		} else if (evt.getPropertyName().equals(GlycoPTMResultGenerator.RESULS_TABLE_GENERATED)) {
 			final File tableFile = (File) evt.getNewValue();
-			showMessage("Result table created at '" + tableFile.getAbsolutePath() + "'");
+			showMessage("Result table created at '" + FileManager.removeAppRootFolderString(tableFile.getAbsolutePath())
+					+ "'");
 		} else if (evt.getPropertyName().equals(GlycoPTMResultGenerator.GLYCO_SITE_DATA_TABLE_GENERATED)) {
 			final File file = (File) evt.getNewValue();
-			showMessage("Glyco-sites data file create at: '" + file.getAbsolutePath() + "'");
+			showMessage("Glyco-sites data file create at: '"
+					+ FileManager.removeAppRootFolderString(file.getAbsolutePath()) + "'");
 		} else if (evt.getPropertyName().equals(GlycoPTMResultGenerator.CHART_GENERATED)) {
 			showChartsInMainPanel(evt.getNewValue());
 		} else if (evt.getPropertyName().equals(GlycoPTMResultGenerator.RESULTS_GENERATOR_ERROR)) {
@@ -1175,15 +1239,22 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_STARTED)) {
 			final File resultsFolder = (File) evt.getNewValue();
-			updateControlsWithParametersFromDisk(resultsFolder);
-			showMessage("Loading results from " + FilenameUtils.getName(resultsFolder.getAbsolutePath()) + "...");
+			try {
+				updateControlsWithParametersFromDisk(resultsFolder);
+				showMessage("Loading results from " + FilenameUtils.getName(resultsFolder.getAbsolutePath()) + "...");
+			} catch (final Exception e) {
+				showError("Error loading results: " + e.getMessage());
+				componentStateKeeper.setToPreviousState(this);
+			}
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_ERROR)) {
 			showMessage("Error loading results: " + evt.getNewValue());
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_FINISHED)) {
-			final Pair<List<GlycoSite>, Boolean> pair = (Pair<List<GlycoSite>, Boolean>) evt.getNewValue();
-			this.currentGlycoSites = pair.getFirstelement();
-			this.calculateProportionsByPeptidesFirstCheckBox.setSelected(pair.getSecondElement());
+			final ResultsLoadedFromDisk results = (ResultsLoadedFromDisk) evt.getNewValue();
+			isCalculateProportionsByPeptidesFirstFromLoadedResults = results.isCalculatePeptideProportionsFirst();
+			this.currentGlycoSites = results.getSites();
+			this.calculateProportionsByPeptidesFirstCheckBox.setSelected(results.isCalculatePeptideProportionsFirst());
+			this.currentPeptides = results.getPeptides();
 			final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(currentGlycoSites, this);
 			resultGenerator.addPropertyChangeListener(this);
 			resultGenerator.setGenerateGraph(true);
@@ -1192,6 +1263,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			resultGenerator.execute();
 			showMessage("Generating graphs for the analysis of " + currentGlycoSites.size() + " glyco sites.");
 			this.componentStateKeeper.setToPreviousState(this);
+			showProteinSequenceButton.setEnabled(true);
+		} else if (evt.getPropertyName().equals(GlycoPTMRunComparator.COMPARATOR_ERROR)) {
+			componentStateKeeper.setToPreviousState(this);
+			showMessage("Error comparing experiments: " + evt.getNewValue());
+		} else if (evt.getPropertyName().equals(GlycoPTMRunComparator.COMPARATOR_FINISHED)) {
+			componentStateKeeper.setToPreviousState(this);
+
+			final RunComparisonResult comparison = (RunComparisonResult) evt.getNewValue();
+			showMessage(comparison.toString());
 		}
 	}
 
@@ -1231,15 +1311,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	public void updateControlsWithParametersFromDisk(File resultsFolder) {
-		final ResultsProperties resultsProperties = ResultsProperties.getResultsProperties(resultsFolder);
+		final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
 		this.dataFileText.setText(resultsProperties.getInputDataFile().getAbsolutePath());
 		this.intensityThresholdText.setText(String.valueOf(resultsProperties.getIntensityThreshold()));
 		this.normalizeIntensityCheckBox.setSelected(resultsProperties.getNormalizeReplicates());
 		this.nameTextField.setText(resultsProperties.getName());
 		this.proteinOfInterestText.setText(resultsProperties.getProteinOfInterest());
-		if (resultsProperties.getFastaFile() != null) {
-			this.fastaFileText.setText(resultsProperties.getFastaFile().getAbsolutePath());
-		}
+		this.fastaFileText.setText(resultsProperties.getFastaFile().getAbsolutePath());
+		ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
+
 	}
 
 	private void showChartsInMainPanel(Object object) {
@@ -1257,6 +1337,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					c.gridy = chartsInMainPanel.size() - 1;
 					separateChartsButton.setEnabled(true);
 					btnShowResultsTable.setEnabled(true);
+					btnShowPeptidesTable.setEnabled(true);
 					if (object instanceof IterationGraphPanel) {
 						chartPanel.removeAll();
 						final IterationGraphPanel iterationGraphPanel = (IterationGraphPanel) object;
@@ -1336,6 +1417,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					// enable popup charts
 					MainFrame.this.separateChartsButton.setEnabled(true);
 					MainFrame.this.btnShowResultsTable.setEnabled(true);
+					MainFrame.this.btnShowPeptidesTable.setEnabled(true);
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
@@ -1379,6 +1461,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	@Override
 	public List<String> getHelpMessages() {
+		// TODO
 		final String[] ret = { "GlycoMSQuant help", //
 				"Here some help.", //
 				"<b>Shere some help in bold</b>", //
@@ -1407,19 +1490,19 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultLoader.execute();
 	}
 
-	public boolean isChargeStateSensible() {
+	public static boolean isChargeStateSensible() {
 		return true;
 	}
 
-	public String getDecoyPattern() {
+	public static String getDecoyPattern() {
 		return "Reverse";
 	}
 
-	public boolean isDistinguishModifiedSequences() {
+	public static boolean isDistinguishModifiedSequences() {
 		return true;
 	}
 
-	public boolean isIgnoreTaxonomies() {
+	public static boolean isIgnoreTaxonomies() {
 		return true;
 	}
 
@@ -1427,5 +1510,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		this.chartPanel.removeAll();
 		chartsInMainPanel.clear();
 
+	}
+
+	@Override
+	public String getMotifRegexp() {
+		return GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
+	}
+
+	public void enableRunComparison(boolean b) {
+		this.compareRunsButton.setEnabled(b);
 	}
 }
