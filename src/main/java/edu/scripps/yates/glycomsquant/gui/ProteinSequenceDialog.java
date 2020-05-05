@@ -25,7 +25,9 @@ import javax.swing.JScrollPane;
 import javax.swing.border.LineBorder;
 
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.plot.CategoryPlot;
 
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.GlycoSite;
@@ -33,6 +35,7 @@ import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
 import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedPeptideListDialog;
 import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.charts.ErrorType;
+import edu.scripps.yates.glycomsquant.gui.tables.grouped_peptides.MyGroupedPeptidesTable;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.utilities.maths.Maths;
@@ -207,13 +210,14 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		final GridBagLayout gbl_graphsPanel = new GridBagLayout();
 		graphsPanel.setLayout(gbl_graphsPanel);
 		getContentPane().add(scroll, BorderLayout.CENTER);
-		// add keyboard listener to function with arrows
-		addKeyListener(getArrowKeyListener());
 
 		// load sequence
 		loadSequence(getProteinSequence(), getPeptideOccupancyArray());
 		// load peptides
 		loadPeptidesTable(getGroupedPeptides());
+		// add keyboard listener to function with arrows
+		addKeyListener(getArrowKeyListener());
+		getPeptideListAttachedDialog().addKeyListener(getArrowKeyListener());
 		pack();
 
 		final java.awt.Dimension dialogSize = getSize();
@@ -249,6 +253,43 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 	protected void processArrowKey(KeyEvent e) {
 		// if there is no selection, just do nothing
+
+		final MyGroupedPeptidesTable table = this.getPeptideListAttachedDialog().getTable();
+		if (table.getSelectedRowCount() > 0) {
+			int newSelectedRow = -1;
+			int newSelectedRow2 = -1;
+			final int[] selectedRows = table.getSelectedRows();
+			boolean ctrl = false;
+			if ((e.getModifiers() & KeyEvent.CTRL_MASK) != 0) {
+				ctrl = true;
+			}
+			switch (e.getKeyCode()) {
+			case KeyEvent.VK_UP:
+				// move selection in the table up
+				newSelectedRow = selectedRows[0] - 1;
+				if (ctrl) {
+					newSelectedRow2 = Maths.max(selectedRows);
+				} else {
+					newSelectedRow2 = newSelectedRow;
+				}
+				break;
+			case KeyEvent.VK_DOWN:
+				// move selection in the table down
+				newSelectedRow2 = Float.valueOf(Maths.min(Maths.max(selectedRows) + 1, table.getRowCount() - 1))
+						.intValue();
+				if (ctrl) {
+					newSelectedRow = Maths.min(selectedRows);
+				} else {
+					newSelectedRow = newSelectedRow2;
+				}
+				break;
+			}
+			if (newSelectedRow >= 0) {
+				table.getSelectionModel().setSelectionInterval(newSelectedRow, newSelectedRow2);
+			}
+			return;
+		}
+		// now it is for the protein sequence
 		if (selectedAminoacidPosition <= 0) {
 			return;
 		}
@@ -680,11 +721,22 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		final int height = 200;
 		graphsPanel.removeAll();
 		try {
-			if (selectedPeptides.isEmpty()) {
-				return;
-			}
 			final JPanel headerPanel = new JPanel();
 			headerPanel.setBackground(Color.white);
+			if (selectedPeptides.isEmpty()) {
+				final JLabel headerLabel = new JLabel("No peptides covering position " + position);
+				headerLabel.setFont(GuiUtils.headerFont());
+				headerPanel.add(headerLabel);
+				final GridBagConstraints c = new GridBagConstraints();
+				c.gridx = 0;
+				c.gridy = 0;
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.ipady = 20;
+				c.anchor = GridBagConstraints.NORTH;
+				this.graphsPanel.add(headerPanel, c);
+				return;
+			}
+
 			String text = null;
 
 			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(selectedPeptides,
@@ -693,22 +745,22 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (position != -1) {
 				if (selectedPeptides.size() > 1) {
-					text = "Charts summarizing " + selectedPeptides.size() + " peptides " + numMeasurementsText
-							+ " covering position " + position + ":";
+					text = "Charts summarizing <br>" + selectedPeptides.size() + " peptides " + numMeasurementsText
+							+ "<br> covering position " + position + ":";
 				} else {
-					text = "Charts summarizing peptide " + selectedPeptides.iterator().next().getKey(false) + " "
-							+ numMeasurementsText + " covering position " + position + ":";
+					text = "Charts summarizing <br>peptide " + selectedPeptides.iterator().next().getKey(false) + " "
+							+ numMeasurementsText + "<br> covering position " + position + ":";
 				}
 			} else {
 				if (selectedPeptides.size() > 1) {
-					text = "Charts summarizing the " + selectedPeptides.size() + " selected peptides "
+					text = "Charts summarizing <br>the " + selectedPeptides.size() + " selected peptides <br>"
 							+ numMeasurementsText + ":";
 				} else {
-					text = "Charts summarizing selected peptide " + selectedPeptides.iterator().next().getKey(false)
-							+ " " + numMeasurementsText + ":";
+					text = "Charts summarizing <br>selected peptide " + selectedPeptides.iterator().next().getKey(false)
+							+ " <br>" + numMeasurementsText + ":";
 				}
 			}
-			final JLabel headerLabel = new JLabel(text);
+			final JLabel headerLabel = new JLabel("<html><div style='text-align: center;'>" + text + "</div></html>");
 			headerLabel.setFont(GuiUtils.headerFont());
 			headerPanel.add(headerLabel);
 			final GridBagConstraints c = new GridBagConstraints();
@@ -775,17 +827,16 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			int height) {
 		final ChartPanel chartPanel = ChartUtils.createScatterPlotChartForPeptides(peptides,
 				calculatePeptidePercentagesFirst, "", "", width, height);
-		chartPanel.getChart().getTitle().setFont(GuiUtils.getFontForSmallChartTitle());
-		final TextTitle subtitle = (TextTitle) chartPanel.getChart().getSubtitle(1);// 1 is the subtitle
-		subtitle.setFont(GuiUtils.getFontForSmallChartTitle());
+
 		return chartPanel;
 	}
 
 	private ChartPanel createPercentagesPieChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
 			boolean calculateProportionsByPeptidesFirst, int width, int height) {
 
-		return ChartUtils.createProportionsPieChartForGroupedPeptides(peptides, "", "",
+		final ChartPanel chartPanel = ChartUtils.createProportionsPieChartForGroupedPeptides(peptides, "", "",
 				calculatePeptidePercentagesFirst, width, height);
+		return chartPanel;
 
 	}
 
@@ -794,15 +845,31 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForPeptides(selectedPeptides, "", "",
 				false, ErrorType.SEM, width, height);
-		chartPanel.getChart().getTitle().setFont(GuiUtils.getFontForSmallChartTitle());
+		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
+		final ValueAxis rangeAxis = plot.getRangeAxis();
+		// font for the axis
+		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		rangeAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		final CategoryAxis domainAxis = plot.getDomainAxis();
+		domainAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		domainAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
 		return chartPanel;
 	}
 
 	private ChartPanel createProportionsWhiskeyChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
 			int width, int height) {
 
-		return ChartUtils.createProportionsBoxAndWhiskerChartForGroupedPeptides(selectedPeptides, "", "",
-				calculatePeptidePercentagesFirst, width, height);
+		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGroupedPeptides(selectedPeptides,
+				"", "", calculatePeptidePercentagesFirst, width, height);
+		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
+		final ValueAxis rangeAxis = plot.getRangeAxis();
+		// font for the axis
+		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		rangeAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		final CategoryAxis domainAxis = plot.getDomainAxis();
+		domainAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		domainAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		return chartPanel;
 	}
 
 	private void setDefaultAminoacidBorder(JLabel label) {

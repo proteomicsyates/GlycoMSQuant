@@ -725,10 +725,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final Iterator<JComponent> iterator = chartsInMainPanel.iterator();
 		while (iterator.hasNext()) {
 			final JComponent component = iterator.next();
+			final int width = GuiUtils.getFractionOfScreenWidthSize(0.5);
+			int height = GuiUtils.getFractionOfScreenHeightSize(3.0 / 4);
+			if (component instanceof AbstractMultipleChartsBySitePanel) {
+				height = GuiUtils.getFractionOfScreenHeightSize(6.0 / 7);
+			}
 			// remove from chartsInMainPanel
 			iterator.remove();
 			// show in dialog
-			showChartDialog(component);
+			showChartDialog(component, width, height);
 		}
 		chartPanel.updateUI();
 		this.separateChartsButton.setEnabled(false);
@@ -736,7 +741,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	private static final Random random = new Random(new Date().getTime());
 
-	private void showChartDialog(JComponent component) {
+	private void showChartDialog(JComponent component, int width, int height) {
 		final java.awt.Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 		String title = "";
 		if (component instanceof ChartPanel) {
@@ -746,7 +751,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JFrame frame = new JFrame(getName() + title);
 		popupCharts.add(frame);
 
-//		frame.setPreferredSize(new Dimension(screenSize.width / 2, screenSize.height / 2));
+		frame.setPreferredSize(new Dimension(width, height));
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.getContentPane().setLayout(new BorderLayout(10, 10));
 
@@ -1349,8 +1354,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 						chartsInMainPanel.clear();
 						chartsInMainPanel.add(iterationGraphPanel);
 
-					} else if (object instanceof AbstractProportionsChartsPanel) {
-						final AbstractProportionsChartsPanel proportionsChartPanel = (AbstractProportionsChartsPanel) object;
+					} else if (object instanceof AbstractMultipleChartsBySitePanel) {
+						final AbstractMultipleChartsBySitePanel proportionsChartPanel = (AbstractMultipleChartsBySitePanel) object;
 						c.gridy++;
 						c.weighty = 100;
 						chartPanel.add(proportionsChartPanel, c);
@@ -1399,8 +1404,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 										chartsInMainPanel.add(chartPanel);
 									}
 									chartPanel.updateUI();
-								} else if (jPanel instanceof AbstractProportionsChartsPanel) {
-									final AbstractProportionsChartsPanel piePanel = (AbstractProportionsChartsPanel) jPanel;
+								} else if (jPanel instanceof AbstractMultipleChartsBySitePanel) {
+									final AbstractMultipleChartsBySitePanel piePanel = (AbstractMultipleChartsBySitePanel) jPanel;
 									piePanel.updateUI();
 									chartsInMainPanel.add(piePanel);
 								} else {

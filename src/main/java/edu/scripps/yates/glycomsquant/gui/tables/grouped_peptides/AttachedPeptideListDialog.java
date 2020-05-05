@@ -128,6 +128,10 @@ public class AttachedPeptideListDialog extends JDialog {
 		return this.proteinSequenceDialog.getProteinSequence();
 	}
 
+	public MyGroupedPeptidesTable getTable() {
+		return this.peptideTable.getTable();
+	}
+
 	public void loadTable(Collection<GroupedQuantifiedPeptide> peptidesToLoad) {
 		peptideTable.getTable().clearData();
 

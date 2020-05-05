@@ -27,7 +27,7 @@ import edu.scripps.yates.glycomsquant.InputParameters;
 import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 import gnu.trove.map.hash.THashMap;
 
-public abstract class AbstractProportionsChartsPanel extends JPanel {
+public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 
 	/**
 	 * 
@@ -37,13 +37,13 @@ public abstract class AbstractProportionsChartsPanel extends JPanel {
 	protected final List<GlycoSite> glycoSites;
 	protected final boolean calculatePeptideProportionsFirst;
 
-	protected final int columns = 4;
+	protected static final int columns = 4;
 	protected final Map<GlycoSite, ChartPanel> chartsBySite = new THashMap<GlycoSite, ChartPanel>();
 	protected final File resultsFolder;
 
-	protected final static int minChartSize = 200;
-	protected final static int margin = 2;// marging between charts
-	private static final Logger log = Logger.getLogger(AbstractProportionsChartsPanel.class);
+	protected final static int minChartSize = 175;
+	protected final static int margin = 1;// marging between charts
+	private static final Logger log = Logger.getLogger(AbstractMultipleChartsBySitePanel.class);
 	public static Font itemsFont = new java.awt.Font("arial", Font.PLAIN, 8);
 	protected Font titleFont = new java.awt.Font("arial", Font.BOLD, 12);
 	protected Font subtitleFont = new java.awt.Font("arial", Font.BOLD, 10);
@@ -51,7 +51,7 @@ public abstract class AbstractProportionsChartsPanel extends JPanel {
 	public static Font axisFont = new Font("arial", Font.BOLD, 10);
 	protected final InputParameters inputParameters;
 
-	public AbstractProportionsChartsPanel(List<GlycoSite> glycoSites, File resultsFolder,
+	public AbstractMultipleChartsBySitePanel(List<GlycoSite> glycoSites, File resultsFolder,
 			InputParameters inputParameters) {
 		super(true);
 		this.glycoSites = glycoSites;

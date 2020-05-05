@@ -13,7 +13,7 @@ import edu.scripps.yates.glycomsquant.InputParameters;
 import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 
-public class ProportionsPieChartsPanel extends AbstractProportionsChartsPanel {
+public class ProportionsPieChartsPanel extends AbstractMultipleChartsBySitePanel {
 
 	/**
 	 * 

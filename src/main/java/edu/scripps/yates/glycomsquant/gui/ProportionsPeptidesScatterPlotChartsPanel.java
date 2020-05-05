@@ -14,7 +14,7 @@ import edu.scripps.yates.glycomsquant.InputParameters;
 import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 
-public class ProportionsPeptidesScatterPlotChartsPanel extends AbstractProportionsChartsPanel {
+public class ProportionsPeptidesScatterPlotChartsPanel extends AbstractMultipleChartsBySitePanel {
 
 	/**
 	 * 

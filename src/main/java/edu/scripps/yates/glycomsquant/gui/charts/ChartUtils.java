@@ -45,7 +45,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
 import edu.scripps.yates.glycomsquant.PTMCode;
-import edu.scripps.yates.glycomsquant.gui.AbstractProportionsChartsPanel;
+import edu.scripps.yates.glycomsquant.gui.AbstractMultipleChartsBySitePanel;
 import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
@@ -228,7 +228,7 @@ public class ChartUtils {
 		final PiePlot plot = (PiePlot) chart.getChart().getPlot();
 		plot.setLabelGenerator(new StandardPieSectionLabelGenerator("{2}", NumberFormat.getIntegerInstance(),
 				new DecimalFormat("#.# %")));
-		plot.setLabelFont(AbstractProportionsChartsPanel.itemsFont);
+		plot.setLabelFont(AbstractMultipleChartsBySitePanel.itemsFont);
 		plot.setBackgroundPaint(Color.white);
 // colors
 
@@ -270,7 +270,7 @@ public class ChartUtils {
 		final PiePlot plot = (PiePlot) chart.getChart().getPlot();
 		plot.setLabelGenerator(new StandardPieSectionLabelGenerator("{2}", NumberFormat.getIntegerInstance(),
 				new DecimalFormat("#.# %")));
-		plot.setLabelFont(AbstractProportionsChartsPanel.itemsFont);
+		plot.setLabelFont(AbstractMultipleChartsBySitePanel.itemsFont);
 		plot.setOutlineVisible(false);
 		final Paint[] paints = ColorsUtil.getDefaultColorsSortedByPTMCode();
 		for (int series = 0; series < paints.length; series++) {
@@ -326,11 +326,11 @@ public class ChartUtils {
 
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
-		rangeAxis.setLabelFont(AbstractProportionsChartsPanel.axisFont);
-		rangeAxis.setTickLabelFont(AbstractProportionsChartsPanel.axisFont);
+		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		rangeAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
 		final ValueAxis domainAxis = plot.getDomainAxis();
-		domainAxis.setLabelFont(AbstractProportionsChartsPanel.axisFont);
-		domainAxis.setTickLabelFont(AbstractProportionsChartsPanel.axisFont);
+		domainAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		domainAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
 		domainAxis.setRange(-1.0, 1.0);
 		domainAxis.setVisible(false);
 		if (tooltipGenerator != null) {
@@ -373,11 +373,11 @@ public class ChartUtils {
 
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
-		rangeAxis.setLabelFont(AbstractProportionsChartsPanel.axisFont);
-		rangeAxis.setTickLabelFont(AbstractProportionsChartsPanel.axisFont);
+		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		rangeAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
 		final ValueAxis domainAxis = plot.getDomainAxis();
-		domainAxis.setLabelFont(AbstractProportionsChartsPanel.axisFont);
-		domainAxis.setTickLabelFont(AbstractProportionsChartsPanel.axisFont);
+		domainAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		domainAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
 		domainAxis.setRange(-1.0, 1.0);
 		domainAxis.setVisible(false);
 		if (tooltipGenerator != null) {
@@ -500,14 +500,14 @@ public class ChartUtils {
 		}
 
 		final BarChart chart = new BarChart(title, subtitle, "",
-				"Averaged " + logInsideString + "intensity and " + errorType, datasetWithErrors,
-				PlotOrientation.VERTICAL);
+				"Mean " + logInsideString + "intensity and " + errorType, datasetWithErrors, PlotOrientation.VERTICAL);
 		// do not separate the bars on each site
 		chart.getRenderer().setItemMargin(0);
 		chart.getRenderer().setDefaultItemLabelsVisible(false);
 		chart.setSeriesPaint(ColorsUtil.getDefaultColorsSortedByPTMCode());
 		final CategoryPlot plot = (CategoryPlot) chart.getChart().getPlot();
 		plot.setOutlineVisible(false);
+		plot.getDomainAxis().setLabel("PTM state");
 		final ChartPanel chartPanel = chart.getChartPanel();
 		if (width != null && height != null) {
 			final Dimension dimension = new Dimension(width, height);
@@ -522,7 +522,7 @@ public class ChartUtils {
 		final DefaultStatisticalCategoryDataset dataset = new DefaultStatisticalCategoryDataset();
 
 		for (final GlycoSite hivPosition : glycoSites) {
-			String columnKey = null;
+			String columnKey = "";
 			if (psms) {
 				columnKey = hivPosition.getPosition() + " (" + hivPosition.getSPCByPTMCode(PTMCode._0) + "/"
 						+ hivPosition.getSPCByPTMCode(PTMCode._2) + "/" + hivPosition.getSPCByPTMCode(PTMCode._203)
@@ -593,8 +593,7 @@ public class ChartUtils {
 			if (makeLog && Double.compare(0.0, error) != 0) {
 				error = Maths.log(error, 2);
 			}
-			dataset.add(average, error, GuiUtils.translateCode(ptmCode.getCode()),
-					GuiUtils.translateCode(ptmCode.getCode()));
+			dataset.add(average, error, GuiUtils.translateCode(ptmCode.getCode()), "");
 		}
 
 		return dataset;
