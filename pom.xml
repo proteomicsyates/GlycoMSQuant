@@ -109,6 +109,30 @@
   		<groupId>edu.scripps.yates</groupId>
   		<artifactId>utilities</artifactId>
   		<version>1.6-SNAPSHOT</version>
+
+  		<exclusions>
+  			<exclusion>
+  				<groupId>uk.ac.ebi.jmzidml</groupId>
+  				<artifactId>jmzidentml</artifactId>
+  			</exclusion>
+  			<exclusion>
+  				<groupId>uk.ac.ebi.pride.archive</groupId>
+  				<artifactId>web-service-model</artifactId>
+  			</exclusion>
+  			<exclusion>
+  				<groupId>no.uib</groupId>
+  				<artifactId>jsparklines</artifactId>
+  			</exclusion>
+
+  			<exclusion>
+  				<groupId>org.springframework</groupId>
+  				<artifactId>spring-web</artifactId>
+  			</exclusion>
+  			<exclusion>
+  				<groupId>org.apache.derby</groupId>
+  				<artifactId>derby</artifactId>
+  			</exclusion>
+  		</exclusions>
   	</dependency>
   	<dependency>
   		<groupId>edu.scripps.yates</groupId>
