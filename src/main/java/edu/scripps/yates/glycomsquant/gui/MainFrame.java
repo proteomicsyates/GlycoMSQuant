@@ -98,9 +98,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JCheckBox intensityThresholdCheckBox;
 	private JButton btnCloseCharts;
 	private ProteinSequenceDialog proteinSequenceDialog;
-	private String proteinSequence;
 	private JButton btnShowPeptidesTable;
-	private boolean isCalculateProportionsByPeptidesFirstFromLoadedResults;
+	private boolean isSumIntensitiesAcrossReplicatesFromLoadedResults;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
@@ -150,6 +149,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					final File fastaFile = getFastaFile();
 					ProteinSequences.getInstance(fastaFile, motifRegexp).getProteinSequence(getProteinOfInterestACC());
 					showMessage("Resources loaded.");
+				} catch (final Exception e) {
+					e.printStackTrace();
+					showError(e.getMessage());
 				} finally {
 					componentStateKeeper.setToPreviousState(MainFrame.this);
 				}
@@ -269,7 +271,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			@Override
 			public void keyReleased(KeyEvent e) {
-				proteinSequence = null;
 				updateProteinOfInterestAndRelatedControls();
 				AppDefaults.getInstance().setProteinOfInterest(proteinOfInterestText.getText());
 			}
@@ -297,6 +298,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			if (AppDefaults.getInstance().getFasta() != null) {
 				fastaFileText.setText(AppDefaults.getInstance().getFasta());
 				updateProteinOfInterestAndRelatedControls();
+				// this needs to be after update controls because otherwise, fasta is disabled
+				// and getFastaFile returns null
+				ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
 			}
 		}
 
@@ -403,11 +407,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		analysisParametersPanel.add(analysisPerPeptidePanel, c4);
 
-		calculateProportionsByPeptidesFirstCheckBox = new JCheckBox("Calculate proportions per peptide");
-		calculateProportionsByPeptidesFirstCheckBox.setToolTipText(
-				"<html>If selected, the % of abundances are calculated by peptide+glycoSite+PTM independently and then aggregated across replicates. The error of these % is plotted.<br>\r\nIf not selected, the intensities of each peptide+glycoSite+PTM are averaged across replicates and the error of these intensities will be plotted.\r\n</html>");
-		calculateProportionsByPeptidesFirstCheckBox.setSelected(true);
-		analysisPerPeptidePanel.add(calculateProportionsByPeptidesFirstCheckBox);
+		sumIntensitiesAcrossReplicatesCheckBox = new JCheckBox("Sum intensities across replicates");
+		sumIntensitiesAcrossReplicatesCheckBox.setToolTipText(
+				"<html>If selected, for each peptide(+charge), the intensities are sum acrosss replicates before calculating the proportions.<br>If not selected, the proportions of each peptide(+charge) will be calculated in each replicate and then averaged among all the proportions covering a site.</html>");
+		sumIntensitiesAcrossReplicatesCheckBox.setSelected(true);
+		analysisPerPeptidePanel.add(sumIntensitiesAcrossReplicatesCheckBox);
 
 		final JPanel outputPanel = new JPanel();
 		final GridBagConstraints gbc_outputPanel = new GridBagConstraints();
@@ -696,7 +700,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			return;
 		}
 		final SitesTableDialog tableDialog = new SitesTableDialog();
-		tableDialog.loadResultTable(currentGlycoSites, isCalculateProportionsByPeptidesFirst());
+		tableDialog.loadResultTable(currentGlycoSites, isSumIntensitiesAcrossReplicates());
 		tableDialog.setVisible(true);
 	}
 
@@ -840,7 +844,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				// clear status
 				this.statusTextArea.setText(null);
 				showMessage("Starting analysis...");
-				readInputData();
+				try {
+					readInputData();
+				} catch (final Exception e) {
+					e.printStackTrace();
+					this.componentStateKeeper.setToPreviousState(this);
+				}
 			}
 		} catch (final Exception e) {
 			e.printStackTrace();
@@ -964,24 +973,24 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	protected void showSequenceDialog(String proteinOfInterest, List<GlycoSite> glycoSites,
 			List<QuantifiedPeptideInterface> peptides) {
 		getProteinSequence();
+		final String proteinSequence = getProteinSequence();
 		if (proteinSequence == null) {
 			showError("Error getting protein sequence from protein '" + proteinOfInterest + "'");
 			return;
 		}
 		proteinSequenceDialog = new ProteinSequenceDialog(proteinOfInterest, proteinSequence, glycoSites, peptides,
-				isCalculateProportionsByPeptidesFirstFromLoadedResults());
+				isSumIntensitiesAcrossReplicatesFromLoadedResults());
 		proteinSequenceDialog.setVisible(true);
 	}
 
-	private boolean isCalculateProportionsByPeptidesFirstFromLoadedResults() {
-		return isCalculateProportionsByPeptidesFirstFromLoadedResults;
+	private boolean isSumIntensitiesAcrossReplicatesFromLoadedResults() {
+		return isSumIntensitiesAcrossReplicatesFromLoadedResults;
 	}
 
 	private String getProteinSequence() {
-		if (proteinSequence == null) {
-			proteinSequence = ProteinSequences.getInstance().getProteinSequence(getProteinOfInterestACC());
-		}
-		return proteinSequence;
+
+		return ProteinSequences.getInstance().getProteinSequence(getProteinOfInterestACC());
+
 	}
 
 	protected void openSelectInputFileDialog() {
@@ -1046,7 +1055,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JTextField nameTextField;
 	private JCheckBox normalizeIntensityCheckBox;
 	private JScrollPane chartPanelScroll;
-	private JCheckBox calculateProportionsByPeptidesFirstCheckBox;
+	private JCheckBox sumIntensitiesAcrossReplicatesCheckBox;
 	private QuantCompareReader inputDataReader;
 	private JLabel intensityThresholdIntervalLabel;
 	private JTextField intensityThresholdIntervalTextField;
@@ -1076,9 +1085,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	@Override
 	public File getFastaFile() {
 		if (!"".equals(this.fastaFileText.getText())) {
-			if (fastaFileText.isEnabled()) {
-				return new File(this.fastaFileText.getText());
-			}
+			return new File(this.fastaFileText.getText());
+
 		}
 		if (getProteinOfInterestACC().equals(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST)) {
 			return AppDefaults.getDefaultProteinOfInterestInternalFastaFile();
@@ -1157,10 +1165,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
 		resultsProperties.setName(getName());
+		resultsProperties.setProteinSequence(getProteinSequence());
 		resultsProperties.setInputDataFile(getInputFile());
 		resultsProperties.setIntensityThreshold(getIntensityThreshold());
 		resultsProperties.setNormalizeReplicates(isNormalizeReplicates());
-		resultsProperties.setCalculatePeptideProportionsFirst(isCalculateProportionsByPeptidesFirst());
+		resultsProperties.setSumIntensitiesAcrossReplicates(isSumIntensitiesAcrossReplicates());
 		resultsProperties.setProteinOfInterest(getProteinOfInterestACC());
 	}
 
@@ -1204,7 +1213,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				// now that we have the new results folder, we can update the properties
 				updateProperties(newIndividualResultFolder);
 				final ResultsProperties resultsProperties = new ResultsProperties(newIndividualResultFolder);
-				resultsProperties.setFastaFile(getFastaFile());
+				resultsProperties.setProteinSequence(getProteinSequence());
 
 				final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(newIndividualResultFolder,
 						currentGlycoSites, this);
@@ -1225,7 +1234,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(GlycoPTMResultGenerator.RESULTS_GENERATOR_FINISHED)) {
 			refreshRuns();
-			isCalculateProportionsByPeptidesFirstFromLoadedResults = isCalculateProportionsByPeptidesFirst();
+			isSumIntensitiesAcrossReplicatesFromLoadedResults = isSumIntensitiesAcrossReplicates();
 			this.componentStateKeeper.setToPreviousState(this);
 			this.showProteinSequenceButton.setEnabled(true);
 
@@ -1248,6 +1257,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				updateControlsWithParametersFromDisk(resultsFolder);
 				showMessage("Loading results from " + FilenameUtils.getName(resultsFolder.getAbsolutePath()) + "...");
 			} catch (final Exception e) {
+				e.printStackTrace();
 				showError("Error loading results: " + e.getMessage());
 				componentStateKeeper.setToPreviousState(this);
 			}
@@ -1256,9 +1266,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_FINISHED)) {
 			final ResultsLoadedFromDisk results = (ResultsLoadedFromDisk) evt.getNewValue();
-			isCalculateProportionsByPeptidesFirstFromLoadedResults = results.isCalculatePeptideProportionsFirst();
+			isSumIntensitiesAcrossReplicatesFromLoadedResults = results.isSumIntensitiesAcrossReplicates();
 			this.currentGlycoSites = results.getSites();
-			this.calculateProportionsByPeptidesFirstCheckBox.setSelected(results.isCalculatePeptideProportionsFirst());
+			this.sumIntensitiesAcrossReplicatesCheckBox.setSelected(results.isSumIntensitiesAcrossReplicates());
 			this.currentPeptides = results.getPeptides();
 			final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(currentGlycoSites, this);
 			resultGenerator.addPropertyChangeListener(this);
@@ -1288,7 +1298,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				IterationGraphPanel.clearSites();
 				iterativeThresholdAnalysis = new IterativeThresholdAnalysis(getIntensityThreshold(),
 						Double.valueOf(this.intensityThresholdIntervalTextField.getText()),
-						isCalculateProportionsByPeptidesFirst());
+						isSumIntensitiesAcrossReplicates());
 			}
 			if (iterativeThresholdAnalysis.hasErrors()) {
 				// stop here
@@ -1322,7 +1332,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		this.normalizeIntensityCheckBox.setSelected(resultsProperties.getNormalizeReplicates());
 		this.nameTextField.setText(resultsProperties.getName());
 		this.proteinOfInterestText.setText(resultsProperties.getProteinOfInterest());
-		this.fastaFileText.setText(resultsProperties.getFastaFile().getAbsolutePath());
+		this.fastaFileText.setText("");
 		ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
 
 	}
@@ -1460,8 +1470,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	@Override
-	public boolean isCalculateProportionsByPeptidesFirst() {
-		return this.calculateProportionsByPeptidesFirstCheckBox.isSelected();
+	public boolean isSumIntensitiesAcrossReplicates() {
+		return this.sumIntensitiesAcrossReplicatesCheckBox.isSelected();
 	}
 
 	@Override

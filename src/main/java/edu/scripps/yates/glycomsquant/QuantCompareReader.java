@@ -150,6 +150,9 @@ public class QuantCompareReader extends javax.swing.SwingWorker<List<QuantifiedP
 		Iterator<QuantifiedPeptideInterface> iterator = ret.iterator();
 		while (iterator.hasNext()) {
 			final QuantifiedPeptideInterface peptide = iterator.next();
+			if (peptide.getFullSequence().equals("HAVPN(203.079373)GTIVK")) {
+				log.info("asd");
+			}
 			// only take peptides belonging to the protein of interest
 			final Optional<String> proteinOfInterest = peptide.getQuantifiedProteins().stream()
 					.map(p -> p.getAccession()).filter(acc -> acc.equalsIgnoreCase(proteinOfInterestACC)).findAny();

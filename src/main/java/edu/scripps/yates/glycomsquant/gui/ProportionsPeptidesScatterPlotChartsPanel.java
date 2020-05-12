@@ -43,7 +43,8 @@ public class ProportionsPeptidesScatterPlotChartsPanel extends AbstractMultipleC
 
 	@Override
 	protected ChartPanel createChart(GlycoSite glycoSite) {
-		return ChartUtils.createScatterPlotChartForGlycoSite(glycoSite, super.getChartTitle(glycoSite),
+		return ChartUtils.createScatterPlotChartForGlycoSite(glycoSite, sumIntensitiesAcrossReplicates,
+				super.getChartTitle(glycoSite),
 				glycoSite.getTotalSPC() + " SPC / " + glycoSite.getTotalNumPeptides() + " Peptides", null, null);
 
 	}

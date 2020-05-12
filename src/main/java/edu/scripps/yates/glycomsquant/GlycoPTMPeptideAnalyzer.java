@@ -43,7 +43,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	private final String motifRegexp;
 
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
-			File fastaFile, AmountType amountType, String motifRegexp) {
+			AmountType amountType, String motifRegexp) {
 		this.peptideNodes = peptideNodes;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
@@ -51,7 +51,17 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		this.motifRegexp = motifRegexp;
 	}
 
-	public List<GlycoSite> getHIVPositions() {
+	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
+			File fastaFile, AmountType amountType, String motifRegexp) {
+		this.peptideNodes = peptideNodes;
+		this.proteinOfInterestACC = proteinOfInterestACC;
+		this.proteinSequence = ProteinSequences.getInstance(fastaFile, motifRegexp)
+				.getProteinSequence(proteinOfInterestACC);
+		this.amountType = amountType;
+		this.motifRegexp = motifRegexp;
+	}
+
+	public List<GlycoSite> getGlycoSites() {
 		// filter by protein
 		final List<QuantifiedPeptideInterface> peptidesFilteredByProtein = peptideNodes.stream()
 				.filter(p -> containsProtein(p.getQuantifiedProteins(), proteinOfInterestACC))
@@ -67,17 +77,14 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 					continue;
 				}
 				final int position = positionInProtein.getPosition();
-				final String ptmCode = String.valueOf(positionInProtein.getDeltaMass());
-				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCode);
+				final PTMCode ptmCodeObj = PTMCode.getByValue(positionInProtein.getDeltaMass());
 				if (!map.containsKey(position)) {
 					map.put(position, new GlycoSite(position, proteinOfInterestACC));
 				}
 				final List<Double> intensities = peptide.getAmounts().stream()
 						.filter(a -> a.getAmountType() == amountType).map(a -> a.getValue())
 						.collect(Collectors.toList());
-				if (intensities.size() > 3) {
-					System.out.println("asdf");
-				}
+
 				// each ratio corresponds to the intensity in one replicate
 				for (final Double intensity : intensities) {
 					// if the ratio is 0.0, it is because it was not present
@@ -170,7 +177,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	@Override
 	protected List<GlycoSite> doInBackground() throws Exception {
 		try {
-			return getHIVPositions();
+			return getGlycoSites();
 		} catch (final Exception e) {
 			e.printStackTrace();
 			firePropertyChange(HIVPOSITIONS_ERROR, null, e.getMessage());

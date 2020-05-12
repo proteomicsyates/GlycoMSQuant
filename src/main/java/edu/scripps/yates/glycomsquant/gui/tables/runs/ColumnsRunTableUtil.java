@@ -81,8 +81,8 @@ public class ColumnsRunTableUtil {
 			case THRESHOLD:
 				ret.add(resultsProperties.getIntensityThreshold());
 				break;
-			case CALCULATE_PEPTIDE_PROPORTIONS_FIRST:
-				ret.add(resultsProperties.getCalculatePeptideProportionsFirst());
+			case SUM_INTENSITIES_ACROSS_REPLICATES:
+				ret.add(resultsProperties.getSumIntensitiesAcrossReplicates());
 				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");

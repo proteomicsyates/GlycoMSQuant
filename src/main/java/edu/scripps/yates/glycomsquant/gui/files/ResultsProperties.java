@@ -9,8 +9,6 @@ import java.util.Properties;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 
-import edu.scripps.yates.glycomsquant.AppDefaults;
-import edu.scripps.yates.glycomsquant.GlycoPTMAnalyzer;
 import edu.scripps.yates.utilities.properties.PropertiesUtil;
 
 public class ResultsProperties {
@@ -21,9 +19,9 @@ public class ResultsProperties {
 	private static final String NAME = "run_name";
 	private static final String INTENSITY_THRESHOLD = "intensity_threshold";
 	private static final String NORMALIZE_REPLICATES = "normalize_replicates";
-	private static final String CALCULATE_PEPTIDES_PROPORTIONS_FIRST = "calculate_peptides_proportions_first";
+	private static final String SUM_INTENSITIES_ACROSS_REPLICATES = "sum_intensities_across_replicates";
 	private static final String GLYCO_SITE_TABLE_FILE = "glyco_sites_table_file";
-	private static final String FASTA_FILE = "fasta_file";
+	private static final String PROTEIN_SEQUENCE = "protein_sequence";
 	private static final String PROTEIN_OF_INTEREST = "protein_of_interest";
 	public final static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private final File individualResultsFolder;
@@ -34,9 +32,9 @@ public class ResultsProperties {
 	private Double intensityThreshold;
 	private Boolean normalizeReplicates;
 	private File glycoSitesTableFile;
-	private File fastaFile;
+	private String proteinSequence;
 	private String proteinOfInterest;
-	private Boolean calculatePeptideProportionsFirst;
+	private Boolean sumIntensitiesAcrossReplicates;
 
 	/**
 	 * 
@@ -79,15 +77,8 @@ public class ResultsProperties {
 				}
 				this.name = properties.getProperty(NAME);
 				this.proteinOfInterest = properties.getProperty(PROTEIN_OF_INTEREST);
-				if (properties.containsKey(FASTA_FILE)) {
-					final String fastaFileName = properties.getProperty(FASTA_FILE);
-					// if it is the default, point to the internal fasta file
-					if (fastaFileName.equals(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST + ".fasta")) {
-						this.fastaFile = AppDefaults.getDefaultProteinOfInterestInternalFastaFile();
-					} else {
-						this.fastaFile = new File(
-								individualResultsFolder.getAbsolutePath() + File.separator + fastaFileName);
-					}
+				if (properties.containsKey(PROTEIN_SEQUENCE)) {
+					this.proteinSequence = properties.getProperty(PROTEIN_SEQUENCE);
 				}
 				if (properties.containsKey(INTENSITY_THRESHOLD)) {
 					this.intensityThreshold = Double.valueOf(properties.getProperty(INTENSITY_THRESHOLD));
@@ -95,9 +86,9 @@ public class ResultsProperties {
 				if (properties.containsKey(NORMALIZE_REPLICATES)) {
 					this.normalizeReplicates = Boolean.valueOf(properties.getProperty(NORMALIZE_REPLICATES));
 				}
-				if (properties.containsKey(CALCULATE_PEPTIDES_PROPORTIONS_FIRST)) {
-					this.calculatePeptideProportionsFirst = Boolean
-							.valueOf(properties.getProperty(CALCULATE_PEPTIDES_PROPORTIONS_FIRST));
+				if (properties.containsKey(SUM_INTENSITIES_ACROSS_REPLICATES)) {
+					this.sumIntensitiesAcrossReplicates = Boolean
+							.valueOf(properties.getProperty(SUM_INTENSITIES_ACROSS_REPLICATES));
 				}
 				if (properties.containsKey(GLYCO_SITE_TABLE_FILE)) {
 					this.glycoSitesTableFile = new File(individualResultsFolder.getAbsolutePath() + File.separator
@@ -137,13 +128,13 @@ public class ResultsProperties {
 		return this.resultsTableFile;
 	}
 
-	public File getFastaFile() {
+	public String getProteinSequence() {
 		loadProperties();
-		return this.fastaFile;
+		return this.proteinSequence;
 	}
 
-	public void setFastaFile(File fastaFile) {
-		this.fastaFile = fastaFile;
+	public void setProteinSequence(String sequence) {
+		this.proteinSequence = sequence;
 		updateProperties();
 	}
 
@@ -168,8 +159,8 @@ public class ResultsProperties {
 			if (name != null) {
 				properties.put(NAME, this.name);
 			}
-			if (fastaFile != null) {
-				properties.put(FASTA_FILE, FilenameUtils.getName(this.fastaFile.getAbsolutePath()));
+			if (proteinSequence != null) {
+				properties.put(PROTEIN_SEQUENCE, this.proteinSequence);
 			}
 			if (proteinOfInterest != null) {
 				properties.put(PROTEIN_OF_INTEREST, this.proteinOfInterest);
@@ -184,9 +175,8 @@ public class ResultsProperties {
 			if (normalizeReplicates != null) {
 				properties.put(NORMALIZE_REPLICATES, String.valueOf(this.normalizeReplicates));
 			}
-			if (calculatePeptideProportionsFirst != null) {
-				properties.put(CALCULATE_PEPTIDES_PROPORTIONS_FIRST,
-						String.valueOf(this.calculatePeptideProportionsFirst));
+			if (sumIntensitiesAcrossReplicates != null) {
+				properties.put(SUM_INTENSITIES_ACROSS_REPLICATES, String.valueOf(this.sumIntensitiesAcrossReplicates));
 			}
 			final FileWriter writer = new FileWriter(propertiesFile);
 			properties.store(writer, "Properties of the GlycoMSAnalyzer run performed on "
@@ -218,8 +208,8 @@ public class ResultsProperties {
 		updateProperties();
 	}
 
-	public void setCalculatePeptideProportionsFirst(Boolean calculatePeptideProportionsFirst) {
-		this.calculatePeptideProportionsFirst = calculatePeptideProportionsFirst;
+	public void setSumIntensitiesAcrossReplicates(Boolean sumIntensitiesAcrossReplicates) {
+		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		updateProperties();
 	}
 
@@ -247,8 +237,8 @@ public class ResultsProperties {
 		return proteinOfInterest;
 	}
 
-	public Boolean getCalculatePeptideProportionsFirst() {
+	public Boolean getSumIntensitiesAcrossReplicates() {
 		loadProperties();
-		return this.calculatePeptideProportionsFirst;
+		return this.sumIntensitiesAcrossReplicates;
 	}
 }

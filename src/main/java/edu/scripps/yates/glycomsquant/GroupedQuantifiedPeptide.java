@@ -1,7 +1,6 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -10,10 +9,7 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import gnu.trove.list.TDoubleList;
-import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.map.TMap;
-import gnu.trove.map.TObjectDoubleMap;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 
 /**
@@ -30,16 +26,32 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	private int chargeState;
 	private String sequence;
 	private TMap<PTMCode, TDoubleList> intensitiesByPTMCode;
+	private final String proteinAcc;
 
-	public GroupedQuantifiedPeptide(Collection<QuantifiedPeptideInterface> peptides) {
-
+	/**
+	 * 
+	 * @param peptides
+	 * @param proteinAcc with respect to what protein we are working on
+	 */
+	public GroupedQuantifiedPeptide(Collection<QuantifiedPeptideInterface> peptides, String proteinAcc) {
+		this.proteinAcc = proteinAcc;
 		addAll(peptides);
 
 	}
 
-	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide) {
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc) {
+		this.proteinAcc = proteinAcc;
 		add(peptide);
 		chargeState = peptide.getPSMs().get(0).getChargeState();
+	}
+
+	/**
+	 * The protein for which this {@link GroupedQuantifiedPeptide} was created
+	 * 
+	 * @return
+	 */
+	public String getProteinAcc() {
+		return this.proteinAcc;
 	}
 
 	@Override
@@ -100,34 +112,9 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 		return false;
 	}
 
-	public TDoubleList getProportionsByPTMCode(PTMCode ptmCode, boolean calculateProportionsByPeptidesFirst) {
-		if (this.getKey(false).equals("SFNCGGEFFYCNTS-2") || this.getKey(false).equals("THSFNCGGEFFYCNTS-2")) {
-			log.info("asdfÄdf");
-		}
-
-		final THashMap<PTMCode, TDoubleList> proportionsByPTMCode = new THashMap<PTMCode, TDoubleList>();
-		if (calculateProportionsByPeptidesFirst) {
-
-			final Map<PTMCode, TDoubleList> percentagesByPTM = GlycoPTMAnalyzerUtil
-					.getPercentagesByPTMCodeCalculatingPeptidesFirst(this);
-			for (final PTMCode ptmCode2 : percentagesByPTM.keySet()) {
-				if (!proportionsByPTMCode.containsKey(ptmCode2)) {
-					proportionsByPTMCode.put(ptmCode2, new TDoubleArrayList());
-				}
-				proportionsByPTMCode.get(ptmCode2).addAll(percentagesByPTM.get(ptmCode2));
-			}
-		} else {
-			final TObjectDoubleMap<PTMCode> percentagesByPTM = GlycoPTMAnalyzerUtil
-					.getPercentagesByPTMByAveragingIntensitiesFirst(this);
-			for (final PTMCode ptmCode2 : percentagesByPTM.keySet()) {
-				if (!proportionsByPTMCode.containsKey(ptmCode2)) {
-					proportionsByPTMCode.put(ptmCode2, new TDoubleArrayList());
-				}
-				proportionsByPTMCode.get(ptmCode2).add(percentagesByPTM.get(ptmCode2));
-			}
-		}
-
-		return proportionsByPTMCode.get(ptmCode);
+	public TDoubleList getProportionsByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
+		return GlycoPTMAnalyzerUtil.getIndividualProportionsByPTMCode(this, sumIntensitiesAcrossReplicates)
+				.get(ptmCode);
 	}
 
 	public String getSequence() {

@@ -11,7 +11,7 @@ enum ColumnsRunTable {
 	THRESHOLD("Int threshold", 10, "Intensity threshold", Double.class),
 	NORMALIZE_REPLICATES("Normalize replicates", 10,
 			"Normalize the intensity of the replicates by dividing by the total sum of intensities", Boolean.class),
-	CALCULATE_PEPTIDE_PROPORTIONS_FIRST("Pep proportions", 10, "Calculate proportions per peptide", Boolean.class)
+	SUM_INTENSITIES_ACROSS_REPLICATES("Sum int rep", 10, "Sum intenssities across replicates", Boolean.class)
 	// RESEARCHER("researcher", 20, "Researcher name (internal data for the
 	// Spanish HPP consortium)"), //
 	// GENE_CLASSIFICATION("gene class", 15, "Gene classification (internal data

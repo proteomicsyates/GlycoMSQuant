@@ -53,28 +53,28 @@ import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.util.Pair;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
-import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.hash.THashMap;
 
 public class ChartUtils {
-	public static BoxAndWhiskerCategoryDataset createPercentErrorDatasetBoxAndWhisker(List<GlycoSite> glycoSites,
-			boolean psms) {
+	public static BoxAndWhiskerCategoryDataset createProportionsBoxAndWhiskerForSites(List<GlycoSite> glycoSites,
+			boolean psms, boolean sumIntensitiesAcrossReplicates) {
 		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
 
-		for (final GlycoSite hivPosition : glycoSites) {
+		for (final GlycoSite site : glycoSites) {
 			String columnKey = null;
 			if (psms) {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getSPCByPTMCode(PTMCode._0) + "/"
-						+ hivPosition.getSPCByPTMCode(PTMCode._2) + "/" + hivPosition.getSPCByPTMCode(PTMCode._203)
-						+ ")";
+				columnKey = site.getPosition() + " (" + site.getSPCByPTMCode(PTMCode._0) + "/"
+						+ site.getSPCByPTMCode(PTMCode._2) + "/" + site.getSPCByPTMCode(PTMCode._203) + ")";
 			} else {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getPeptidesByPTMCode(PTMCode._0).size() + "/"
-						+ hivPosition.getPeptidesByPTMCode(PTMCode._2).size() + "/"
-						+ hivPosition.getPeptidesByPTMCode(PTMCode._203).size() + ")";
+				columnKey = site.getPosition() + " (" + site.getPeptidesByPTMCode(PTMCode._0).size() + "/"
+						+ site.getPeptidesByPTMCode(PTMCode._2).size() + "/"
+						+ site.getPeptidesByPTMCode(PTMCode._203).size() + ")";
 			}
 
 			for (final PTMCode ptmCode : PTMCode.values()) {
-				final TDoubleList doublelist = hivPosition.getIndividualPeptidePercentagesByPTMCode(ptmCode);
+
+				final TDoubleList doublelist = site.getIndividualPeptideProportionsByPTMCode(ptmCode,
+						sumIntensitiesAcrossReplicates);
 				final List<Double> list = new ArrayList<Double>();
 				for (final double double1 : doublelist.toArray()) {
 					list.add(double1);
@@ -87,10 +87,10 @@ public class ChartUtils {
 	}
 
 	public static ChartPanel createProportionsBoxAndWhiskerChartForGlycoSites(List<GlycoSite> glycoSites, String title,
-			String subtitle, boolean psms) throws IOException {
+			String subtitle, boolean psms, boolean sumIntensitiesAcrossReplicates) throws IOException {
 
-		final BoxAndWhiskerCategoryDataset dataset = ChartUtils.createPercentErrorDatasetBoxAndWhisker(glycoSites,
-				psms);
+		final BoxAndWhiskerCategoryDataset dataset = ChartUtils.createProportionsBoxAndWhiskerForSites(glycoSites, psms,
+				sumIntensitiesAcrossReplicates);
 		final BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer();
 		renderer.setFillBox(true);
 		renderer.setDefaultToolTipGenerator(new BoxAndWhiskerToolTipGenerator());
@@ -122,10 +122,10 @@ public class ChartUtils {
 
 	public static ChartPanel createProportionsBoxAndWhiskerChartForGroupedPeptides(
 			Collection<GroupedQuantifiedPeptide> peptides, String title, String subtitle,
-			boolean calculatePeptidePercentagesFirst, int width, int height) {
+			boolean sumIntensitiesAcrossReplicates, int width, int height) {
 
-		final BoxAndWhiskerCategoryDataset dataset = createPercentErrorDatasetBoxAndWhiskerforGroupedPeptides(peptides,
-				calculatePeptidePercentagesFirst);
+		final BoxAndWhiskerCategoryDataset dataset = createProportionsErrorDatasetBoxAndWhiskerforGroupedPeptides(
+				peptides, sumIntensitiesAcrossReplicates);
 		final BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer() {
 			private static final long serialVersionUID = 7752611432598679547L;
 
@@ -172,48 +172,31 @@ public class ChartUtils {
 		return chartPanel;
 	}
 
-	public static BoxAndWhiskerCategoryDataset createPercentErrorDatasetBoxAndWhiskerforGroupedPeptides(
-			Collection<GroupedQuantifiedPeptide> peptides, boolean calculatePeptidePercentagesFirst) {
+	public static BoxAndWhiskerCategoryDataset createProportionsErrorDatasetBoxAndWhiskerforGroupedPeptides(
+			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
 		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
-		if (calculatePeptidePercentagesFirst) {
-			final Map<PTMCode, List<Double>> valuesPerPTMCode = new THashMap<PTMCode, List<Double>>();
-			for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
-				final Map<PTMCode, TDoubleList> percentagesByPTM = GlycoPTMAnalyzerUtil
-						.getPercentagesByPTMCodeCalculatingPeptidesFirst(groupedPeptide);
-				for (final PTMCode ptmCode : PTMCode.values()) {
 
-					final TDoubleList percentages = percentagesByPTM.get(ptmCode);
-					if (!valuesPerPTMCode.containsKey(ptmCode)) {
-						valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
-					}
-					for (final double percentage : percentages.toArray()) {
-						valuesPerPTMCode.get(ptmCode).add(percentage);
-					}
-				}
-			}
+		final Map<PTMCode, List<Double>> valuesPerPTMCode = new THashMap<PTMCode, List<Double>>();
+		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+
+			final Map<PTMCode, TDoubleList> proportionsByPTM = GlycoPTMAnalyzerUtil
+					.getIndividualProportionsByPTMCode(groupedPeptide, sumIntensitiesAcrossReplicates);
 			for (final PTMCode ptmCode : PTMCode.values()) {
-				final String columnKey = "";
-				final List<Double> list = valuesPerPTMCode.get(ptmCode);
-				dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
-			}
-		} else {
-			final Map<PTMCode, List<Double>> valuesPerPTMCode = new THashMap<PTMCode, List<Double>>();
-			for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
-				final TObjectDoubleMap<PTMCode> percentagesByPTM = GlycoPTMAnalyzerUtil
-						.getPercentagesByPTMByAveragingIntensitiesFirst(groupedPeptide);
-				for (final PTMCode ptmCode : PTMCode.values()) {
-					final double percentage = percentagesByPTM.get(ptmCode);
-					if (!valuesPerPTMCode.containsKey(ptmCode)) {
-						valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
-					}
+
+				final TDoubleList proportions = proportionsByPTM.get(ptmCode);
+				if (!valuesPerPTMCode.containsKey(ptmCode)) {
+					valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+				}
+				for (final double percentage : proportions.toArray()) {
 					valuesPerPTMCode.get(ptmCode).add(percentage);
 				}
 			}
-			for (final PTMCode ptmCode : PTMCode.values()) {
-				final String columnKey = "";
-				final List<Double> list = valuesPerPTMCode.get(ptmCode);
-				dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
-			}
+
+		}
+		for (final PTMCode ptmCode : PTMCode.values()) {
+			final String columnKey = "";
+			final List<Double> list = valuesPerPTMCode.get(ptmCode);
+			dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
 		}
 
 		return dataset;
@@ -263,8 +246,8 @@ public class ChartUtils {
 	}
 
 	public static ChartPanel createProportionsPieChartForGlycoSite(GlycoSite glycoSite, String title, String subtitle,
-			boolean calculatePeptideProportionsFirst, Integer width, Integer height) {
-		final PieDataset dataset = createProportionsPieDatasetForGlycoSite(glycoSite, calculatePeptideProportionsFirst);
+			boolean sumIntensitiesAcrossReplicates, Integer width, Integer height) {
+		final PieDataset dataset = createProportionsPieDatasetForGlycoSite(glycoSite, sumIntensitiesAcrossReplicates);
 		final PieChart chart = new PieChart(title, subtitle, dataset, false);
 
 		final PiePlot plot = (PiePlot) chart.getChart().getPlot();
@@ -289,18 +272,19 @@ public class ChartUtils {
 	}
 
 	public static PieDataset createProportionsPieDatasetForGlycoSite(GlycoSite glycoSite,
-			boolean calculatePeptideProportionsFirst) {
+			boolean sumIntensitiesAcrossReplicates) {
 		final DefaultPieDataset dataset = new DefaultPieDataset();
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			final double percetange = glycoSite.getPercentageByPTMCode(ptmCode, calculatePeptideProportionsFirst);
+			final double percetange = glycoSite.getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
 			dataset.setValue(GuiUtils.translateCode(ptmCode.getCode()), percetange);
 		}
 		return dataset;
 	}
 
-	public static ChartPanel createScatterPlotChartForGlycoSite(GlycoSite glycoSite, String title, String subtitle,
-			Integer width, Integer height) {
-		final Pair<XYDataset, MyXYItemLabelGenerator> pair = createProportionsScatteredDataSetForGlycoSite(glycoSite);
+	public static ChartPanel createScatterPlotChartForGlycoSite(GlycoSite glycoSite,
+			boolean sumIntensitiesAcrossReplicates, String title, String subtitle, Integer width, Integer height) {
+		final Pair<XYDataset, MyXYItemLabelGenerator> pair = createProportionsScatteredDataSetForGlycoSite(glycoSite,
+				sumIntensitiesAcrossReplicates);
 		final XYDataset dataset = pair.getFirstelement();
 		final MyXYItemLabelGenerator tooltipGenerator = pair.getSecondElement();
 		final ChartPanel chartPanel = new ChartPanel(
@@ -345,9 +329,9 @@ public class ChartUtils {
 	}
 
 	public static ChartPanel createScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
-			boolean calculateProportionsByPeptidesFirst, String title, String subtitle, Integer width, Integer height) {
+			boolean sumIntensitiesAcrossReplicates, String title, String subtitle, Integer width, Integer height) {
 		final Pair<XYDataset, MyXYItemLabelGenerator> pair = createProportionsScatteredDataSetForPeptides(peptides,
-				calculateProportionsByPeptidesFirst);
+				sumIntensitiesAcrossReplicates);
 		final XYDataset dataset = pair.getFirstelement();
 		final MyXYItemLabelGenerator tooltipGenerator = pair.getSecondElement();
 		final ChartPanel chartPanel = new ChartPanel(
@@ -392,7 +376,7 @@ public class ChartUtils {
 	}
 
 	private static Pair<XYDataset, MyXYItemLabelGenerator> createProportionsScatteredDataSetForGlycoSite(
-			GlycoSite glycoSite) {
+			GlycoSite glycoSite, boolean sumIntensitiesAcrossReplicates) {
 
 		final XYSeriesCollection xySeriesCollection = new XYSeriesCollection();
 
@@ -407,7 +391,7 @@ public class ChartUtils {
 //			final int minoffset = -maxoffset;
 
 			final TDoubleList individualPeptidePercentagesByPTMCode = glycoSite
-					.getIndividualPeptidePercentagesByPTMCode(ptmCode);
+					.getIndividualPeptideProportionsByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
 			// we will spread these values over the x range [-1,1]
 			final double step = 2.0 / (individualPeptidePercentagesByPTMCode.size() + 1);
 			double x = -1;
@@ -428,7 +412,7 @@ public class ChartUtils {
 	}
 
 	private static Pair<XYDataset, MyXYItemLabelGenerator> createProportionsScatteredDataSetForPeptides(
-			Collection<GroupedQuantifiedPeptide> peptides, boolean calculateProportionsByPeptidesFirst) {
+			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
 
 		final XYSeriesCollection xySeriesCollection = new XYSeriesCollection();
 
@@ -439,27 +423,16 @@ public class ChartUtils {
 			final XYSeries series = new XYSeries(code);
 			double x = -1;
 			final double step = 2.0 / (GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(ptmCode, peptides,
-					calculateProportionsByPeptidesFirst) + 1);
+					sumIntensitiesAcrossReplicates) + 1);
 
 			for (final GroupedQuantifiedPeptide peptide : peptides) {
-				if (calculateProportionsByPeptidesFirst) {
-					final TDoubleList percentages = GlycoPTMAnalyzerUtil
-							.getPercentagesByPTMCodeCalculatingPeptidesFirst(peptide).get(ptmCode);
-					for (final double percentage : percentages.toArray()) {
-						x += step;
-						series.add(x, percentage);
-						tooltipValues.put(code, peptide.getKey(false) + "-" + code);
-					}
-
-				} else {
-					final double percentage = GlycoPTMAnalyzerUtil
-							.getPercentagesByPTMByAveragingIntensitiesFirst(peptide).get(ptmCode);
-
+				final TDoubleList percentages = GlycoPTMAnalyzerUtil
+						.getIndividualProportionsByPTMCode(peptide, sumIntensitiesAcrossReplicates).get(ptmCode);
+				for (final double percentage : percentages.toArray()) {
 					x += step;
 					series.add(x, percentage);
 					tooltipValues.put(code, peptide.getKey(false) + "-" + code);
 				}
-
 			}
 			xySeriesCollection.addSeries(series);
 		}
@@ -543,9 +516,9 @@ public class ChartUtils {
 				case SEM:
 					error = hivPosition.getSEMIntensityByPTMCode(ptmCode);
 					break;
-				case STDEV:
-					error = hivPosition.getSTDEVIntensityByPTMCode(ptmCode);
-					break;
+//				case STDEV:
+//					error = hivPosition.getSTDEVIntensityByPTMCode(ptmCode);
+//					break;
 				default:
 					break;
 				}
@@ -583,9 +556,9 @@ public class ChartUtils {
 			case SEM:
 				error = Maths.sem(intensities);
 				break;
-			case STDEV:
-				error = Maths.stddev(intensities);
-				break;
+//			case STDEV:
+//				error = Maths.stddev(intensities);
+//				break;
 			default:
 				break;
 			}

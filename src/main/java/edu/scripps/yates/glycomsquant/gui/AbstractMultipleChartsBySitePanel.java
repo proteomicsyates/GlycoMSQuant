@@ -35,7 +35,7 @@ public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 	private static final long serialVersionUID = -8678280965340246718L;
 
 	protected final List<GlycoSite> glycoSites;
-	protected final boolean calculatePeptideProportionsFirst;
+	protected final boolean sumIntensitiesAcrossReplicates;
 
 	protected static final int columns = 4;
 	protected final Map<GlycoSite, ChartPanel> chartsBySite = new THashMap<GlycoSite, ChartPanel>();
@@ -55,7 +55,7 @@ public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 			InputParameters inputParameters) {
 		super(true);
 		this.glycoSites = glycoSites;
-		this.calculatePeptideProportionsFirst = inputParameters.isCalculateProportionsByPeptidesFirst();
+		this.sumIntensitiesAcrossReplicates = inputParameters.isSumIntensitiesAcrossReplicates();
 		this.resultsFolder = resultsFolder;
 		this.inputParameters = inputParameters;
 		initComponents();

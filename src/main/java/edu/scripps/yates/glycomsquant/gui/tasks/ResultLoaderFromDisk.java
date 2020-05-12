@@ -60,10 +60,10 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			MainFrame.getInstance();
 			parser.setIgnoreTaxonomies(MainFrame.isIgnoreTaxonomies());
 			final List<GlycoSite> glycoSites = readDataFile(dataFile, parser);
-			final Boolean calculatePeptideProportionsFirst = resultsProperties.getCalculatePeptideProportionsFirst();
+			final Boolean sumIntensitiesAcrossReplicates = resultsProperties.getSumIntensitiesAcrossReplicates();
 			final List<QuantifiedPeptideInterface> peptides = GlycoPTMAnalyzerUtil.getPeptidesFromSites(glycoSites);
 			final ResultsLoadedFromDisk results = new ResultsLoadedFromDisk(resultsProperties, glycoSites, peptides,
-					calculatePeptideProportionsFirst);
+					sumIntensitiesAcrossReplicates);
 			firePropertyChange(RESULT_LOADER_FROM_DISK_FINISHED, null, results);
 		} catch (final Exception e) {
 			e.printStackTrace();

@@ -64,7 +64,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.intensityThreshold = inputParams.getIntensityThreshold();
 		this.amountType = inputParams.getAmountType();
 		this.normalizeReplicates = inputParams.isNormalizeReplicates();
-		this.calculateProportionsByPeptidesFirst = inputParams.isCalculateProportionsByPeptidesFirst();
+		this.calculateProportionsByPeptidesFirst = inputParams.isSumIntensitiesAcrossReplicates();
 		this.motifRegexp = inputParams.getMotifRegexp();
 		printWelcome();
 	}
@@ -227,8 +227,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 
 		log.info("Now analyzing the " + peptides.size() + " peptides...");
 		final GlycoPTMPeptideAnalyzer glycoPTMPeptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
-				proteinOfInterestACC, fastaFile, amountType, this.motifRegexp);
-		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getHIVPositions();
+				proteinOfInterestACC, amountType, this.motifRegexp);
+		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getGlycoSites();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
 		resultGenerator = new GlycoPTMResultGenerator(inputFile.getParentFile(), hivPositions, this);
@@ -244,7 +244,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList list = new TDoubleArrayList();
 			for (final GlycoSite hivPosition : hivPositions) {
-				list.add(hivPosition.getPercentageByPTMCode(ptmCode, isCalculateProportionsByPeptidesFirst()));
+				list.add(hivPosition.getProportionByPTMCode(ptmCode, isSumIntensitiesAcrossReplicates()));
 			}
 			ret.put(ptmCode, Maths.mean(list));
 
@@ -348,7 +348,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	}
 
 	@Override
-	public boolean isCalculateProportionsByPeptidesFirst() {
+	public boolean isSumIntensitiesAcrossReplicates() {
 		return this.calculateProportionsByPeptidesFirst;
 	}
 

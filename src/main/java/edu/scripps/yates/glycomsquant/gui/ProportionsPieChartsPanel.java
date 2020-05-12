@@ -30,8 +30,8 @@ public class ProportionsPieChartsPanel extends AbstractMultipleChartsBySitePanel
 	protected ChartPanel createChart(GlycoSite glycoSite) {
 		final String title = getChartTitle(glycoSite);
 		final String subtitle = glycoSite.getTotalSPC() + " SPC / " + glycoSite.getTotalNumPeptides() + " Peptides";
-		return ChartUtils.createProportionsPieChartForGlycoSite(glycoSite, title, subtitle, calculatePeptideProportionsFirst, null,
-				null);
+		return ChartUtils.createProportionsPieChartForGlycoSite(glycoSite, title, subtitle,
+				sumIntensitiesAcrossReplicates, null, null);
 
 	}
 
@@ -42,7 +42,7 @@ public class ProportionsPieChartsPanel extends AbstractMultipleChartsBySitePanel
 
 	@Override
 	protected PieDataset createDataset(GlycoSite glycoSite) {
-		return ChartUtils.createProportionsPieDatasetForGlycoSite(glycoSite, calculatePeptideProportionsFirst);
+		return ChartUtils.createProportionsPieDatasetForGlycoSite(glycoSite, sumIntensitiesAcrossReplicates);
 
 	}
 

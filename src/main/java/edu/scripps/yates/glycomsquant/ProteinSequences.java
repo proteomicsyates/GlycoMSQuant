@@ -134,13 +134,16 @@ public class ProteinSequences {
 
 	private String getProteinSequenceFromUniprot(String proteinAcc) {
 		try {
-			log.info("Getting protein sequence from UniprotKB for " + proteinAcc);
-			final Entry fastaEntry = UniprotFastaRetriever.getFastaEntry(proteinAcc);
-			if (fastaEntry != null) {
-				final String proteinSequence = fastaEntry.getSequence().getValue();
-				return proteinSequence;
-			} else {
-				throw new IllegalArgumentException("Sequence from " + proteinAcc + " not found in UniprotKB.");
+			final String uniProtACC = FastaParser.getUniProtACC(proteinAcc);
+			if (uniProtACC != null) {
+				log.info("Getting protein sequence from UniprotKB for " + proteinAcc);
+				final Entry fastaEntry = UniprotFastaRetriever.getFastaEntry(proteinAcc);
+				if (fastaEntry != null) {
+					final String proteinSequence = fastaEntry.getSequence().getValue();
+					return proteinSequence;
+				} else {
+					throw new IllegalArgumentException("Sequence from " + proteinAcc + " not found in UniprotKB.");
+				}
 			}
 		} catch (final URISyntaxException e) {
 			e.printStackTrace();

@@ -40,7 +40,7 @@ public class IterationData {
 			final TDoubleList toAverage = new TDoubleArrayList();
 			if (glycoSites != null) {
 				for (final GlycoSite glycoSite : glycoSites) {
-					final double sitePercentageByPTMCode = glycoSite.getPercentageByPTMCode(ptmCode,
+					final double sitePercentageByPTMCode = glycoSite.getProportionByPTMCode(ptmCode,
 							calculateProportionsByPeptidesFirst);
 					toAverage.add(sitePercentageByPTMCode);
 					if (!percentagesBySite.containsKey(glycoSite.getPosition())) {

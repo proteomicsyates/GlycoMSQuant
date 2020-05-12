@@ -14,7 +14,6 @@ import edu.scripps.yates.glycomsquant.gui.tasks.ResultLoaderFromDisk;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
 import edu.scripps.yates.utilities.maths.Maths;
-import edu.scripps.yates.utilities.maths.TTest;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.THashMap;
@@ -86,58 +85,72 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 	}
 
 	public void compareResults() {
-		final RunComparisonResult comparison = new RunComparisonResult(this.resultsFromDisk);
-		for (int i = 0; i < this.resultsFromDisk.size(); i++) {
-			for (int j = i + 1; j < this.resultsFromDisk.size(); j++) {
-				final ResultsLoadedFromDisk results1 = resultsFromDisk.get(i);
-				final ResultsLoadedFromDisk results2 = resultsFromDisk.get(j);
-				try {
-					final RunComparisonTTest compareResults = compareResults(results1, results2);
-					comparison.addPairComparison(compareResults);
-				} catch (final Exception e) {
-					firePropertyChange(COMPARATOR_ERROR, null,
-							"Error comparing " + results1.getResultProperties().getName() + " vs "
-									+ results2.getResultProperties().getName());
-				}
+		try {
+			MyMannWhitneyTestResult.startComparison();
+			final RunComparisonResult comparison = new RunComparisonResult(this.resultsFromDisk);
+			for (int i = 0; i < this.resultsFromDisk.size(); i++) {
+				for (int j = i + 1; j < this.resultsFromDisk.size(); j++) {
+					final ResultsLoadedFromDisk results1 = resultsFromDisk.get(i);
+					final ResultsLoadedFromDisk results2 = resultsFromDisk.get(j);
+					try {
+						final RunComparisonTest compareResults = compareResults(results1, results2);
+						comparison.addPairComparison(compareResults);
+					} catch (final Exception e) {
+						firePropertyChange(COMPARATOR_ERROR, null,
+								"Error comparing " + results1.getResultProperties().getName() + " vs "
+										+ results2.getResultProperties().getName());
+					}
 
+				}
 			}
+			firePropertyChange(COMPARATOR_FINISHED, null, comparison);
+		} catch (final Exception e) {
+			e.printStackTrace();
+			firePropertyChange(COMPARATOR_ERROR, null, e.getMessage());
 		}
-		firePropertyChange(COMPARATOR_FINISHED, null, comparison);
 	}
 
-	private RunComparisonTTest compareResults(ResultsLoadedFromDisk results1, ResultsLoadedFromDisk results2) {
-		final RunComparisonTTest ret = new RunComparisonTTest(results1, results2);
+	private RunComparisonTest compareResults(ResultsLoadedFromDisk results1, ResultsLoadedFromDisk results2) {
+		final RunComparisonTest ret = new RunComparisonTest(results1, results2);
 		final TIntObjectMap<GlycoSite> sites1 = GlycoPTMAnalyzerUtil.getSitesByPosition(results1.getSites());
 		final TIntObjectMap<GlycoSite> sites2 = GlycoPTMAnalyzerUtil.getSitesByPosition(results2.getSites());
 		for (final int position : sites1.keys()) {
 			if (sites2.containsKey(position)) {
-				final Map<PTMCode, TTest> compareSites = compareSites(sites1.get(position), sites2.get(position));
+				final Map<PTMCode, MyMannWhitneyTestResult> compareSites = compareSites(sites1.get(position),
+						sites2.get(position));
 				ret.addTTestsForPosition(position, compareSites);
 			}
 		}
 		return ret;
 	}
 
-	private Map<PTMCode, TTest> compareSites(GlycoSite glycoSite1, GlycoSite glycoSite2) {
-		final Map<PTMCode, TTest> ret = new THashMap<PTMCode, TTest>();
+	private Map<PTMCode, MyMannWhitneyTestResult> compareSites(GlycoSite glycoSite1, GlycoSite glycoSite2) {
+		final Map<PTMCode, MyMannWhitneyTestResult> ret = new THashMap<PTMCode, MyMannWhitneyTestResult>();
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			final TDoubleList percentages1 = glycoSite1.getIndividualPeptidePercentagesByPTMCode(ptmCode);
-			final TDoubleList percentages2 = glycoSite2.getIndividualPeptidePercentagesByPTMCode(ptmCode);
-			TTest test = null;
-			System.out.println("Test: " + ptmCode.getCode() + " in " + glycoSite1.getPosition());
-			if (ptmCode == PTMCode._2 && glycoSite1.getPosition() == 363) {
-				System.out.println("asfd");
-			}
-			if (isValidForTTest(percentages1) && isValidForTTest(percentages2)) {
-				test = TTest.test(percentages1.toArray(), percentages2.toArray(), true);
-			} else if (isValidForTTest(percentages1)) {
-				test = TTest.test(percentages1.toArray(), 0.0);
-			} else if (isValidForTTest(percentages2)) {
-				test = TTest.test(percentages2.toArray(), 0.0);
-			} else {
-				// both 0, so is null
-			}
-			ret.put(ptmCode, test);
+			// the value of sumIntensitiesAcrossReplicates here doesn't matter because each
+			// glycoSite will have already the values and the boolean will not be used
+			final TDoubleList percentages1 = glycoSite1.getIndividualPeptideProportionsByPTMCode(ptmCode, true);
+			final TDoubleList percentages2 = glycoSite2.getIndividualPeptideProportionsByPTMCode(ptmCode, true);
+// 			System.out.println("Test: " + ptmCode.getCode() + " in " + glycoSite1.getPosition());
+//			if (ptmCode == PTMCode._2 && glycoSite1.getPosition() == 363) {
+//				System.out.println("asfd");
+//			}
+
+			final MyMannWhitneyTestResult result = new MyMannWhitneyTestResult(percentages1.toArray(),
+					percentages2.toArray());
+			ret.put(ptmCode, result);
+
+//			if (isValidForTTest(percentages1) && isValidForTTest(percentages2)) {
+//				
+//				test = TTest.test(percentages1.toArray(), percentages2.toArray(), true);
+//			} else if (isValidForTTest(percentages1)) {
+//				test = TTest.test(percentages1.toArray(), 0.0);
+//			} else if (isValidForTTest(percentages2)) {
+//				test = TTest.test(percentages2.toArray(), 0.0);
+//			} else {
+//				// both 0, so is null
+//			}
+//			ret.put(ptmCode, test);
 
 		}
 		return ret;

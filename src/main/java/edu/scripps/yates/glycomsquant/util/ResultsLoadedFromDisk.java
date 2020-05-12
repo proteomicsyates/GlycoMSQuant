@@ -9,15 +9,15 @@ import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
 public class ResultsLoadedFromDisk {
 	private final List<GlycoSite> sites;
 	private final List<QuantifiedPeptideInterface> peptides;
-	private final boolean calculatePeptideProportionsFirst;
+	private final boolean sumIntensitiesAcrossReplicates;
 	private final ResultsProperties resultProperties;
 
 	public ResultsLoadedFromDisk(ResultsProperties resultProperties, List<GlycoSite> sites,
-			List<QuantifiedPeptideInterface> peptides, boolean calculatePeptideProportionsFirst) {
+			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates) {
 		this.resultProperties = resultProperties;
 		this.sites = sites;
 		this.peptides = peptides;
-		this.calculatePeptideProportionsFirst = calculatePeptideProportionsFirst;
+		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 	}
 
 	public List<GlycoSite> getSites() {
@@ -28,8 +28,8 @@ public class ResultsLoadedFromDisk {
 		return peptides;
 	}
 
-	public boolean isCalculatePeptideProportionsFirst() {
-		return calculatePeptideProportionsFirst;
+	public boolean isSumIntensitiesAcrossReplicates() {
+		return sumIntensitiesAcrossReplicates;
 	}
 
 	public ResultsProperties getResultProperties() {

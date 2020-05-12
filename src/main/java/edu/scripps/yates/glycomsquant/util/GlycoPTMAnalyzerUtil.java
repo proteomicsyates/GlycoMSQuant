@@ -10,6 +10,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.Logger;
+
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.CurrentInputParameters;
 import edu.scripps.yates.glycomsquant.GlycoSite;
@@ -39,6 +41,7 @@ import gnu.trove.set.hash.THashSet;
 import gnu.trove.set.hash.TIntHashSet;
 
 public class GlycoPTMAnalyzerUtil {
+	private final static Logger log = Logger.getLogger(GlycoPTMAnalyzerUtil.class);
 	private final static Map<String, Pattern> patternsByRegexp = new THashMap<String, Pattern>();
 
 	/**
@@ -77,8 +80,7 @@ public class GlycoPTMAnalyzerUtil {
 
 	}
 
-	public static TIntList hasMotif(Peptide peptide) {
-		final String proteinAcc = peptide.getProteins().stream().map(protein -> protein.getAccession()).findAny().get();
+	public static TIntList hasMotif(Peptide peptide, String proteinAcc) {
 		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
 		return hasMotif(peptide, proteinSequence, ProteinSequences.getInstance().getMotifRegexp());
 	}
@@ -182,8 +184,7 @@ public class GlycoPTMAnalyzerUtil {
 		final List<PTM> ptmsForKey = new ArrayList<PTM>();
 		if (peptide.getPTMs() != null) {
 			for (final PTM ptm : peptide.getPTMs()) {
-				final String ptmCodeString = String.valueOf(ptm.getMassShift());
-				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCodeString);
+				final PTMCode ptmCodeObj = PTMCode.getByValue(ptm.getMassShift());
 				if (ptmCodeObj != null) {
 					continue; // we dont include it in the key
 				}
@@ -214,7 +215,40 @@ public class GlycoPTMAnalyzerUtil {
 		return key;
 	}
 
-	public static Map<PTMCode, TDoubleList> getPercentagesByPTMCodeCalculatingPeptidesFirst(
+	/**
+	 * Gets the individual proportions per {@link PTMCode}.<br>
+	 * Note that if sumIntensitiesAcrossReplicates = true, the number of proportions
+	 * will be one per PTMCode (TDoubleList of 1 element).
+	 * 
+	 * @param peptides
+	 * @param sumIntensitiesAcrossReplicates
+	 * @return
+	 */
+	public static Map<PTMCode, TDoubleList> getIndividualProportionsByPTMCode(GroupedQuantifiedPeptide peptides,
+			boolean sumIntensitiesAcrossReplicates) {
+		final Map<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();
+		if (sumIntensitiesAcrossReplicates) {
+			final TObjectDoubleMap<PTMCode> proportionByPTM = getProportionByPTMSummingAcrossReplicates(peptides);
+			for (final PTMCode ptmCode : PTMCode.values()) {
+				if (!ret.containsKey(ptmCode)) {
+					ret.put(ptmCode, new TDoubleArrayList());
+				}
+				ret.get(ptmCode).add(proportionByPTM.get(ptmCode));
+			}
+		} else {
+			final Map<PTMCode, TDoubleList> individualProportions = getIndividualProportionsByPTMCodeNotSummingAcrossReplicates(
+					peptides);
+			for (final PTMCode ptmCode : PTMCode.values()) {
+				if (!ret.containsKey(ptmCode)) {
+					ret.put(ptmCode, new TDoubleArrayList());
+				}
+				ret.get(ptmCode).addAll(individualProportions.get(ptmCode));
+			}
+		}
+		return ret;
+	}
+
+	private static Map<PTMCode, TDoubleList> getIndividualProportionsByPTMCodeNotSummingAcrossReplicates(
 			GroupedQuantifiedPeptide peptides) {
 		// these peptides have the same sequence+charge, but different PTMs
 		final Map<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();
@@ -232,7 +266,7 @@ public class GlycoPTMAnalyzerUtil {
 				final double avgIntensityOfPeptide = Maths.mean(peptideIntensitiesByPTMCodeInReplicate.get(ptmCode2));
 				avgPeptideIntensityInReplicateByPTMCode.put(ptmCode2, avgIntensityOfPeptide);
 			}
-			final TObjectDoubleMap<PTMCode> peptidePercentagesInReplicateByPTMCode = getPercentages(
+			final TObjectDoubleMap<PTMCode> peptidePercentagesInReplicateByPTMCode = calculateProportions(
 					avgPeptideIntensityInReplicateByPTMCode);
 
 			for (final PTMCode ptmCode2 : peptidePercentagesInReplicateByPTMCode.keySet()) {
@@ -246,11 +280,47 @@ public class GlycoPTMAnalyzerUtil {
 		return ret;
 	}
 
+	private static TObjectDoubleMap<PTMCode> getPercentagesByPTMCodeSummingAcrossReplicates(
+			GroupedQuantifiedPeptide peptides) {
+		// these peptides have the same sequence+charge, but different PTMs
+
+		final List<String> replicates = getReplicateNamesFromPeptide(peptides);
+
+		final Map<PTMCode, TDoubleList> peptideIntensitiesByPTMCodeAcrossReplicates = new THashMap<PTMCode, TDoubleList>();
+		for (final String replicate : replicates) {
+
+			// for each peptide, in each replicate, we grab the intensity per PTM
+
+			final Map<PTMCode, TDoubleList> peptideIntensitiesByPTMCodeInReplicate = getIntensitiesPerPTMCodeInReplicate(
+					peptides, replicate);
+			for (final PTMCode ptmCode : peptideIntensitiesByPTMCodeInReplicate.keySet()) {
+				if (!peptideIntensitiesByPTMCodeAcrossReplicates.containsKey(ptmCode)) {
+					peptideIntensitiesByPTMCodeAcrossReplicates.put(ptmCode, new TDoubleArrayList());
+				}
+				peptideIntensitiesByPTMCodeAcrossReplicates.get(ptmCode)
+						.add(Maths.mean(peptideIntensitiesByPTMCodeInReplicate.get(ptmCode)));
+			}
+
+		}
+		// for each peptide, across replicates, we sum all intensities
+		final TObjectDoubleMap<PTMCode> sumIntensitiesAcrossReplicatesByPTMCode = new TObjectDoubleHashMap<PTMCode>();
+		for (final PTMCode ptmCode2 : peptideIntensitiesByPTMCodeAcrossReplicates.keySet()) {
+			final double sumIntensitiesAcrossReplicates = Maths
+					.sum(peptideIntensitiesByPTMCodeAcrossReplicates.get(ptmCode2));
+			sumIntensitiesAcrossReplicatesByPTMCode.put(ptmCode2, sumIntensitiesAcrossReplicates);
+		}
+		// then we calculate the proportions
+		final TObjectDoubleMap<PTMCode> peptidePercentagesByPTMCode = calculateProportions(
+				sumIntensitiesAcrossReplicatesByPTMCode);
+
+		return peptidePercentagesByPTMCode;
+	}
+
 	public static int getNumIndividualPeptideMeasurements(Collection<GroupedQuantifiedPeptide> peptides,
-			boolean calculateProportionsByPeptidesFirst) {
+			boolean sumIntensitiesAcrossReplicates) {
 		int ret = -Integer.MAX_VALUE;
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			final int num = getNumIndividualPeptideMeasurements(ptmCode, peptides, calculateProportionsByPeptidesFirst);
+			final int num = getNumIndividualPeptideMeasurements(ptmCode, peptides, sumIntensitiesAcrossReplicates);
 			if (num > ret) {
 				ret = num;
 			}
@@ -260,23 +330,23 @@ public class GlycoPTMAnalyzerUtil {
 	}
 
 	public static int getNumIndividualPeptideMeasurements(PTMCode ptmCode,
-			Collection<GroupedQuantifiedPeptide> peptides, boolean calculateProportionsByPeptidesFirst) {
-		if (!calculateProportionsByPeptidesFirst) {
+			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
+		if (sumIntensitiesAcrossReplicates) {
 			return peptides.size();
 		} else {
 			int num = 0;
 			for (final GroupedQuantifiedPeptide peptide : peptides) {
-				num += GlycoPTMAnalyzerUtil.getPercentagesByPTMCodeCalculatingPeptidesFirst(peptide).get(ptmCode)
-						.size();
+				num += GlycoPTMAnalyzerUtil.getIndividualProportionsByPTMCodeNotSummingAcrossReplicates(peptide)
+						.get(ptmCode).size();
 			}
 			return num;
 		}
 	}
 
-	public static TObjectDoubleMap<PTMCode> getPercentagesByPTMCode(GroupedQuantifiedPeptide peptides,
-			boolean calculateProportionsByPeptidesFirst) {
-		if (calculateProportionsByPeptidesFirst) {
-			final Map<PTMCode, TDoubleList> percentagesByPTM = getPercentagesByPTMCodeCalculatingPeptidesFirst(
+	public static TObjectDoubleMap<PTMCode> getProportionByPTMCode(GroupedQuantifiedPeptide peptides,
+			boolean sumIntensitiesAcrossReplicates) {
+		if (!sumIntensitiesAcrossReplicates) {
+			final Map<PTMCode, TDoubleList> percentagesByPTM = getIndividualProportionsByPTMCodeNotSummingAcrossReplicates(
 					peptides);
 			final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
 			for (final PTMCode ptmCode : percentagesByPTM.keySet()) {
@@ -284,30 +354,31 @@ public class GlycoPTMAnalyzerUtil {
 			}
 			return ret;
 		} else {
-			return getPercentagesByPTMByAveragingIntensitiesFirst(peptides);
+			return getProportionByPTMSummingAcrossReplicates(peptides);
 		}
 	}
 
-	public static TObjectDoubleMap<PTMCode> getPercentagesByPTMByAveragingIntensitiesFirst(
+	private static TObjectDoubleMap<PTMCode> getProportionByPTMSummingAcrossReplicates(
 			GroupedQuantifiedPeptide peptides) {
-		final TObjectDoubleMap<PTMCode> averagesByPTMCode = new TObjectDoubleHashMap<PTMCode>();
+		final TObjectDoubleMap<PTMCode> summedIntensities = new TObjectDoubleHashMap<PTMCode>();
 		double sumIntensity = 0.0;
 		for (final PTMCode ptmCode2 : PTMCode.values()) {
 			// per peptide (sequence+charge), we average all the intensities across
 			// replicates and we calculate the proportions with that
-			final double averageByPTMCode = getAverageIntensityByPTMCode(ptmCode2, peptides);
-			averagesByPTMCode.put(ptmCode2, averageByPTMCode);
-			sumIntensity += averageByPTMCode;
+			final double summedIntensity = getSummedIntensityAcrossReplicatesByPTMCode(ptmCode2, peptides);
+			summedIntensities.put(ptmCode2, summedIntensity);
+			sumIntensity += summedIntensity;
 		}
 		final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
-		for (final PTMCode ptmCode : averagesByPTMCode.keySet()) {
-			final double percentage = averagesByPTMCode.get(ptmCode) / sumIntensity;
+		for (final PTMCode ptmCode : summedIntensities.keySet()) {
+			final double percentage = summedIntensities.get(ptmCode) / sumIntensity;
 			ret.put(ptmCode, percentage);
 		}
 		return ret;
 	}
 
-	private static double getAverageIntensityByPTMCode(PTMCode ptmCode, GroupedQuantifiedPeptide peptides) {
+	private static double getSummedIntensityAcrossReplicatesByPTMCode(PTMCode ptmCode,
+			GroupedQuantifiedPeptide peptides) {
 		final TDoubleList intensities = new TDoubleArrayList();
 		final List<String> replicates = getReplicateNamesFromPeptide(peptides);
 		for (final String replicate : replicates) {
@@ -320,7 +391,7 @@ public class GlycoPTMAnalyzerUtil {
 		if (intensities.isEmpty()) {
 			return 0.0;
 		}
-		return Maths.mean(intensities);
+		return Maths.sum(intensities);
 	}
 
 	/**
@@ -355,8 +426,7 @@ public class GlycoPTMAnalyzerUtil {
 		final List<PTMInPeptide> positionsInPeptide = peptide.getPTMsInPeptide();
 		for (final PTMInPeptide positionInpeptide : positionsInPeptide) {
 			final int position = positionInpeptide.getPosition();
-			final String ptmCode = String.valueOf(positionInpeptide.getDeltaMass());
-			final PTMCode ptmCodeObj = PTMCode.getByValue(ptmCode);
+			final PTMCode ptmCodeObj = PTMCode.getByValue(positionInpeptide.getDeltaMass());
 			if (ptmCodeObj != null && !ret.containsKey(position)) {
 				ret.put(position, ptmCodeObj);
 			}
@@ -371,15 +441,15 @@ public class GlycoPTMAnalyzerUtil {
 	 * @param peptide
 	 * @return
 	 */
-	public static THashMap<PTMCode, TIntList> getPositionsByPTMCodesFromPeptide(QuantifiedPeptideInterface peptide) {
+	public static THashMap<PTMCode, TIntList> getPositionsByPTMCodesFromPeptide(QuantifiedPeptideInterface peptide,
+			String proteinAcc) {
 		final THashMap<PTMCode, TIntList> ret = new THashMap<PTMCode, TIntList>();
 		final TIntObjectMap<PTMInPeptide> ptmPositionsInPeptide = getPTMsInPeptideByPosition(peptide);
-		final TIntList motifsPositions = hasMotif(peptide);
+		final TIntList motifsPositions = hasMotif(peptide, proteinAcc);
 		for (final int motifPosition : motifsPositions.toArray()) {
 			PTMCode ptmCodeObj = null;
 			if (ptmPositionsInPeptide.containsKey(motifPosition)) {
-				final String ptmCode = String.valueOf(ptmPositionsInPeptide.get(motifPosition).getDeltaMass());
-				ptmCodeObj = PTMCode.getByValue(ptmCode);
+				ptmCodeObj = PTMCode.getByValue(ptmPositionsInPeptide.get(motifPosition).getDeltaMass());
 
 			} else {
 				ptmCodeObj = PTMCode._0;
@@ -405,7 +475,8 @@ public class GlycoPTMAnalyzerUtil {
 	 * @param avgPeptideIntensityByPTMCode
 	 * @return
 	 */
-	private static TObjectDoubleMap<PTMCode> getPercentages(TObjectDoubleMap<PTMCode> avgPeptideIntensityByPTMCode) {
+	private static TObjectDoubleMap<PTMCode> calculateProportions(
+			TObjectDoubleMap<PTMCode> avgPeptideIntensityByPTMCode) {
 		final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
 		if (avgPeptideIntensityByPTMCode.isEmpty()) {
 			return ret;
@@ -443,7 +514,7 @@ public class GlycoPTMAnalyzerUtil {
 				}
 				hashCodes.add(peptide.hashCode());
 				final THashMap<PTMCode, TIntList> positionsByPTMCodesFromPeptide = getPositionsByPTMCodesFromPeptide(
-						peptide);
+						peptide, peptides.getProteinAcc());
 				// if the peptide has that ptmCode:
 				if (positionsByPTMCodesFromPeptide.containsKey(ptmCode)) {
 					final double intensityFromPeptideInReplicate = getIntensityFromPeptideInReplicate(peptide,
@@ -505,12 +576,12 @@ public class GlycoPTMAnalyzerUtil {
 	 * @return
 	 */
 	public static Map<String, GroupedQuantifiedPeptide> getGroupedPeptidesFromPeptides(
-			Collection<QuantifiedPeptideInterface> peptides) {
+			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc) {
 		final Map<String, GroupedQuantifiedPeptide> ret = new THashMap<String, GroupedQuantifiedPeptide>();
 		for (final QuantifiedPeptideInterface peptide : peptides) {
 			final String peptideKey = getPeptideKey(peptide, true);
 			if (!ret.containsKey(peptideKey)) {
-				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide));
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}

@@ -155,8 +155,8 @@ class ScrollableRunsTable extends JPanel {
 				}
 			}
 			if (!someError) {
-				JOptionPane.showConfirmDialog(this, "Run" + plural + " deleted.", "Confirmation of deletion",
-						JOptionPane.OK_OPTION);
+				JOptionPane.showMessageDialog(this, "Run" + plural + " deleted.", "Confirmation of deletion",
+						JOptionPane.INFORMATION_MESSAGE);
 			}
 		}
 

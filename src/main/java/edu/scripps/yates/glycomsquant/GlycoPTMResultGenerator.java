@@ -80,7 +80,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 	public void generateResults() throws IOException {
 
 		if (generateTable) {
-			final File tableFile = writeResultTable(inputParameters.isCalculateProportionsByPeptidesFirst());
+			final File tableFile = writeResultTable(inputParameters.isSumIntensitiesAcrossReplicates());
 			// update property
 			final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
 			resultsProperties.setResultsTableFile(tableFile);
@@ -117,27 +117,29 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		}
 
 		// with PSMs on the names
-		String title = "Site % abundaces";
+		String title = "Site % abundances";
 		final boolean psms = false;
 		generatedImages.add(writeStackedChartOfPercentages(title, subtitle, psms));
 
-		if (inputParameters.isCalculateProportionsByPeptidesFirst()) {
-			// proportion error graphs
-			title = "SEM of %";
-			generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, ErrorType.SEM));
-			title = "STDEV of %";
-			generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, ErrorType.STDEV));
-			generatedImages.add(writeProportionsBoxAndWhiskerChart(title, subtitle, psms));
+//		if (inputParameters.isSumIntensitiesAcrossReplicates()) {
+		// proportion error graphs
+		title = "SEM of %";
+		generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, ErrorType.SEM));
+//			title = "STDEV of %";
+//			generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, ErrorType.STDEV));
+		title = "distributions of %";
+		generatedImages.add(writeProportionsBoxAndWhiskerChart(title, subtitle, psms,
+				inputParameters.isSumIntensitiesAcrossReplicates()));
 
-		} else {
-			// intensity error graphs
-			// with PSMs on the names
-			final boolean makeLog = false;
-			title = "SEM of Intensities";
-			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.SEM, makeLog));
-//			title = "STDEV of Intensities";
-//			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.STDEV, makeLog));
-		}
+//		} else {
+//			// intensity error graphs
+//			// with PSMs on the names
+//			final boolean makeLog = false;
+//			title = "SEM of Intensities";
+//			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.SEM, makeLog));
+////			title = "STDEV of Intensities";
+////			generatedImages.add(writeIntensitiesErrorBarChart(title, subtitle, psms, ErrorType.STDEV, makeLog));
+//		}
 		// pie charts with averaged proportions
 		final ProportionsPieChartsPanel pieCharts = new ProportionsPieChartsPanel(glycoSites, resultsFolder,
 				inputParameters);
@@ -175,9 +177,10 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		return null;
 	}
 
-	private File writeProportionsBoxAndWhiskerChart(String title, String subtitle, boolean psms) throws IOException {
+	private File writeProportionsBoxAndWhiskerChart(String title, String subtitle, boolean psms,
+			boolean sumIntensitiesAcrossReplicates) throws IOException {
 		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGlycoSites(glycoSites, title,
-				subtitle, psms);
+				subtitle, psms, sumIntensitiesAcrossReplicates);
 		this.charts.add(chartPanel);
 		if (saveGraphsToFiles) {
 			final File file = new File(
@@ -294,8 +297,8 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 						+ hivPosition.getPeptidesByPTMCode(PTMCode._203).size() + ")";
 			}
 			for (final PTMCode ptmCode : PTMCode.values()) {
-				final double avgIntensity = hivPosition.getPercentageByPTMCode(ptmCode,
-						inputParameters.isCalculateProportionsByPeptidesFirst());
+				final double avgIntensity = hivPosition.getProportionByPTMCode(ptmCode,
+						inputParameters.isSumIntensitiesAcrossReplicates());
 				dataset.addValue(avgIntensity, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
 			}
 		}
@@ -306,7 +309,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 
 	private DefaultStatisticalCategoryDataset createProportionsErrorDataset(boolean psms, ErrorType errorType) {
 		final DefaultStatisticalCategoryDataset dataset = new DefaultStatisticalCategoryDataset();
-
+		final boolean sumIntensitiesAcrossReplicates = inputParameters.isSumIntensitiesAcrossReplicates();
 		for (final GlycoSite hivPosition : glycoSites) {
 			String columnKey = null;
 			if (psms) {
@@ -320,16 +323,16 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 			}
 
 			for (final PTMCode ptmCode : PTMCode.values()) {
-				final double average = hivPosition.getPercentageByPTMCode(ptmCode,
-						inputParameters.isCalculateProportionsByPeptidesFirst());
+
+				final double average = hivPosition.getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
 				double error = 0.0;
 				switch (errorType) {
 				case SEM:
-					error = hivPosition.getSEMPercentageByPTMCode(ptmCode);
+					error = hivPosition.getSEMOfProportionsByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
 					break;
-				case STDEV:
-					error = hivPosition.getSTDEVPercentageByPTMCode(ptmCode);
-					break;
+//				case STDEV:
+//					error = hivPosition.getSTDEVPercentageByPTMCode(ptmCode);
+//					break;
 				default:
 					break;
 				}
@@ -341,7 +344,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		return dataset;
 	}
 
-	private File writeResultTable(boolean calculateProportionsByPeptidesFirst) throws IOException {
+	private File writeResultTable(boolean sumIntensitiesAcrossReplicates) throws IOException {
 		final File file = new File(FileManager.getResultsTableFileName(resultsFolder, inputParameters));
 		final FileWriter fw = new FileWriter(file);
 
@@ -350,10 +353,10 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 			fw.write("\tAVG_" + GuiUtils.translateCode(ptmCode.getCode()) + "\tSTDEV_"
 					+ GuiUtils.translateCode(ptmCode.getCode()) + "\tSEM_" + GuiUtils.translateCode(ptmCode.getCode())
 					+ "\t%_" + GuiUtils.translateCode(ptmCode.getCode()));
-			if (calculateProportionsByPeptidesFirst) {
-				fw.write("STDEV(%)_" + GuiUtils.translateCode(ptmCode.getCode()));
-				fw.write("SEM(%)_" + GuiUtils.translateCode(ptmCode.getCode()));
-			}
+
+//			fw.write("STDEV(%)_" + GuiUtils.translateCode(ptmCode.getCode()));
+			fw.write("SEM(%)_" + GuiUtils.translateCode(ptmCode.getCode()));
+
 			fw.write("\tSPC_" + GuiUtils.translateCode(ptmCode.getCode()) + "\tPEP_"
 					+ GuiUtils.translateCode(ptmCode.getCode()));
 		}
@@ -366,11 +369,12 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 				fw.write(glycoSite.getSTDEVIntensityByPTMCode(ptmCode) + "\t");
 				fw.write(glycoSite.getSEMIntensityByPTMCode(ptmCode) + "\t");
 
-				fw.write(glycoSite.getPercentageByPTMCode(ptmCode, calculateProportionsByPeptidesFirst) + "\t");
-				if (calculateProportionsByPeptidesFirst) {
-					fw.write(glycoSite.getSTDEVPercentageByPTMCode(ptmCode) + "\t");
-					fw.write(glycoSite.getSEMPercentageByPTMCode(ptmCode) + "\t");
-				}
+				fw.write(glycoSite.getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates) + "\t");
+
+//					fw.write(glycoSite.getSTDEVPercentageByPTMCode(ptmCode) + "\t");
+				fw.write(glycoSite.getSEMOfProportionsByPTMCode(ptmCode,
+						inputParameters.isSumIntensitiesAcrossReplicates()) + "\t");
+
 				final int spc = glycoSite.getSPCByPTMCode(ptmCode);
 				fw.write(spc + "\t");
 				final int numPeptides = glycoSite.getPeptidesByPTMCode(ptmCode).size();

@@ -41,7 +41,7 @@ public class GlycoSite {
 	// there will be multiple peptides from the same sequence, but different ptms on
 	// them
 	private final Map<String, GroupedQuantifiedPeptide> peptidesByNoPTMPeptideKey = new THashMap<String, GroupedQuantifiedPeptide>();
-	private final Map<PTMCode, TDoubleList> percentageBySecondMethodByPTMCode = new THashMap<PTMCode, TDoubleList>();
+	private final Map<PTMCode, TDoubleList> individualProportionsByPTMCode = new THashMap<PTMCode, TDoubleList>();
 	private final String protein;
 	private Integer totalSPC;
 	private final Set<String> replicates = new THashSet<String>();
@@ -92,7 +92,7 @@ public class GlycoSite {
 					ret = new GlycoSite(position, protein);
 				} else {
 					// first column is PTMCode
-					final PTMCode ptmCode = PTMCode.getByValue(split[0]);
+					final PTMCode ptmCode = PTMCode.getByValue(Double.valueOf(split[0]));
 					if (ptmCode == null) {
 						throw new IllegalArgumentException(line + " is not readable as a PTMCode line");
 					}
@@ -136,7 +136,7 @@ public class GlycoSite {
 
 		final String key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, true);
 		if (!peptidesByNoPTMPeptideKey.containsKey(key)) {
-			peptidesByNoPTMPeptideKey.put(key, new GroupedQuantifiedPeptide(peptide));
+			peptidesByNoPTMPeptideKey.put(key, new GroupedQuantifiedPeptide(peptide, protein));
 		}
 		final boolean added = peptidesByNoPTMPeptideKey.get(key).add(peptide);
 
@@ -158,14 +158,6 @@ public class GlycoSite {
 
 	public int getPosition() {
 		return position;
-	}
-
-	private TDoubleList getPeptideIntensitiesByPTMCode(PTMCode ptmCode) {
-		return peptideIntensitiesByPTMCode.get(ptmCode);
-	}
-
-	private Map<PTMCode, TDoubleList> getPeptideIntensitiesByPTMCode() {
-		return this.peptideIntensitiesByPTMCode;
 	}
 
 	@Override
@@ -217,99 +209,51 @@ public class GlycoSite {
 		return 0.0;
 	}
 
-	/**
-	 * Calculates the percentage of {@link PTMCode} by first calculating the
-	 * percentages at peptide level and then averaging all.
-	 * 
-	 * @param ptmCode
-	 * @return
-	 */
-	private double getProportionsByPTMCodeByPeptidesFirstMethod(PTMCode ptmCode) {
+	public double getProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
+		if (!individualProportionsByPTMCode.containsKey(ptmCode)) {
+			individualProportionsByPTMCode.clear();
 
-		if (!percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
-			if (this.getPosition() == 357) {
-				log.info("asdf");
-			}
-			final THashMap<PTMCode, TDoubleList> percentagesOfPeptidesToAverage = new THashMap<PTMCode, TDoubleList>();
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
-				// for each peptide key we average all intensities and then calculate the
-				// percentages
+
 				final GroupedQuantifiedPeptide peptides = peptidesByNoPTMPeptideKey.get(peptideKey);
 
-				final Map<PTMCode, TDoubleList> percentages = GlycoPTMAnalyzerUtil
-						.getPercentagesByPTMCodeCalculatingPeptidesFirst(peptides);
+				final Map<PTMCode, TDoubleList> individualProportions = GlycoPTMAnalyzerUtil
+						.getIndividualProportionsByPTMCode(peptides, sumIntensitiesAcrossReplicates);
 
-				for (final PTMCode ptmCode2 : percentages.keySet()) {
-					if (!percentagesOfPeptidesToAverage.containsKey(ptmCode2)) {
-						percentagesOfPeptidesToAverage.put(ptmCode2, new TDoubleArrayList());
+				for (final PTMCode ptmCode2 : individualProportions.keySet()) {
+					if (!individualProportionsByPTMCode.containsKey(ptmCode2)) {
+						individualProportionsByPTMCode.put(ptmCode2, new TDoubleArrayList());
 					}
-					percentagesOfPeptidesToAverage.get(ptmCode2).addAll(percentages.get(ptmCode2));
-				}
-
-			}
-			for (final PTMCode ptmCode2 : PTMCode.values()) {
-				if (percentagesOfPeptidesToAverage.containsKey(ptmCode2)) {
-					percentageBySecondMethodByPTMCode.put(ptmCode2, percentagesOfPeptidesToAverage.get(ptmCode2));
+					individualProportionsByPTMCode.get(ptmCode2).addAll(individualProportions.get(ptmCode2));
 				}
 			}
 		}
-		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
-			return Maths.mean(percentageBySecondMethodByPTMCode.get(ptmCode));
+		if (individualProportionsByPTMCode.containsKey(ptmCode)) {
+			return Maths.mean(individualProportionsByPTMCode.get(ptmCode));
 		}
 		return 0.0;
 	}
 
-	public double getPercentageByPTMCode(PTMCode ptmCode, boolean calculateProportionsByPeptidesFirst) {
-		if (calculateProportionsByPeptidesFirst) {
-			return getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
-		} else {
-			return getPercentageByPTMCodeByAverageIntensitiesFirstMethod(ptmCode);
-		}
+	public TDoubleList getIndividualPeptideProportionsByPTMCode(PTMCode ptmCode,
+			boolean sumIntensitiesAcrossReplicates) {
+		getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
+		return this.individualProportionsByPTMCode.get(ptmCode);
 	}
 
-	public TDoubleList getIndividualPeptidePercentagesByPTMCode(PTMCode ptmCode) {
-		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
-		return this.percentageBySecondMethodByPTMCode.get(ptmCode);
-	}
+	public double getSEMOfProportionsByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
 
-	public double getSTDEVPercentageByPTMCode(PTMCode ptmCode) {
-
-		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
-		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
-			return Maths.stddev(this.percentageBySecondMethodByPTMCode.get(ptmCode));
+		final TDoubleList individualPeptidePercentages = getIndividualPeptideProportionsByPTMCode(ptmCode,
+				sumIntensitiesAcrossReplicates);
+		if (individualPeptidePercentages != null && !individualPeptidePercentages.isEmpty()) {
+			return Maths.sem(this.individualProportionsByPTMCode.get(ptmCode));
 		}
 		return 0.0;
-	}
-
-	public double getSEMPercentageByPTMCode(PTMCode ptmCode) {
-
-		getProportionsByPTMCodeByPeptidesFirstMethod(ptmCode);
-		if (percentageBySecondMethodByPTMCode.containsKey(ptmCode)) {
-			return Maths.sem(this.percentageBySecondMethodByPTMCode.get(ptmCode));
-		}
-		return 0.0;
-	}
-
-	private double getPercentageByPTMCodeByAverageIntensitiesFirstMethod(PTMCode ptmCode) {
-		double averagePTMCodeOfInterest = 0.0;
-		final TDoubleList averages = new TDoubleArrayList();
-		for (final PTMCode ptmCode2 : PTMCode.values()) {
-			// per peptide (sequence+charge), we average all the intensities across
-			// replicates and we calculate the proportions with that
-			final double averageByPTMCode = getAverageIntensityByPTMCode(ptmCode2);
-			averages.add(averageByPTMCode);
-			if (ptmCode2 == ptmCode) {
-				averagePTMCodeOfInterest = averageByPTMCode;
-			}
-		}
-		final double percentage = averagePTMCodeOfInterest / averages.sum();
-		return percentage;
 	}
 
 	private String getValuesString() {
 		final StringBuilder sb = new StringBuilder();
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			sb.append("(" + ptmCode + ":" + getPercentageByPTMCode(ptmCode, true) + "%) ");
+			sb.append("(" + ptmCode + ":" + getProportionByPTMCode(ptmCode, true) + "%) ");
 		}
 		return sb.toString();
 	}
@@ -355,6 +299,6 @@ public class GlycoSite {
 	}
 
 	public Collection<GroupedQuantifiedPeptide> getCoveredGroupedPeptides() {
-		return GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(getCoveredPeptides()).values();
+		return GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(getCoveredPeptides(), protein).values();
 	}
 }

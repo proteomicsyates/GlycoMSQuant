@@ -45,7 +45,7 @@ public class ColumnsSitesTableUtil {
 		return instance;
 	}
 
-	public List<Object> getGlycoSiteInfoList(GlycoSite glycoSite, boolean calculateProportionsByPeptidesFirst,
+	public List<Object> getGlycoSiteInfoList(GlycoSite glycoSite, boolean sumIntensitiesAcrossReplicates,
 			List<ColumnsSitesTable> list, int index) {
 
 		final List<Object> ret = new ArrayList<Object>();
@@ -78,13 +78,13 @@ public class ColumnsSitesTableUtil {
 				ret.add(glycoSite.getPeptidesByPTMCode(PTMCode._0).size());
 				break;
 			case PERCENT_2:
-				ret.add(glycoSite.getPercentageByPTMCode(PTMCode._2, calculateProportionsByPeptidesFirst));
+				ret.add(glycoSite.getProportionByPTMCode(PTMCode._2, sumIntensitiesAcrossReplicates));
 				break;
 			case PERCENT_203:
-				ret.add(glycoSite.getPercentageByPTMCode(PTMCode._203, calculateProportionsByPeptidesFirst));
+				ret.add(glycoSite.getProportionByPTMCode(PTMCode._203, sumIntensitiesAcrossReplicates));
 				break;
 			case PERCENT_NoPTM:
-				ret.add(glycoSite.getPercentageByPTMCode(PTMCode._0, calculateProportionsByPeptidesFirst));
+				ret.add(glycoSite.getProportionByPTMCode(PTMCode._0, sumIntensitiesAcrossReplicates));
 				break;
 			case SEM_2:
 				ret.add(glycoSite.getSEMIntensityByPTMCode(PTMCode._2));
@@ -96,13 +96,13 @@ public class ColumnsSitesTableUtil {
 				ret.add(glycoSite.getSEMIntensityByPTMCode(PTMCode._0));
 				break;
 			case SEM_PERCENT_2:
-				ret.add(glycoSite.getSEMPercentageByPTMCode(PTMCode._2));
+				ret.add(glycoSite.getSEMOfProportionsByPTMCode(PTMCode._2, sumIntensitiesAcrossReplicates));
 				break;
 			case SEM_PERCENT_203:
-				ret.add(glycoSite.getSEMPercentageByPTMCode(PTMCode._203));
+				ret.add(glycoSite.getSEMOfProportionsByPTMCode(PTMCode._203, sumIntensitiesAcrossReplicates));
 				break;
 			case SEM_PERCENT_NoPTM:
-				ret.add(glycoSite.getSEMPercentageByPTMCode(PTMCode._0));
+				ret.add(glycoSite.getSEMOfProportionsByPTMCode(PTMCode._0, sumIntensitiesAcrossReplicates));
 				break;
 			case SPC_2:
 				ret.add(glycoSite.getSPCByPTMCode(PTMCode._2));
@@ -113,24 +113,24 @@ public class ColumnsSitesTableUtil {
 			case SPC_NoPTM:
 				ret.add(glycoSite.getSPCByPTMCode(PTMCode._0));
 				break;
-			case STDEV_2:
-				ret.add(glycoSite.getSTDEVIntensityByPTMCode(PTMCode._2));
-				break;
-			case STDEV_203:
-				ret.add(glycoSite.getSTDEVIntensityByPTMCode(PTMCode._203));
-				break;
-			case STDEV_NoPTM:
-				ret.add(glycoSite.getSTDEVIntensityByPTMCode(PTMCode._0));
-				break;
-			case STDEV_PERCENT_2:
-				ret.add(glycoSite.getSTDEVPercentageByPTMCode(PTMCode._2));
-				break;
-			case STDEV_PERCENT_203:
-				ret.add(glycoSite.getSTDEVPercentageByPTMCode(PTMCode._203));
-				break;
-			case STDEV_PERCENT_NoPTM:
-				ret.add(glycoSite.getSTDEVPercentageByPTMCode(PTMCode._0));
-				break;
+//			case STDEV_2:
+//				ret.add(glycoSite.getSTDEVIntensityByPTMCode(PTMCode._2));
+//				break;
+//			case STDEV_203:
+//				ret.add(glycoSite.getSTDEVIntensityByPTMCode(PTMCode._203));
+//				break;
+//			case STDEV_NoPTM:
+//				ret.add(glycoSite.getSTDEVIntensityByPTMCode(PTMCode._0));
+//				break;
+//			case STDEV_PERCENT_2:
+//				ret.add(glycoSite.getSTDEVPercentageByPTMCode(PTMCode._2, sumIntensitiesAcrossReplicates));
+//				break;
+//			case STDEV_PERCENT_203:
+//				ret.add(glycoSite.getSTDEVPercentageByPTMCode(PTMCode._203, sumIntensitiesAcrossReplicates));
+//				break;
+//			case STDEV_PERCENT_NoPTM:
+//				ret.add(glycoSite.getSTDEVPercentageByPTMCode(PTMCode._0, sumIntensitiesAcrossReplicates));
+//				break;
 			case TOTAL_PEPTIDES:
 				ret.add(glycoSite.getTotalNumPeptides());
 				break;

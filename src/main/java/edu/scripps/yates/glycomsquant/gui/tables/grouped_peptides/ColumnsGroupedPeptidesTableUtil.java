@@ -146,17 +146,17 @@ public class ColumnsGroupedPeptidesTableUtil {
 				break;
 			case PERCENT_2:
 				final double percent = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._2,
-						MainFrame.getInstance().isCalculateProportionsByPeptidesFirst()));
+						MainFrame.getInstance().isSumIntensitiesAcrossReplicates()));
 				ret.add(percent);
 				break;
 			case PERCENT_203:
 				final double percent2 = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._203,
-						MainFrame.getInstance().isCalculateProportionsByPeptidesFirst()));
+						MainFrame.getInstance().isSumIntensitiesAcrossReplicates()));
 				ret.add(percent2);
 				break;
 			case PERCENT_NoPTM:
 				final double percent3 = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._0,
-						MainFrame.getInstance().isCalculateProportionsByPeptidesFirst()));
+						MainFrame.getInstance().isSumIntensitiesAcrossReplicates()));
 				ret.add(percent3);
 				break;
 			default:

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -73,17 +74,18 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private final JLabel proteinCoverageLabel;
 	private final JLabel selectedPositionLabel;
 	private final JPanel graphsPanel;
-	private final boolean calculatePeptidePercentagesFirst;
+	private final boolean sumIntensitiesAcrossReplicates;
 	public final THashMap<JLabel, Color> defaultColorsByAminoacidLabels = new THashMap<JLabel, Color>();
 
 	public ProteinSequenceDialog(String proteinOfInterest, String proteinSequence, List<GlycoSite> glycoSites,
-			List<QuantifiedPeptideInterface> peptides, boolean calculatePeptidePercentagesFirst) {
+			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates) {
 		super(GuiUtils.getFractionOfScreenWidthSize(0.4));
 		setTitle("Protein sequence of '" + proteinOfInterest + "'");
 		this.proteinSequence = proteinSequence;
-		this.groupedPeptides.addAll(GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(peptides).values());
+		this.groupedPeptides
+				.addAll(GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest).values());
 		this.glycoSites = glycoSites;
-		this.calculatePeptidePercentagesFirst = calculatePeptidePercentagesFirst;
+		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		glycoSites.stream().forEach(g -> glycoSitesByPosition.put(g.getPosition(), g));
 		// the width will be the size of a label * proteinSequenceLineLength + 50
 		final JLabel tempLabel = new JLabel("A");
@@ -736,27 +738,38 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 				this.graphsPanel.add(headerPanel, c);
 				return;
 			}
+			// sort peptides in a list
+			final List<GroupedQuantifiedPeptide> peptides = new ArrayList<GroupedQuantifiedPeptide>();
+			peptides.addAll(selectedPeptides);
+			Collections.sort(peptides, new Comparator<GroupedQuantifiedPeptide>() {
+
+				@Override
+				public int compare(GroupedQuantifiedPeptide o1, GroupedQuantifiedPeptide o2) {
+
+					return o1.getKey(false).compareTo(o2.getKey(false));
+				}
+			});
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(selectedPeptides,
-					calculatePeptidePercentagesFirst);
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(peptides,
+					sumIntensitiesAcrossReplicates);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (position != -1) {
-				if (selectedPeptides.size() > 1) {
-					text = "Charts summarizing <br>" + selectedPeptides.size() + " peptides " + numMeasurementsText
+				if (peptides.size() > 1) {
+					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
 							+ "<br> covering position " + position + ":";
 				} else {
-					text = "Charts summarizing <br>peptide " + selectedPeptides.iterator().next().getKey(false) + " "
+					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
 							+ numMeasurementsText + "<br> covering position " + position + ":";
 				}
 			} else {
-				if (selectedPeptides.size() > 1) {
-					text = "Charts summarizing <br>the " + selectedPeptides.size() + " selected peptides <br>"
+				if (peptides.size() > 1) {
+					text = "Charts summarizing <br>the " + peptides.size() + " selected peptides <br>"
 							+ numMeasurementsText + ":";
 				} else {
-					text = "Charts summarizing <br>selected peptide " + selectedPeptides.iterator().next().getKey(false)
+					text = "Charts summarizing <br>selected peptide " + peptides.iterator().next().getKey(false)
 							+ " <br>" + numMeasurementsText + ":";
 				}
 			}
@@ -774,8 +787,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			// starting in row 1
 			// proportions pie chart
-			final ChartPanel chart3 = createPercentagesPieChartForPeptides(selectedPeptides,
-					calculatePeptidePercentagesFirst, width, height);
+			final ChartPanel chart3 = ChartUtils.createProportionsPieChartForGroupedPeptides(peptides, "", "",
+					sumIntensitiesAcrossReplicates, width, height);
 			final GridBagConstraints c4 = new GridBagConstraints();
 			c4.gridx = 0;
 			c4.gridy = 1;
@@ -784,7 +797,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			this.graphsPanel.add(chart3, c4);
 			chart3.updateUI();
 			// proportions whiskeyChart
-			final ChartPanel chart2 = createProportionsWhiskeyChartForPeptides(selectedPeptides, width, height);
+			final ChartPanel chart2 = createProportionsWhiskeyChartForPeptides(peptides, width, height);
 			final GridBagConstraints c3 = new GridBagConstraints();
 			c3.gridx = 1;
 			c3.gridy = 1;
@@ -794,7 +807,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			chart2.updateUI();
 
 			// proportions scatter plot
-			final ChartPanel chart4 = createScatterPlotChartForPeptides(selectedPeptides, width, height);
+			final ChartPanel chart4 = createScatterPlotChartForPeptides(peptides, width, height);
 			final GridBagConstraints c5 = new GridBagConstraints();
 			c5.gridx = 0;
 			c5.gridy = 2;
@@ -803,7 +816,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			this.graphsPanel.add(chart4, c5);
 			chart4.updateUI();
 			// intensities whiskeyChart
-			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(selectedPeptides, width, height);
+			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, width, height);
 			final GridBagConstraints c2 = new GridBagConstraints();
 			c2.gridx = 1;
 			c2.gridy = 2;
@@ -826,18 +839,9 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private ChartPanel createScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides, int width,
 			int height) {
 		final ChartPanel chartPanel = ChartUtils.createScatterPlotChartForPeptides(peptides,
-				calculatePeptidePercentagesFirst, "", "", width, height);
+				sumIntensitiesAcrossReplicates, "", "", width, height);
 
 		return chartPanel;
-	}
-
-	private ChartPanel createPercentagesPieChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
-			boolean calculateProportionsByPeptidesFirst, int width, int height) {
-
-		final ChartPanel chartPanel = ChartUtils.createProportionsPieChartForGroupedPeptides(peptides, "", "",
-				calculatePeptidePercentagesFirst, width, height);
-		return chartPanel;
-
 	}
 
 	private ChartPanel createIntensitiesErrorBarChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
@@ -860,7 +864,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			int width, int height) {
 
 		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGroupedPeptides(selectedPeptides,
-				"", "", calculatePeptidePercentagesFirst, width, height);
+				"", "", sumIntensitiesAcrossReplicates, width, height);
 		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
