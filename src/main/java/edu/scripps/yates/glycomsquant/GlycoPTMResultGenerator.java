@@ -30,6 +30,8 @@ import edu.scripps.yates.glycomsquant.gui.charts.ErrorType;
 import edu.scripps.yates.glycomsquant.gui.charts.StackedBarChart;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
+import edu.scripps.yates.glycomsquant.gui.tables.sites.ColumnsSitesTable;
+import edu.scripps.yates.glycomsquant.gui.tables.sites.ColumnsSitesTableUtil;
 import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
@@ -348,41 +350,22 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		final File file = new File(FileManager.getResultsTableFileName(resultsFolder, inputParameters));
 		final FileWriter fw = new FileWriter(file);
 
-		fw.write("results for analysis: " + inputParameters.getName() + "\n");
-		for (final PTMCode ptmCode : PTMCode.values()) {
-			fw.write("\tAVG_" + GuiUtils.translateCode(ptmCode.getCode()) + "\tSTDEV_"
-					+ GuiUtils.translateCode(ptmCode.getCode()) + "\tSEM_" + GuiUtils.translateCode(ptmCode.getCode())
-					+ "\t%_" + GuiUtils.translateCode(ptmCode.getCode()));
-
-//			fw.write("STDEV(%)_" + GuiUtils.translateCode(ptmCode.getCode()));
-			fw.write("SEM(%)_" + GuiUtils.translateCode(ptmCode.getCode()));
-
-			fw.write("\tSPC_" + GuiUtils.translateCode(ptmCode.getCode()) + "\tPEP_"
-					+ GuiUtils.translateCode(ptmCode.getCode()));
+		final List<String> columnsString = ColumnsSitesTable.getColumnsString();
+		for (final String header : columnsString) {
+			fw.write(header + "\t");
 		}
 		fw.write("\n");
-		for (final GlycoSite glycoSite : glycoSites) {
-			fw.write(glycoSite.getPosition() + "\t");
-			for (final PTMCode ptmCode : PTMCode.values()) {
-
-				fw.write(glycoSite.getAverageIntensityByPTMCode(ptmCode) + "\t");
-				fw.write(glycoSite.getSTDEVIntensityByPTMCode(ptmCode) + "\t");
-				fw.write(glycoSite.getSEMIntensityByPTMCode(ptmCode) + "\t");
-
-				fw.write(glycoSite.getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates) + "\t");
-
-//					fw.write(glycoSite.getSTDEVPercentageByPTMCode(ptmCode) + "\t");
-				fw.write(glycoSite.getSEMOfProportionsByPTMCode(ptmCode,
-						inputParameters.isSumIntensitiesAcrossReplicates()) + "\t");
-
-				final int spc = glycoSite.getSPCByPTMCode(ptmCode);
-				fw.write(spc + "\t");
-				final int numPeptides = glycoSite.getPeptidesByPTMCode(ptmCode).size();
-				fw.write(numPeptides + "\t");
+		final List<ColumnsSitesTable> columns = ColumnsSitesTable.getColumns();
+		for (final GlycoSite glycoSite : this.glycoSites) {
+			final List<Object> glycoSiteInfoList = ColumnsSitesTableUtil.getInstance().getGlycoSiteInfoList(glycoSite,
+					inputParameters.isSumIntensitiesAcrossReplicates(), columns);
+			for (final Object glycoSiteInfo : glycoSiteInfoList) {
+				fw.write(glycoSiteInfo.toString() + "\t");
 			}
 			fw.write("\n");
 		}
 		fw.close();
+
 		firePropertyChange(RESULS_TABLE_GENERATED, false, file);
 		return file;
 	}

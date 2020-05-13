@@ -46,7 +46,7 @@ public class ColumnsSitesTableUtil {
 	}
 
 	public List<Object> getGlycoSiteInfoList(GlycoSite glycoSite, boolean sumIntensitiesAcrossReplicates,
-			List<ColumnsSitesTable> list, int index) {
+			List<ColumnsSitesTable> list) {
 
 		final List<Object> ret = new ArrayList<Object>();
 		if (glycoSite == null)
@@ -147,19 +147,6 @@ public class ColumnsSitesTableUtil {
 
 		return ret;
 
-	}
-
-	public String getStringFromList(List<String> lineStringList, char separator) {
-		final StringBuilder sb = new StringBuilder();
-		if (lineStringList != null)
-			for (final String obj : lineStringList) {
-				if (obj != null)
-					sb.append(obj);
-				else
-					sb.append("-");
-				sb.append(separator);
-			}
-		return sb.toString();
 	}
 
 	private String cleanString(String string) {

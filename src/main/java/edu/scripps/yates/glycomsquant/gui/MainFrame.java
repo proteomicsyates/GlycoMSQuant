@@ -343,6 +343,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				intensityThresholdText.setEnabled(intensityThresholdCheckBox.isSelected());
+				if (!intensityThresholdCheckBox.isSelected()) {
+					intensityThresholdText.setText(null);
+				}
 			}
 		});
 
@@ -821,7 +824,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 						"Iterative analysis of intensity threshold", JOptionPane.YES_NO_CANCEL_OPTION,
 						JOptionPane.QUESTION_MESSAGE);
 				if (selectedOption == JOptionPane.YES_OPTION) {
-
+					// disable sites and peptides tables
+					this.btnShowPeptidesTable.setEnabled(false);
+					this.btnShowResultsTable.setEnabled(false);
+					showProteinSequenceButton.setEnabled(false);
 					// keep enable/disable states
 					this.componentStateKeeper.keepEnableStates(this);
 					this.componentStateKeeper.disable(this);
@@ -1350,9 +1356,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					c.fill = GridBagConstraints.HORIZONTAL;
 					c.gridx = 0;
 					c.gridy = chartsInMainPanel.size() - 1;
-					separateChartsButton.setEnabled(true);
-					btnShowResultsTable.setEnabled(true);
-					btnShowPeptidesTable.setEnabled(true);
+
 					if (object instanceof IterationGraphPanel) {
 						chartPanel.removeAll();
 						final IterationGraphPanel iterationGraphPanel = (IterationGraphPanel) object;
@@ -1430,9 +1434,13 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					showMessage("Charts loaded.");
 					chartPanel.validate();
 					// enable popup charts
-					MainFrame.this.separateChartsButton.setEnabled(true);
-					MainFrame.this.btnShowResultsTable.setEnabled(true);
-					MainFrame.this.btnShowPeptidesTable.setEnabled(true);
+					separateChartsButton.setEnabled(true);
+					// enable tables only if it is not iterative analysis
+					if (!isIterativeAnalysis()) {
+						btnShowResultsTable.setEnabled(true);
+						btnShowPeptidesTable.setEnabled(true);
+						showProteinSequenceButton.setEnabled(true);
+					}
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}

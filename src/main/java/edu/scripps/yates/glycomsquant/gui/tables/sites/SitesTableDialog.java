@@ -58,7 +58,7 @@ public class SitesTableDialog extends JFrame {
 		setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
 	}
 
-	public void loadResultTable(List<GlycoSite> glycoSites, boolean calculateProportionsByPeptidesFirst) {
+	public void loadResultTable(List<GlycoSite> glycoSites, boolean sumIntensitiesAcrossReplicates) {
 
 		log.info("Loading result table with " + glycoSites.size() + " glyco sites");
 
@@ -73,12 +73,11 @@ public class SitesTableDialog extends JFrame {
 		northPanel.setLayout(new BorderLayout());
 
 		contentPanel.add(northPanel, BorderLayout.NORTH);
-		scrollableTable = new ScrollableSitesTable(200, calculateProportionsByPeptidesFirst);
+		scrollableTable = new ScrollableSitesTable(200);
 		contentPanel.add(scrollableTable, BorderLayout.CENTER);
 		scrollableTable.getTable().clearData();
 
-		addColumnsInTable(scrollableTable.getTable(),
-				ColumnsSitesTable.getColumnsStringForTable(calculateProportionsByPeptidesFirst));
+		addColumnsInTable(scrollableTable.getTable(), ColumnsSitesTable.getColumnsStringForTable());
 
 		if (glycoSites != null) {
 			for (int i = 0; i < glycoSites.size(); i++) {
@@ -86,8 +85,7 @@ public class SitesTableDialog extends JFrame {
 				final MySitesTableModel model = (MySitesTableModel) scrollableTable.getTable().getModel();
 
 				final List<Object> glycoSiteInfoList = ColumnsSitesTableUtil.getInstance().getGlycoSiteInfoList(
-						glycoSite, calculateProportionsByPeptidesFirst,
-						ColumnsSitesTable.getColumns(calculateProportionsByPeptidesFirst), i + 1);
+						glycoSite, sumIntensitiesAcrossReplicates, ColumnsSitesTable.getColumns());
 				model.addRow(glycoSiteInfoList.toArray());
 				log.info("Table now with " + model.getRowCount() + " rows");
 			}

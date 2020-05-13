@@ -30,11 +30,9 @@ public class ScrollableSitesTable extends JScrollPane {
 
 	private Comparator comp;
 
-	private static boolean dontAskAndLoadResults = false;
+	public ScrollableSitesTable(int wide) {
 
-	public ScrollableSitesTable(int wide, boolean calculateProportionsByPeptidesFirst) {
-
-		table.setModel(new MySitesTableModel(calculateProportionsByPeptidesFirst));
+		table.setModel(new MySitesTableModel());
 
 		// Set renderer for painting different background colors
 		table.setDefaultRenderer(Object.class, new MySitesTableCellRenderer());
@@ -52,58 +50,8 @@ public class ScrollableSitesTable extends JScrollPane {
 
 	private void initializeUI(int wide) {
 		setViewportView(table);
-//		setLayout(new BorderLayout());
-
-//		setPreferredSize(new Dimension(wide, 400));
-
-		//
-		// Turn off JTable's auto resize so that JScrollpane
-		// will show a horizontal scroll bar.
-		//
-		// table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
-//		table.setSize(new Dimension(wide, 400));
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-		addRunPathCellListener();
-
-//		pane.setViewportBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
-//		pane.setViewportBorder(new TitledBorder(
-//				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Table",
-//				TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-//		add(pane, BorderLayout.CENTER);
-
 		super.repaint();
-	}
-
-	private void addRunPathCellListener() {
-//		if (table != null)
-//			table.addMouseListener(new MouseAdapter() {
-//				@Override
-//				public void mouseClicked(MouseEvent e) {
-//					try {
-//						final JTable target = (JTable) e.getSource();
-//						int row = target.getSelectedRow();
-//						if (target.getRowSorter() != null) {
-//							row = target.getRowSorter().convertRowIndexToModel(row);
-//						}
-//						final int column = target.getSelectedColumn();
-//						log.info("Row=" + row + " Column=" + column);
-//						// double click on left button
-//						if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
-//
-//							final int index = ColumnsResultsTable.getColumns().indexOf(ColumnsResultsTable.RUN_PATH);
-//							final String value = target.getModel().getValueAt(row, index).toString();
-//							clickOnresult(value);
-//							return;
-//
-//						}
-//
-//					} catch (final IllegalArgumentException ex) {
-//						ex.printStackTrace();
-//					}
-//				}
-//			});
-
 	}
 
 	public void setFilter(String columnName, String regexp) {
@@ -111,8 +59,6 @@ public class ScrollableSitesTable extends JScrollPane {
 		try {
 
 			final RowFilter<Object, Object> paginatorFilter = getColumnFilter(columnName, regexp);
-			// if (paginatorFilter != null)
-			// filters.add(paginatorFilter);
 
 			if (sorter != null) {
 

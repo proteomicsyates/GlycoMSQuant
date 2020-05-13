@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.border.TitledBorder;
 
 import org.apache.log4j.Logger;
 import org.jfree.chart.ChartPanel;
@@ -91,18 +91,15 @@ public class IterationGraphPanel extends JPanel {
 		add(leftPanel, BorderLayout.WEST);
 		final GridBagLayout gbl_leftPanel = new GridBagLayout();
 		gbl_leftPanel.columnWidths = new int[] { 250 };
-		gbl_leftPanel.rowHeights = new int[] { 10, 0, 0, 0 };
 		gbl_leftPanel.columnWeights = new double[] { 1.0 };
-		gbl_leftPanel.rowWeights = new double[] { 0.0, 1.0, 1.0, Double.MIN_VALUE };
 		leftPanel.setLayout(gbl_leftPanel);
 
 		final JPanel ptmCodesPanel = new JPanel();
-		ptmCodesPanel.setBorder(
-				new TitledBorder(null, "Average proportions", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		ptmCodesPanel.setBorder(BorderFactory.createTitledBorder("Average proportions"));
 		final GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(0, 5, 0, 5);
 		c.fill = GridBagConstraints.HORIZONTAL;
-		c.anchor = GridBagConstraints.WEST;
+		c.anchor = GridBagConstraints.PAGE_START;
 		c.gridx = 0;
 		c.gridy = 0;
 		leftPanel.add(ptmCodesPanel, c);
@@ -144,12 +141,13 @@ public class IterationGraphPanel extends JPanel {
 		});
 		//
 		final JPanel peptidesPanel = new JPanel();
-		peptidesPanel.setBorder(new TitledBorder(null, "Peptides", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		peptidesPanel.setBorder(BorderFactory.createTitledBorder("Peptides"));
 		final GridBagConstraints gbc_peptidesPanel = new GridBagConstraints();
 		gbc_peptidesPanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_peptidesPanel.insets = new Insets(0, 5, 5, 5);
 		gbc_peptidesPanel.gridx = 0;
 		gbc_peptidesPanel.gridy = 1;
+
 		leftPanel.add(peptidesPanel, gbc_peptidesPanel);
 		final GridBagLayout gbl_peptidesPanel = new GridBagLayout();
 		gbl_peptidesPanel.columnWidths = new int[] { 0 };
@@ -169,32 +167,25 @@ public class IterationGraphPanel extends JPanel {
 		});
 		totalPeptidesCheckBox.setToolTipText("Total number of peptides in each iteration");
 
-		final GridBagConstraints c3 = new GridBagConstraints();
-		c3.anchor = GridBagConstraints.WEST;
-		c3.insets = new Insets(0, 10, 0, 0);
-		c3.gridx = 0;
-		c3.gridy = 0;
-		peptidesPanel.add(totalPeptidesCheckBox, c3);
+		peptidesPanel.add(totalPeptidesCheckBox, getConstraints(0, 0));
 
 		final JPanel sitesPanel = new JPanel();
-		final JScrollPane scroll = new JScrollPane(sitesPanel);
 
-		sitesPanel.setBorder(new TitledBorder(null, "Sites", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		sitesPanel.setBorder(BorderFactory.createTitledBorder("Sites"));
 		final GridBagConstraints gbc_sitesPanel = new GridBagConstraints();
 		gbc_sitesPanel.insets = new Insets(0, 5, 0, 5);
-		gbc_sitesPanel.weighty = 100.0;
-		gbc_sitesPanel.anchor = GridBagConstraints.WEST;
 		gbc_sitesPanel.fill = GridBagConstraints.BOTH;
 		gbc_sitesPanel.gridx = 0;
 		gbc_sitesPanel.gridy = 2;
-		leftPanel.add(scroll, gbc_sitesPanel);
+
+		leftPanel.add(sitesPanel, gbc_sitesPanel);
+
 		final GridBagLayout gbl_sitesPanel = new GridBagLayout();
-		gbl_sitesPanel.columnWidths = new int[] { 0 };
-		gbl_sitesPanel.rowHeights = new int[] { 0 };
-		gbl_sitesPanel.columnWeights = new double[] { Double.MIN_VALUE };
-		gbl_sitesPanel.rowWeights = new double[] { Double.MIN_VALUE };
+		gbl_sitesPanel.columnWidths = new int[] { 100 };
+//		gbl_sitesPanel.columnWeights = new double[] { 1.0 };
 		sitesPanel.setLayout(gbl_sitesPanel);
-		c3.gridy++;
+
+		int y = 1;
 		// checkboxs for peptides and PTMs
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final JCheckBox checkBox = new JCheckBox("peptides with " + GuiUtils.translateCode(ptmCode.getCode()));
@@ -205,10 +196,10 @@ public class IterationGraphPanel extends JPanel {
 				}
 			});
 			this.peptidesCheckBoxByPTMCode.put(ptmCode, checkBox);
-			peptidesPanel.add(checkBox, c3);
-			c3.gridy++;
+			peptidesPanel.add(checkBox, getConstraints(0, y++));
+
 		}
-		hideTotalPeptidesCheckBox = new JCheckBox("Hide total peptides", false);
+		hideTotalPeptidesCheckBox = new JCheckBox("Hide number of peptides", false);
 		hideTotalPeptidesCheckBox
 				.setToolTipText("<html>If selected, the total number of peptides will be hidden from the chart<br>"
 						+ "and only the site-specific numbers could be seen if selected below</html>");
@@ -219,15 +210,15 @@ public class IterationGraphPanel extends JPanel {
 				updateGraph();
 			}
 		});
-		peptidesPanel.add(hideTotalPeptidesCheckBox, c3);
+		peptidesPanel.add(hideTotalPeptidesCheckBox, getConstraints(0, y));
 
 		// now we add the checkboxes of the sites
 		final GridBagConstraints c4 = new GridBagConstraints();
-		c4.anchor = GridBagConstraints.WEST;
-		c4.fill = GridBagConstraints.VERTICAL;
+		c4.anchor = GridBagConstraints.LINE_START;
+		c4.fill = GridBagConstraints.BOTH;
 		c4.gridx = 0;
 		c4.gridy = 0;
-		c4.insets = new Insets(0, 10, 0, 10);
+		c4.insets = new Insets(0, 0, 0, 0);
 		if (glycoSites != null) {
 			final TIntList positions = getSortedGlycoSitesPositions();
 			for (final int position : positions.toArray()) {
@@ -245,6 +236,8 @@ public class IterationGraphPanel extends JPanel {
 
 				if (c4.gridx == 0) {
 					c4.gridx = 1;
+				} else if (c4.gridx == 1) {
+					c4.gridx = 2;
 				} else {
 					c4.gridx = 0;
 					c4.gridy++;
@@ -259,6 +252,15 @@ public class IterationGraphPanel extends JPanel {
 		scrollPane = new JScrollPane();
 		componentStateKeeper.addInvariableComponent(scrollPane);
 		centerPanel.add(scrollPane, BorderLayout.CENTER);
+	}
+
+	private GridBagConstraints getConstraints(int x, int y) {
+		final GridBagConstraints ret = new GridBagConstraints();
+		ret.anchor = GridBagConstraints.WEST;
+		ret.insets = new Insets(0, 10, 0, 0);
+		ret.gridx = x;
+		ret.gridy = y;
+		return ret;
 	}
 
 	private TIntList getSortedGlycoSitesPositions() {
