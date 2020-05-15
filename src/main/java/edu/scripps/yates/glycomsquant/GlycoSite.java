@@ -64,6 +64,7 @@ public class GlycoSite {
 			if (peptideIntensitiesByPTMCode.containsKey(ptmCode)) {
 				final TDoubleList peptideIntensities = peptideIntensitiesByPTMCode.get(ptmCode);
 				final List<QuantifiedPeptideInterface> peptides = peptidesByPTMCode.get(ptmCode);
+
 				for (int i = 0; i < peptideIntensities.size(); i++) {
 					final double intensity = peptideIntensities.get(i);
 					final QuantifiedPeptideInterface peptide = peptides.get(i);
@@ -119,24 +120,25 @@ public class GlycoSite {
 	/**
 	 * 
 	 * @param ptmCode
-	 * @param value
+	 * @param intensity
 	 * @param peptide
 	 */
-	public void addValue(PTMCode ptmCode, double value, QuantifiedPeptideInterface peptide) {
+	public void addValue(PTMCode ptmCode, double intensity, QuantifiedPeptideInterface peptide) {
 		if (!peptideIntensitiesByPTMCode.containsKey(ptmCode)) {
 			peptideIntensitiesByPTMCode.put(ptmCode, new TDoubleArrayList());
 			peptidesByPTMCode.put(ptmCode, new ArrayList<QuantifiedPeptideInterface>());
 			nonRedundantPeptidesByPTMCode.put(ptmCode, new THashSet<QuantifiedPeptideInterface>());
 		}
 
-		peptideIntensitiesByPTMCode.get(ptmCode).add(value);
+		peptideIntensitiesByPTMCode.get(ptmCode).add(intensity);
 		peptidesByPTMCode.get(ptmCode).add(peptide);
 		nonRedundantPeptidesByPTMCode.get(ptmCode).add(peptide);
 		coveredPeptides.add(peptide);
 
 		final String key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, true);
 		if (!peptidesByNoPTMPeptideKey.containsKey(key)) {
-			peptidesByNoPTMPeptideKey.put(key, new GroupedQuantifiedPeptide(peptide, protein));
+			final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, protein, getPosition());
+			peptidesByNoPTMPeptideKey.put(key, new GroupedQuantifiedPeptide(peptide, protein, positionInPeptide));
 		}
 		final boolean added = peptidesByNoPTMPeptideKey.get(key).add(peptide);
 
@@ -212,11 +214,12 @@ public class GlycoSite {
 	public double getProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
 		if (!individualProportionsByPTMCode.containsKey(ptmCode)) {
 			individualProportionsByPTMCode.clear();
-
+			if (this.getPosition() == 357) {
+				log.info("asdf");
+			}
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
 
 				final GroupedQuantifiedPeptide peptides = peptidesByNoPTMPeptideKey.get(peptideKey);
-
 				final Map<PTMCode, TDoubleList> individualProportions = GlycoPTMAnalyzerUtil
 						.getIndividualProportionsByPTMCode(peptides, sumIntensitiesAcrossReplicates);
 
@@ -299,6 +302,7 @@ public class GlycoSite {
 	}
 
 	public Collection<GroupedQuantifiedPeptide> getCoveredGroupedPeptides() {
-		return GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(getCoveredPeptides(), protein).values();
+		return GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(getCoveredPeptides(), protein, getPosition())
+				.values();
 	}
 }

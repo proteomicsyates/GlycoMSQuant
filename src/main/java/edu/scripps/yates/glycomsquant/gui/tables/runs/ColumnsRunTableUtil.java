@@ -30,8 +30,6 @@ public class ColumnsRunTableUtil {
 	public static final String VALUE_SEPARATOR = ",";
 
 	public static final String PREFIX = "/";// for making the table to sort, but we have to remove it so that the path
-											// is relative to the app run folder
-	private final File resultsFolder;
 	static {
 		threeDigitsDecimal = NumberFormat.getInstance();
 		threeDigitsDecimal.setMaximumFractionDigits(3);
@@ -41,7 +39,6 @@ public class ColumnsRunTableUtil {
 	}
 
 	private ColumnsRunTableUtil(File resultsFolder) {
-		this.resultsFolder = resultsFolder;
 	}
 
 	public static ColumnsRunTableUtil getInstance(File resultsFolder) {
@@ -66,10 +63,10 @@ public class ColumnsRunTableUtil {
 				break;
 			case INPUT_DATA_FILE:
 				ret.add(cleanString(
-						String.valueOf(FilenameUtils.getName(resultsProperties.getInputDataFile().getAbsolutePath()))));
+						String.valueOf(FilenameUtils.getName(resultsProperties.getInputFile().getAbsolutePath()))));
 				break;
 			case NORMALIZE_REPLICATES:
-				ret.add(resultsProperties.getNormalizeReplicates());
+				ret.add(resultsProperties.isNormalizeReplicates());
 				break;
 			case NAME:
 				ret.add(cleanString(resultsProperties.getName()));
@@ -82,7 +79,10 @@ public class ColumnsRunTableUtil {
 				ret.add(resultsProperties.getIntensityThreshold());
 				break;
 			case SUM_INTENSITIES_ACROSS_REPLICATES:
-				ret.add(resultsProperties.getSumIntensitiesAcrossReplicates());
+				ret.add(resultsProperties.isSumIntensitiesAcrossReplicates());
+				break;
+			case DISCARD_PEPTIDES_WITH_PTMS_IN_WRONG_MOTIFS:
+				ret.add(resultsProperties.isDiscardWrongPositionedPTMs());
 				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");

@@ -379,7 +379,7 @@ public class AttachedPeptideListDialog extends JDialog {
 		final int y = parentLocationOnScreen.y;
 		this.setLocation(x, y);
 		this.setSize(maxWidth, this.proteinSequenceDialog.getHeight());
-		log.debug("Setting position next to the parent frame (" + x + "," + y + ")");
+//		log.debug("Setting position next to the parent frame (" + x + "," + y + ")");
 	}
 
 	public void setMinimized(boolean b) {

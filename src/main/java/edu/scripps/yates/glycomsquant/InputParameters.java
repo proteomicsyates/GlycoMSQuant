@@ -11,17 +11,17 @@ public interface InputParameters {
 
 	public File getFastaFile();
 
-	public double getFakePTM();
-
 	public String getName();
 
-	public double getIntensityThreshold();
+	public Double getIntensityThreshold();
 
 	public AmountType getAmountType();
 
-	public boolean isNormalizeReplicates();
+	public Boolean isNormalizeReplicates();
 
-	public boolean isSumIntensitiesAcrossReplicates();
+	public Boolean isSumIntensitiesAcrossReplicates();
 
 	public String getMotifRegexp();
+
+	public Boolean isDiscardWrongPositionedPTMs();
 }

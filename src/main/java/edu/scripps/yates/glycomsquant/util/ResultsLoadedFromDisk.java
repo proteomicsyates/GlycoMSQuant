@@ -9,15 +9,13 @@ import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
 public class ResultsLoadedFromDisk {
 	private final List<GlycoSite> sites;
 	private final List<QuantifiedPeptideInterface> peptides;
-	private final boolean sumIntensitiesAcrossReplicates;
 	private final ResultsProperties resultProperties;
 
 	public ResultsLoadedFromDisk(ResultsProperties resultProperties, List<GlycoSite> sites,
-			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates) {
+			List<QuantifiedPeptideInterface> peptides) {
 		this.resultProperties = resultProperties;
 		this.sites = sites;
 		this.peptides = peptides;
-		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 	}
 
 	public List<GlycoSite> getSites() {
@@ -26,10 +24,6 @@ public class ResultsLoadedFromDisk {
 
 	public List<QuantifiedPeptideInterface> getPeptides() {
 		return peptides;
-	}
-
-	public boolean isSumIntensitiesAcrossReplicates() {
-		return sumIntensitiesAcrossReplicates;
 	}
 
 	public ResultsProperties getResultProperties() {

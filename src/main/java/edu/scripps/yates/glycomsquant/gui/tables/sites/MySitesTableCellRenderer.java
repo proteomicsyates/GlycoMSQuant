@@ -43,10 +43,6 @@ public class MySitesTableCellRenderer extends DefaultTableCellRenderer {
 			value = "";
 		}
 		if (selectedColumn != null && selectedColumn.getColumnClass().equals(Double.class)) {
-			if (selectedColumn == ColumnsSitesTable.AVG_203) {
-				log.info(value);
-			}
-
 			value = GuiUtils.formatDouble((double) value, selectedColumn.isPercentage());
 		}
 		if (columnIndex > 0 && columnIndex == column) {

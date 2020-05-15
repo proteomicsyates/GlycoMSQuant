@@ -11,7 +11,9 @@ enum ColumnsRunTable {
 	THRESHOLD("Int threshold", 10, "Intensity threshold", Double.class),
 	NORMALIZE_REPLICATES("Normalize replicates", 10,
 			"Normalize the intensity of the replicates by dividing by the total sum of intensities", Boolean.class),
-	SUM_INTENSITIES_ACROSS_REPLICATES("Sum int rep", 10, "Sum intenssities across replicates", Boolean.class)
+	SUM_INTENSITIES_ACROSS_REPLICATES("Sum int rep", 10, "Sum intensities across replicates", Boolean.class),
+	DISCARD_PEPTIDES_WITH_PTMS_IN_WRONG_MOTIFS("Dis. wrong motif peps", 10,
+			"Discard peptides with PTMs of interest located in non-valid motifs", Boolean.class)
 	// RESEARCHER("researcher", 20, "Researcher name (internal data for the
 	// Spanish HPP consortium)"), //
 	// GENE_CLASSIFICATION("gene class", 15, "Gene classification (internal data

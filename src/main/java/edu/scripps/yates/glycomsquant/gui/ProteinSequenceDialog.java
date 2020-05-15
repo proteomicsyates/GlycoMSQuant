@@ -82,9 +82,12 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		super(GuiUtils.getFractionOfScreenWidthSize(0.4));
 		setTitle("Protein sequence of '" + proteinOfInterest + "'");
 		this.proteinSequence = proteinSequence;
-		this.groupedPeptides
-				.addAll(GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest).values());
+
 		this.glycoSites = glycoSites;
+		for (final GlycoSite site : glycoSites) {
+			this.groupedPeptides.addAll(GlycoPTMAnalyzerUtil
+					.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest, site.getPosition()).values());
+		}
 		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		glycoSites.stream().forEach(g -> glycoSitesByPosition.put(g.getPosition(), g));
 		// the width will be the size of a label * proteinSequenceLineLength + 50

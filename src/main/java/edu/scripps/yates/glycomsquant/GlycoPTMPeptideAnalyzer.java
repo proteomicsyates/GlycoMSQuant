@@ -62,22 +62,24 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	}
 
 	public List<GlycoSite> getGlycoSites() {
-		// filter by protein
-		final List<QuantifiedPeptideInterface> peptidesFilteredByProtein = peptideNodes.stream()
-				.filter(p -> containsProtein(p.getQuantifiedProteins(), proteinOfInterestACC))
-				.collect(Collectors.toList());
+
 		// create HIVPosition objects
 		final TIntObjectMap<GlycoSite> map = new TIntObjectHashMap<GlycoSite>();
-		for (final QuantifiedPeptideInterface peptide : peptidesFilteredByProtein) {
+		for (final QuantifiedPeptideInterface peptide : peptideNodes) {
+			final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence,
+					peptide.getSequence());
+			if (positionsOfPeptideInProtein.size() > 1 || positionsOfPeptideInProtein.isEmpty()) {
+				// discard peptides that can be mapped to multiple positions in the protein
+				continue;
+			}
+			final List<PTMInProtein> positionsInProtein = getPTMPositionsInProtein(peptide);
 
-			final List<PTMInProtein> positionsInProtein = getPositionsInProtein(peptide);
-
-			for (final PTMInProtein positionInProtein : positionsInProtein) {
-				if (!positionInProtein.getProteinACC().equals(proteinOfInterestACC)) {
+			for (final PTMInProtein ptmPositionInProtein : positionsInProtein) {
+				if (!ptmPositionInProtein.getProteinACC().equals(proteinOfInterestACC)) {
 					continue;
 				}
-				final int position = positionInProtein.getPosition();
-				final PTMCode ptmCodeObj = PTMCode.getByValue(positionInProtein.getDeltaMass());
+				final int position = ptmPositionInProtein.getPosition();
+				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmPositionInProtein.getDeltaMass());
 				if (!map.containsKey(position)) {
 					map.put(position, new GlycoSite(position, proteinOfInterestACC));
 				}
@@ -110,7 +112,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		return ret;
 	}
 
-	private List<PTMInProtein> getPositionsInProtein(QuantifiedPeptideInterface peptide) {
+	private List<PTMInProtein> getPTMPositionsInProtein(QuantifiedPeptideInterface peptide) {
 		final String sequence = peptide.getSequence();
 		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence, sequence);
 		if (positionsOfPeptideInProtein.size() > 1) {
@@ -124,7 +126,8 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 					"Peptide '" + sequence + "' can NOT be found in protein '" + proteinOfInterestACC + "'");
 		}
 
-		final TIntList motifsPositions = GlycoPTMAnalyzerUtil.hasMotif(peptide, this.proteinSequence, motifRegexp);
+		final TIntList motifsPositions = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, this.proteinSequence,
+				motifRegexp);
 
 		final List<PTMInProtein> ret = new ArrayList<PTMInProtein>();
 		for (final int positionOfPeptideInProtein : positionsOfPeptideInProtein.toArray()) {

@@ -23,25 +23,23 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	private final static Logger log = Logger.getLogger(GroupedQuantifiedPeptide.class);
 	private String key;
 	private String keyWithNoCharge;
-	private int chargeState;
+	private final int chargeState;
 	private String sequence;
 	private TMap<PTMCode, TDoubleList> intensitiesByPTMCode;
 	private final String proteinAcc;
+	private final int positionInPeptide;
 
 	/**
 	 * 
-	 * @param peptides
-	 * @param proteinAcc with respect to what protein we are working on
+	 * @param peptide
+	 * @param proteinAcc
+	 * @param positionInPeptide position in the peptide for which this
+	 *                          {@link GroupedQuantifiedPeptide} was created
 	 */
-	public GroupedQuantifiedPeptide(Collection<QuantifiedPeptideInterface> peptides, String proteinAcc) {
-		this.proteinAcc = proteinAcc;
-		addAll(peptides);
-
-	}
-
-	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc) {
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, int positionInPeptide) {
 		this.proteinAcc = proteinAcc;
 		add(peptide);
+		this.positionInPeptide = positionInPeptide;
 		chargeState = peptide.getPSMs().get(0).getChargeState();
 	}
 
@@ -130,5 +128,15 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 
 		}
 		return intensitiesByPTMCode.get(ptmCode);
+	}
+
+	/**
+	 * position in the peptide for which this {@link GroupedQuantifiedPeptide} was
+	 * created
+	 * 
+	 * @return
+	 */
+	public int getPositionInPeptide() {
+		return positionInPeptide;
 	}
 }

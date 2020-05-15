@@ -45,7 +45,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 				throw new IllegalArgumentException("GlycoSite file in result folder '"
 						+ individualResultsFolder.getAbsolutePath() + "' is not found");
 			}
-			final File inputDataFile = resultsProperties.getInputDataFile();
+			final File inputDataFile = resultsProperties.getInputFile();
 			if (inputDataFile == null || !inputDataFile.exists()) {
 				throw new IllegalArgumentException("Input data file in result folder '"
 						+ individualResultsFolder.getAbsolutePath() + "' is not found");
@@ -60,10 +60,8 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			MainFrame.getInstance();
 			parser.setIgnoreTaxonomies(MainFrame.isIgnoreTaxonomies());
 			final List<GlycoSite> glycoSites = readDataFile(dataFile, parser);
-			final Boolean sumIntensitiesAcrossReplicates = resultsProperties.getSumIntensitiesAcrossReplicates();
 			final List<QuantifiedPeptideInterface> peptides = GlycoPTMAnalyzerUtil.getPeptidesFromSites(glycoSites);
-			final ResultsLoadedFromDisk results = new ResultsLoadedFromDisk(resultsProperties, glycoSites, peptides,
-					sumIntensitiesAcrossReplicates);
+			final ResultsLoadedFromDisk results = new ResultsLoadedFromDisk(resultsProperties, glycoSites, peptides);
 			firePropertyChange(RESULT_LOADER_FROM_DISK_FINISHED, null, results);
 		} catch (final Exception e) {
 			e.printStackTrace();

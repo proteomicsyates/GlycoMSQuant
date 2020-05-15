@@ -80,9 +80,9 @@ public class GlycoPTMAnalyzerUtil {
 
 	}
 
-	public static TIntList hasMotif(Peptide peptide, String proteinAcc) {
+	public static TIntList getMotifPositions(Peptide peptide, String proteinAcc) {
 		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
-		return hasMotif(peptide, proteinSequence, ProteinSequences.getInstance().getMotifRegexp());
+		return getMotifPositions(peptide, proteinSequence, ProteinSequences.getInstance().getMotifRegexp());
 	}
 
 	/**
@@ -94,7 +94,7 @@ public class GlycoPTMAnalyzerUtil {
 	 * @param motifRegexp
 	 * @return
 	 */
-	public static TIntList hasMotif(Peptide peptide, String proteinSequence, String motifRegexp) {
+	public static TIntList getMotifPositions(Peptide peptide, String proteinSequence, String motifRegexp) {
 		// get the extended sequences. They can be more than one if the peptide is found
 		// more than once in the protein sequence
 		final List<String> extendedSequences = getExtendedSequences(peptide.getSequence(), proteinSequence);
@@ -336,8 +336,9 @@ public class GlycoPTMAnalyzerUtil {
 		} else {
 			int num = 0;
 			for (final GroupedQuantifiedPeptide peptide : peptides) {
-				num += GlycoPTMAnalyzerUtil.getIndividualProportionsByPTMCodeNotSummingAcrossReplicates(peptide)
-						.get(ptmCode).size();
+
+				num += getIndividualProportionsByPTMCode(peptide, sumIntensitiesAcrossReplicates).get(ptmCode).size();
+
 			}
 			return num;
 		}
@@ -370,7 +371,7 @@ public class GlycoPTMAnalyzerUtil {
 			sumIntensity += summedIntensity;
 		}
 		final TObjectDoubleMap<PTMCode> ret = new TObjectDoubleHashMap<PTMCode>();
-		for (final PTMCode ptmCode : summedIntensities.keySet()) {
+		for (final PTMCode ptmCode : PTMCode.values()) {
 			final double percentage = summedIntensities.get(ptmCode) / sumIntensity;
 			ret.put(ptmCode, percentage);
 		}
@@ -445,7 +446,7 @@ public class GlycoPTMAnalyzerUtil {
 			String proteinAcc) {
 		final THashMap<PTMCode, TIntList> ret = new THashMap<PTMCode, TIntList>();
 		final TIntObjectMap<PTMInPeptide> ptmPositionsInPeptide = getPTMsInPeptideByPosition(peptide);
-		final TIntList motifsPositions = hasMotif(peptide, proteinAcc);
+		final TIntList motifsPositions = getMotifPositions(peptide, proteinAcc);
 		for (final int motifPosition : motifsPositions.toArray()) {
 			PTMCode ptmCodeObj = null;
 			if (ptmPositionsInPeptide.containsKey(motifPosition)) {
@@ -464,7 +465,12 @@ public class GlycoPTMAnalyzerUtil {
 
 	public static TIntObjectMap<PTMInPeptide> getPTMsInPeptideByPosition(QuantifiedPeptideInterface peptide) {
 		final TIntObjectMap<PTMInPeptide> ret = new TIntObjectHashMap<PTMInPeptide>();
+
 		peptide.getPTMsInPeptide().stream().forEach(ptm -> ret.put(ptm.getPosition(), ptm));
+		final List<PTMInPeptide> ptMsInPeptide = peptide.getPTMsInPeptide();
+		if (ret.size() != ptMsInPeptide.size()) {
+			throw new IllegalArgumentException();
+		}
 		return ret;
 	}
 
@@ -503,7 +509,7 @@ public class GlycoPTMAnalyzerUtil {
 	private static Map<PTMCode, TDoubleList> getIntensitiesPerPTMCodeInReplicate(GroupedQuantifiedPeptide peptides,
 			String replicate) {
 		final Map<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();
-
+		final int positionInPeptide = peptides.getPositionInPeptide();
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList valuesPerPTMCode = new TDoubleArrayList();
 			// reduce list to have unique hashcodes
@@ -515,8 +521,9 @@ public class GlycoPTMAnalyzerUtil {
 				hashCodes.add(peptide.hashCode());
 				final THashMap<PTMCode, TIntList> positionsByPTMCodesFromPeptide = getPositionsByPTMCodesFromPeptide(
 						peptide, peptides.getProteinAcc());
-				// if the peptide has that ptmCode:
-				if (positionsByPTMCodesFromPeptide.containsKey(ptmCode)) {
+				// if the peptide has that ptmCode and it is in that position:
+				if (positionsByPTMCodesFromPeptide.containsKey(ptmCode)
+						&& positionsByPTMCodesFromPeptide.get(ptmCode).contains(positionInPeptide)) { // IMPORTANT!!
 					final double intensityFromPeptideInReplicate = getIntensityFromPeptideInReplicate(peptide,
 							replicate);
 					// if it is NaN means that the peptide was not detected in that replicate
@@ -573,20 +580,51 @@ public class GlycoPTMAnalyzerUtil {
 	 * used to group the {@link QuantifiedPeptideInterface}
 	 * 
 	 * @param peptides
+	 * @param proteinAcc        protein for which this
+	 *                          {@link GroupedQuantifiedPeptide} is created
+	 * @param positionInProtein position in protein for which this
+	 *                          {@link GroupedQuantifiedPeptide} is created
 	 * @return
 	 */
 	public static Map<String, GroupedQuantifiedPeptide> getGroupedPeptidesFromPeptides(
-			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc) {
+			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc, int positionInProtein) {
 		final Map<String, GroupedQuantifiedPeptide> ret = new THashMap<String, GroupedQuantifiedPeptide>();
 		for (final QuantifiedPeptideInterface peptide : peptides) {
 			final String peptideKey = getPeptideKey(peptide, true);
+			final int positionInPeptide = getPositionInPeptide(peptide, proteinAcc, positionInProtein);
 			if (!ret.containsKey(peptideKey)) {
-				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc));
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, positionInPeptide));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}
 		}
 		return ret;
+	}
+
+	/**
+	 * Gets the position in the peptide corresponding to the positionInProtein of a
+	 * peptide that is suppose to cover it.
+	 * 
+	 * @param peptide
+	 * @param proteinAcc
+	 * @param positionInProtein
+	 * @return
+	 */
+	public static int getPositionInPeptide(QuantifiedPeptideInterface peptide, String proteinAcc,
+			int positionInProtein) {
+		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
+		final TIntArrayList positions = StringUtils.allPositionsOf(proteinSequence, peptide.getSequence());
+		if (positions.size() > 1) {
+			throw new IllegalArgumentException("Peptide " + peptide.getSequence()
+					+ " maps to multiple position to protein " + proteinAcc + " with sequence " + proteinSequence);
+		}
+		if (positions == null || positions.isEmpty()) {
+			throw new IllegalArgumentException("Peptide " + peptide.getSequence() + " does not map to protein "
+					+ proteinAcc + " with sequence " + proteinSequence);
+		}
+		final int positionOfPeptideInProtein = positions.get(0);
+		final int positionInPeptide = positionInProtein - positionOfPeptideInProtein + 1;
+		return positionInPeptide;
 	}
 
 	public static TIntObjectMap<GlycoSite> getSitesByPosition(List<GlycoSite> sites) {

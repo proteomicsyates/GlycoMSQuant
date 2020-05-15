@@ -60,9 +60,9 @@ import edu.scripps.yates.glycomsquant.GlycoPTMPeptideAnalyzer;
 import edu.scripps.yates.glycomsquant.GlycoPTMResultGenerator;
 import edu.scripps.yates.glycomsquant.GlycoPTMRunComparator;
 import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.InputDataReader;
 import edu.scripps.yates.glycomsquant.InputParameters;
 import edu.scripps.yates.glycomsquant.ProteinSequences;
-import edu.scripps.yates.glycomsquant.QuantCompareReader;
 import edu.scripps.yates.glycomsquant.RunComparisonResult;
 import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedRunsDialog;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
@@ -100,6 +100,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private ProteinSequenceDialog proteinSequenceDialog;
 	private JButton btnShowPeptidesTable;
 	private boolean isSumIntensitiesAcrossReplicatesFromLoadedResults;
+	private JCheckBox discardWrongPositionedPTMsCheckBox;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
@@ -111,7 +112,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	private MainFrame() {
-		super(300);
+		super(500); // size of the attached dialog
 		setMaximumSize(GuiUtils.getScreenDimension());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle("GlycoMSQuant");
@@ -189,8 +190,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel dataFilePanel = new JPanel();
 		final GridBagConstraints gbc_dataFilePanel = new GridBagConstraints();
+		gbc_dataFilePanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_dataFilePanel.anchor = GridBagConstraints.WEST;
-		gbc_dataFilePanel.insets = new Insets(0, 0, 5, 0);
 		gbc_dataFilePanel.gridx = 0;
 		gbc_dataFilePanel.gridy = 0;
 		inputPanel.add(dataFilePanel, gbc_dataFilePanel);
@@ -217,8 +218,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel fastaFilePanel = new JPanel();
 		final GridBagConstraints gbc_fastaFilePanel = new GridBagConstraints();
+		gbc_fastaFilePanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_fastaFilePanel.anchor = GridBagConstraints.WEST;
-		gbc_fastaFilePanel.insets = new Insets(0, 0, 5, 0);
 		gbc_fastaFilePanel.gridx = 0;
 		gbc_fastaFilePanel.gridy = 1;
 		inputPanel.add(fastaFilePanel, gbc_fastaFilePanel);
@@ -248,10 +249,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		selectFastaFileButton.setToolTipText("Click to select file on your file system");
 		fastaFilePanel.add(selectFastaFileButton);
 
-		final JPanel accessionPanel = new JPanel();
-		final FlowLayout flowLayout = (FlowLayout) accessionPanel.getLayout();
-		flowLayout.setAlignment(FlowLayout.LEFT);
+		final JPanel accessionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints gbc_accessionPanel = new GridBagConstraints();
+		gbc_accessionPanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_accessionPanel.anchor = GridBagConstraints.WEST;
 		gbc_accessionPanel.gridx = 0;
 		gbc_accessionPanel.gridy = 2;
@@ -312,26 +312,24 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		gbc_analysisPanel.gridy = 1;
 		menusPanel.add(analysisPanel, gbc_analysisPanel);
 		final GridBagLayout gbl_analysisPanel = new GridBagLayout();
-		gbl_analysisPanel.columnWidths = new int[] { 0 };
-		gbl_analysisPanel.rowHeights = new int[] { 0 };
-		gbl_analysisPanel.columnWeights = new double[] { 1.0, 0.0, 0.0 };
-		gbl_analysisPanel.rowWeights = new double[] { 0.0 };
 		analysisPanel.setLayout(gbl_analysisPanel);
 
-		final JPanel analysisParametersPanel = new JPanel(new GridBagLayout());
+		final GridBagLayout gbl_analysisParametersPanel = new GridBagLayout();
+		gbl_analysisParametersPanel.columnWeights = new double[] { 1.0 };
+		final JPanel analysisParametersPanel = new JPanel(gbl_analysisParametersPanel);
 		analysisParametersPanel.setBorder(
 				new TitledBorder(null, "Analysis parameters", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
 		final GridBagConstraints gbc_analysisParametersPanel = new GridBagConstraints();
-		gbc_analysisParametersPanel.fill = GridBagConstraints.VERTICAL;
+		gbc_analysisParametersPanel.anchor = GridBagConstraints.NORTH;
 		analysisPanel.add(analysisParametersPanel, gbc_analysisParametersPanel);
 
 		final JPanel intensityThresholdPanel = new JPanel();
 		final GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.BOTH;
-		c.insets = new Insets(0, 0, 0, 5);
-		c.gridx = 0;
-		c.gridy = 0;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.NORTH;
+		c.gridx = 1;
+		c.gridy = 1;
 		analysisParametersPanel.add(intensityThresholdPanel, c);
 
 		intensityThresholdPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -359,9 +357,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JPanel iterativeAnalysisPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c2 = new GridBagConstraints();
 		c2.fill = GridBagConstraints.BOTH;
-		c2.insets = new Insets(0, 0, 0, 5);
 		c2.gridx = 0;
-		c2.gridy = 1;
+		c2.gridy = 2;
+		c2.gridwidth = 2;
 		analysisParametersPanel.add(iterativeAnalysisPanel, c2);
 
 		iterativeThresholdAnalysisCheckBox = new JCheckBox("Iterative Threshold Analysis");
@@ -391,9 +389,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JPanel normalizeIntensityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c3 = new GridBagConstraints();
 		c3.fill = GridBagConstraints.BOTH;
-		c3.insets = new Insets(0, 0, 0, 5);
-		c3.gridx = 0;
-		c3.gridy = 2;
+		c3.gridx = 1;
+		c3.gridy = 0;
 		analysisParametersPanel.add(normalizeIntensityPanel, c3);
 
 		normalizeIntensityCheckBox = new JCheckBox("Normalize replicates");
@@ -401,25 +398,37 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				"Click to enable or disable the application of the normalization of the intensities in the input data file by replicates.");
 		normalizeIntensityPanel.add(normalizeIntensityCheckBox);
 
-		final JPanel analysisPerPeptidePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final JPanel sumIntensitiesAcrossReplicatesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c4 = new GridBagConstraints();
 		c4.fill = GridBagConstraints.BOTH;
-		c4.insets = new Insets(0, 0, 0, 5);
 		c4.gridx = 0;
-		c4.gridy = 3;
+		c4.gridy = 0;
 
-		analysisParametersPanel.add(analysisPerPeptidePanel, c4);
+		analysisParametersPanel.add(sumIntensitiesAcrossReplicatesPanel, c4);
 
 		sumIntensitiesAcrossReplicatesCheckBox = new JCheckBox("Sum intensities across replicates");
 		sumIntensitiesAcrossReplicatesCheckBox.setToolTipText(
 				"<html>If selected, for each peptide(+charge), the intensities are sum acrosss replicates before calculating the proportions.<br>If not selected, the proportions of each peptide(+charge) will be calculated in each replicate and then averaged among all the proportions covering a site.</html>");
 		sumIntensitiesAcrossReplicatesCheckBox.setSelected(true);
-		analysisPerPeptidePanel.add(sumIntensitiesAcrossReplicatesCheckBox);
+		sumIntensitiesAcrossReplicatesPanel.add(sumIntensitiesAcrossReplicatesCheckBox);
+
+		final JPanel discardWrongPositionedPTMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c5 = new GridBagConstraints();
+		c5.fill = GridBagConstraints.BOTH;
+		c5.gridx = 0;
+		c5.gridy = 1;
+		analysisParametersPanel.add(discardWrongPositionedPTMsPanel, c5);
+
+		discardWrongPositionedPTMsCheckBox = new JCheckBox("Discard PTMs in non-valid motifs");
+		discardWrongPositionedPTMsCheckBox.setToolTipText(
+				"If selected, peptides having PTMs of interest that are not in valid motifs are discarded regardless of having other positions with PTMs in valid motifs.");
+		discardWrongPositionedPTMsCheckBox.setSelected(true);
+		discardWrongPositionedPTMsPanel.add(discardWrongPositionedPTMsCheckBox);
 
 		final JPanel outputPanel = new JPanel();
 		final GridBagConstraints gbc_outputPanel = new GridBagConstraints();
 		gbc_outputPanel.anchor = GridBagConstraints.NORTH;
-		gbc_outputPanel.insets = new Insets(0, 0, 0, 5);
+		gbc_outputPanel.insets = new Insets(0, 5, 0, 5);
 		gbc_outputPanel.gridx = 1;
 		gbc_outputPanel.gridy = 0;
 		analysisPanel.add(outputPanel, gbc_outputPanel);
@@ -435,7 +444,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		flowLayout_4.setAlignment(FlowLayout.LEFT);
 		final GridBagConstraints gbc_namePanel = new GridBagConstraints();
 		gbc_namePanel.fill = GridBagConstraints.BOTH;
-		gbc_namePanel.insets = new Insets(0, 0, 5, 0);
 		gbc_namePanel.gridx = 0;
 		gbc_namePanel.gridy = 0;
 		outputPanel.add(namePanel, gbc_namePanel);
@@ -447,7 +455,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		nameTextField = new JTextField();
 		nameTextField.setToolTipText("Prefix that will be added to all the output files");
 		namePanel.add(nameTextField);
-		nameTextField.setColumns(20);
+		nameTextField.setColumns(30);
 		nameTextField.addKeyListener(new KeyListener() {
 
 			@Override
@@ -474,7 +482,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		separateChartsButton.setToolTipText("Click to show or close graphs in separate resizable dialogs");
 		final GridBagConstraints gbc_separateChartsPanel = new GridBagConstraints();
 		gbc_separateChartsPanel.fill = GridBagConstraints.BOTH;
-		gbc_separateChartsPanel.insets = new Insets(0, 0, 5, 0);
 		gbc_separateChartsPanel.gridx = 0;
 		gbc_separateChartsPanel.gridy = 1;
 		outputPanel.add(separateChartsPanel, gbc_separateChartsPanel);
@@ -498,12 +505,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			}
 		});
-		final JPanel showResultsPanel = new JPanel();
-		showResultsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 
 		showProteinSequenceButton = new JButton("Advanced results inspection");
 		showProteinSequenceButton.setEnabled(false);
-		showResultsPanel.add(showProteinSequenceButton);
+		separateChartsPanel.add(showProteinSequenceButton);
 		showProteinSequenceButton.setToolTipText("Click to visualize the results overlayed on the protein sequence");
 		showProteinSequenceButton.addActionListener(new ActionListener() {
 
@@ -515,20 +520,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		});
 
-		final GridBagConstraints gbc_showResultsPanel = new GridBagConstraints();
-		gbc_showResultsPanel.anchor = GridBagConstraints.WEST;
-		gbc_showResultsPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_showResultsPanel.fill = GridBagConstraints.VERTICAL;
-		gbc_showResultsPanel.gridx = 0;
-		gbc_showResultsPanel.gridy = 2;
-		outputPanel.add(showResultsPanel, gbc_showResultsPanel);
-
 		final JPanel panel = new JPanel();
 		final GridBagConstraints gbc_panel = new GridBagConstraints();
 		gbc_panel.anchor = GridBagConstraints.WEST;
 		gbc_panel.fill = GridBagConstraints.VERTICAL;
 		gbc_panel.gridx = 0;
-		gbc_panel.gridy = 3;
+		gbc_panel.gridy = 2;
 		outputPanel.add(panel, gbc_panel);
 		btnShowResultsTable = new JButton("Show sites table");
 		panel.add(btnShowResultsTable);
@@ -573,7 +570,6 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JPanel panel_1 = new JPanel();
 		final GridBagConstraints gbc_panel_1 = new GridBagConstraints();
 		gbc_panel_1.anchor = GridBagConstraints.NORTHWEST;
-		gbc_panel_1.insets = new Insets(0, 0, 0, 5);
 		gbc_panel_1.gridx = 0;
 		gbc_panel_1.gridy = 0;
 		startButtonPanel.add(panel_1, gbc_panel_1);
@@ -1057,17 +1053,18 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JButton selectFastaFileButton;
 	private JLabel lblFastaFile;
 	private JButton showProteinSequenceButton;
-	private JButton startButton;
 	private JTextField nameTextField;
 	private JCheckBox normalizeIntensityCheckBox;
 	private JScrollPane chartPanelScroll;
 	private JCheckBox sumIntensitiesAcrossReplicatesCheckBox;
-	private QuantCompareReader inputDataReader;
+	private InputDataReader inputDataReader;
 	private JLabel intensityThresholdIntervalLabel;
 	private JTextField intensityThresholdIntervalTextField;
 	private IterativeThresholdAnalysis iterativeThresholdAnalysis;
 	private List<QuantifiedPeptideInterface> currentPeptides;
 	private JButton compareRunsButton;
+	private String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
+	private AmountType amountType = AmountType.INTENSITY;
 
 	public static void main(String[] args) {
 		final MainFrame frame = MainFrame.getInstance();
@@ -1101,18 +1098,13 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	@Override
-	public double getFakePTM() {
-		return GlycoPTMAnalyzer.DEFAULT_FAKE_PTM;
-	}
-
-	@Override
 	public String getName() {
 
 		return this.nameTextField.getText();
 	}
 
 	@Override
-	public double getIntensityThreshold() {
+	public Double getIntensityThreshold() {
 		try {
 			if ("".equals(this.intensityThresholdText.getText())) {
 				return 0.0;
@@ -1127,11 +1119,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	@Override
 	public AmountType getAmountType() {
-		return AmountType.INTENSITY;
+		return amountType;
 	}
 
 	@Override
-	public boolean isNormalizeReplicates() {
+	public Boolean isNormalizeReplicates() {
 		return normalizeIntensityCheckBox.isSelected();
 	}
 
@@ -1141,15 +1133,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private void readInputData() {
 		final File inputFile = getInputFile();
 		final String proteinOfInterestACC = getProteinOfInterestACC();
-		final double fakePTM = getFakePTM();
 		final AmountType amountType = getAmountType();
 		final boolean normalizeExperimentsByProtein = isNormalizeReplicates();
 		final double intensityThreshold = getIntensityThreshold();
 		final String motifRegexp = getMotifRegexp();
-
+		final boolean discardWrongPositionedPTMs = isDiscardWrongPositionedPTMs();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		inputDataReader = new QuantCompareReader(inputFile, proteinOfInterestACC, getProteinSequence(), fakePTM,
-				intensityThreshold, amountType, normalizeExperimentsByProtein, motifRegexp);
+		inputDataReader = new InputDataReader(inputFile, proteinOfInterestACC, intensityThreshold, amountType,
+				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}
@@ -1177,13 +1168,16 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setNormalizeReplicates(isNormalizeReplicates());
 		resultsProperties.setSumIntensitiesAcrossReplicates(isSumIntensitiesAcrossReplicates());
 		resultsProperties.setProteinOfInterest(getProteinOfInterestACC());
+		resultsProperties.setMotifRegexp(getMotifRegexp());
+		resultsProperties.setFastaFile(getFastaFile());
+		resultsProperties.setDiscardWrongPositionedPTMs(isDiscardWrongPositionedPTMs());
 	}
 
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		if (evt.getPropertyName().equals("progress")) {
 			showMessage(evt.getNewValue());
-		} else if (evt.getPropertyName().equals(QuantCompareReader.INPUT_DATA_READER_FINISHED)) {
+		} else if (evt.getPropertyName().equals(InputDataReader.INPUT_DATA_READER_FINISHED)) {
 			currentPeptides = (List<QuantifiedPeptideInterface>) evt.getNewValue();
 			if (currentPeptides != null && !currentPeptides.isEmpty()) {
 				showMessage(currentPeptides.size() + " peptides read from input file ");
@@ -1195,7 +1189,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			} else {
 				showError("Some error occurred because no peptides were read from input file.");
 			}
-		} else if (evt.getPropertyName().equals(QuantCompareReader.INPUT_DATA_READER_ERROR)) {
+		} else if (evt.getPropertyName().equals(InputDataReader.INPUT_DATA_READER_ERROR)) {
 			if (!isIterativeAnalysis()) {
 				showError(evt.getNewValue());
 			} else {
@@ -1205,9 +1199,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				updateIterativeAnalysis(null);
 			}
 			this.componentStateKeeper.setToPreviousState(this);
-		} else if (evt.getPropertyName().equals(QuantCompareReader.INPUT_DATA_READER_START)) {
+		} else if (evt.getPropertyName().equals(InputDataReader.INPUT_DATA_READER_START)) {
 			showMessage("Reading input data...");
-		} else if (evt.getPropertyName().equals(QuantCompareReader.NUM_VALID_PEPTIDES)) {
+		} else if (evt.getPropertyName().equals(InputDataReader.NUM_VALID_PEPTIDES)) {
 //			peptidesValid = (int) evt.getNewValue();
 		} else if (evt.getPropertyName().equals(GlycoPTMPeptideAnalyzer.HIVPOSITIONS_CALCULATED)) {
 			currentGlycoSites = (List<GlycoSite>) evt.getNewValue();
@@ -1272,9 +1266,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_FINISHED)) {
 			final ResultsLoadedFromDisk results = (ResultsLoadedFromDisk) evt.getNewValue();
-			isSumIntensitiesAcrossReplicatesFromLoadedResults = results.isSumIntensitiesAcrossReplicates();
+			isSumIntensitiesAcrossReplicatesFromLoadedResults = results.getResultProperties()
+					.isSumIntensitiesAcrossReplicates();
 			this.currentGlycoSites = results.getSites();
-			this.sumIntensitiesAcrossReplicatesCheckBox.setSelected(results.isSumIntensitiesAcrossReplicates());
+			this.sumIntensitiesAcrossReplicatesCheckBox
+					.setSelected(results.getResultProperties().isSumIntensitiesAcrossReplicates());
 			this.currentPeptides = results.getPeptides();
 			final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(currentGlycoSites, this);
 			resultGenerator.addPropertyChangeListener(this);
@@ -1333,12 +1329,19 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	public void updateControlsWithParametersFromDisk(File resultsFolder) {
 		final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
-		this.dataFileText.setText(resultsProperties.getInputDataFile().getAbsolutePath());
+		this.dataFileText.setText(resultsProperties.getInputFile().getAbsolutePath());
 		this.intensityThresholdText.setText(String.valueOf(resultsProperties.getIntensityThreshold()));
-		this.normalizeIntensityCheckBox.setSelected(resultsProperties.getNormalizeReplicates());
+		this.normalizeIntensityCheckBox.setSelected(resultsProperties.isNormalizeReplicates());
 		this.nameTextField.setText(resultsProperties.getName());
-		this.proteinOfInterestText.setText(resultsProperties.getProteinOfInterest());
-		this.fastaFileText.setText("");
+		this.proteinOfInterestText.setText(resultsProperties.getProteinOfInterestACC());
+		if (resultsProperties.getFastaFile() != null) {
+			this.fastaFileText.setText(resultsProperties.getFastaFile().getAbsolutePath());
+		} else {
+			this.fastaFileText.setText("");
+		}
+		this.motifRegexp = resultsProperties.getMotifRegexp();
+		this.discardWrongPositionedPTMsCheckBox.setSelected(resultsProperties.isDiscardWrongPositionedPTMs());
+		this.amountType = resultsProperties.getAmountType();
 		ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
 
 	}
@@ -1478,7 +1481,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	@Override
-	public boolean isSumIntensitiesAcrossReplicates() {
+	public Boolean isSumIntensitiesAcrossReplicates() {
 		return this.sumIntensitiesAcrossReplicatesCheckBox.isSelected();
 	}
 
@@ -1537,10 +1540,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	@Override
 	public String getMotifRegexp() {
-		return GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
+		return this.motifRegexp;
 	}
 
 	public void enableRunComparison(boolean b) {
 		this.compareRunsButton.setEnabled(b);
+	}
+
+	@Override
+	public Boolean isDiscardWrongPositionedPTMs() {
+		return this.discardWrongPositionedPTMsCheckBox.isSelected();
 	}
 }

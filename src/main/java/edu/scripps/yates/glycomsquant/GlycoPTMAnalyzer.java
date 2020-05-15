@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 
-import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -37,7 +37,6 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final File inputFile;
 	private final String proteinOfInterestACC;
 	private final File fastaFile;
-	private final double fakePTM;
 	private final String name;
 	private final double intensityThreshold;
 	/*
@@ -51,6 +50,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final boolean normalizeReplicates;
 	private final boolean calculateProportionsByPeptidesFirst;
 	private final String motifRegexp;
+	private final boolean discardWrongPositionedPTMs;
 
 	private static final DecimalFormat f = new DecimalFormat("#.#E0");
 
@@ -59,29 +59,29 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.inputFile = inputParams.getInputFile();
 		this.proteinOfInterestACC = inputParams.getProteinOfInterestACC();
 		this.fastaFile = inputParams.getFastaFile();
-		this.fakePTM = inputParams.getFakePTM();
 		this.name = inputParams.getName();
 		this.intensityThreshold = inputParams.getIntensityThreshold();
 		this.amountType = inputParams.getAmountType();
 		this.normalizeReplicates = inputParams.isNormalizeReplicates();
 		this.calculateProportionsByPeptidesFirst = inputParams.isSumIntensitiesAcrossReplicates();
 		this.motifRegexp = inputParams.getMotifRegexp();
+		this.discardWrongPositionedPTMs = inputParams.isDiscardWrongPositionedPTMs();
 		printWelcome();
 	}
 
-	public GlycoPTMAnalyzer(File inputFile, String proteinOfInterestACC, File fastaFile, double fakePTM, String prefix,
-			String suffix, double intensityThreshold, AmountType amountType, boolean normalizeExperimentsByProtein,
-			boolean calculateProportionsByPeptidesFirst, String motifRegexp) {
+	public GlycoPTMAnalyzer(File inputFile, String proteinOfInterestACC, File fastaFile, String prefix, String suffix,
+			double intensityThreshold, AmountType amountType, boolean normalizeExperimentsByProtein,
+			boolean calculateProportionsByPeptidesFirst, String motifRegexp, boolean discardWrongPositionedPTMs) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
-		this.fakePTM = fakePTM;
 		this.name = prefix;
 		this.intensityThreshold = intensityThreshold;
 		this.amountType = amountType;
 		this.normalizeReplicates = normalizeExperimentsByProtein;
 		this.motifRegexp = motifRegexp;
 		this.calculateProportionsByPeptidesFirst = calculateProportionsByPeptidesFirst;
+		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 		printWelcome();
 
 		CurrentInputParameters.getInstance().setInputParameters(this);
@@ -131,6 +131,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		option8.setRequired(false);
 		options.addOption(option8);
 
+		final Option option9 = new Option("dis", "discard_wrong_motifs", false,
+				"[OPTIONAL] If present, peptides having PTMs of interest that are not in motifs are discarded regardless of having other positions with valid PTMs in motifs.");
+		option9.setRequired(false);
+		options.addOption(option9);
 	}
 
 	public static void main(String[] args) {
@@ -138,7 +142,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		final AppVersion version = getVersion();
 		System.out.println("Running HIVPTMAnalysis version " + version.toString());
 		setupCommandLineOptions();
-		final CommandLineParser parser = new BasicParser();
+		final CommandLineParser parser = new DefaultParser();
 		try {
 			final CommandLine cmd = parser.parse(options, args);
 
@@ -152,8 +156,6 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			}
 
 			final File fastaFile = new File(cmd.getOptionValue("fas"));
-
-			final double fakePTM = DEFAULT_FAKE_PTM;
 
 			String prefix = "";
 			if (cmd.hasOption("pre")) {
@@ -179,9 +181,15 @@ public class GlycoPTMAnalyzer implements InputParameters {
 				normalizeExperimentsByProtein = Boolean.valueOf(cmd.getOptionValue("pep"));
 			}
 			final String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
-			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, fakePTM,
-					prefix, suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, analysisByPeptides,
-					motifRegexp);
+
+			boolean discardWrongPositionedPTMs = false;
+			if (cmd.hasOption("dis")) {
+				discardWrongPositionedPTMs = Boolean.valueOf(cmd.getOptionValue("dis"));
+			}
+
+			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, prefix,
+					suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, analysisByPeptides,
+					motifRegexp, discardWrongPositionedPTMs);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {
@@ -208,9 +216,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	public void run(boolean generateTable, boolean generateGraphs) throws IOException {
 		List<QuantifiedPeptideInterface> peptides = null;
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
-		final QuantCompareReader q = new QuantCompareReader(inputFile, proteinOfInterestACC, proteinSequence, fakePTM,
-				intensityThreshold, amountType, normalizeReplicates, this.motifRegexp);
+		final InputDataReader q = new InputDataReader(inputFile, proteinOfInterestACC, intensityThreshold, amountType,
+				normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs);
 		try {
 			peptides = q.runReader();
 		} catch (final IOException e) {
@@ -323,17 +330,12 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	}
 
 	@Override
-	public double getFakePTM() {
-		return this.fakePTM;
-	}
-
-	@Override
 	public String getName() {
 		return this.name;
 	}
 
 	@Override
-	public double getIntensityThreshold() {
+	public Double getIntensityThreshold() {
 		return this.intensityThreshold;
 	}
 
@@ -343,17 +345,22 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	}
 
 	@Override
-	public boolean isNormalizeReplicates() {
+	public Boolean isNormalizeReplicates() {
 		return this.normalizeReplicates;
 	}
 
 	@Override
-	public boolean isSumIntensitiesAcrossReplicates() {
+	public Boolean isSumIntensitiesAcrossReplicates() {
 		return this.calculateProportionsByPeptidesFirst;
 	}
 
 	@Override
 	public String getMotifRegexp() {
 		return motifRegexp;
+	}
+
+	@Override
+	public Boolean isDiscardWrongPositionedPTMs() {
+		return this.discardWrongPositionedPTMs;
 	}
 }

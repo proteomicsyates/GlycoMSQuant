@@ -4,6 +4,7 @@ import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 
+import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.maths.PValueCorrection;
 import edu.scripps.yates.utilities.maths.PValueCorrectionResult;
 import edu.scripps.yates.utilities.maths.PValueCorrectionType;
@@ -16,6 +17,8 @@ import gnu.trove.map.hash.TObjectDoubleHashMap;
 public class MyMannWhitneyTestResult {
 
 	private final double u;
+	private final double[] x;
+	private final double[] y;
 	private final double pvalue;
 	private Double correctedPValue;
 	private final PValueCorrectionType method = PValueCorrectionType.BH;
@@ -31,11 +34,29 @@ public class MyMannWhitneyTestResult {
 
 	public MyMannWhitneyTestResult(double[] x, double y[]) {
 		final MannWhitneyUTest test = new MannWhitneyUTest(NaNStrategy.REMOVED, TiesStrategy.AVERAGE);
+		this.x = x;
+		this.y = y;
 		u = test.mannWhitneyU(x, y);
 		pvalue = test.mannWhitneyUTest(x, y);
 		pvaluesByID.put(id, pvalue);
 		instancesByID.put(id, this);
 		id++;
+	}
+
+	public double getXMean() {
+		return Maths.mean(x);
+	}
+
+	public double getXSem() {
+		return Maths.sem(x);
+	}
+
+	public double getYMean() {
+		return Maths.mean(y);
+	}
+
+	public double getYSem() {
+		return Maths.sem(y);
 	}
 
 	public double getPValue() {
