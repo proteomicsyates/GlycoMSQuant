@@ -145,19 +145,31 @@ public class ColumnsGroupedPeptidesTableUtil {
 				ret.add(num2);
 				break;
 			case PERCENT_2:
-				final double percent = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._2,
-						MainFrame.getInstance().isSumIntensitiesAcrossReplicates()));
-				ret.add(percent);
+				try {
+					final double percent = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._2,
+							MainFrame.getInstance().isSumIntensitiesAcrossReplicates())) * 100.0;
+					ret.add(percent);
+				} catch (final IllegalArgumentException e) {
+					ret.add("-");
+				}
 				break;
 			case PERCENT_203:
-				final double percent2 = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._203,
-						MainFrame.getInstance().isSumIntensitiesAcrossReplicates()));
-				ret.add(percent2);
+				try {
+					final double percent2 = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._203,
+							MainFrame.getInstance().isSumIntensitiesAcrossReplicates())) * 100.0;
+					ret.add(percent2);
+				} catch (final IllegalArgumentException e) {
+					ret.add("-");
+				}
 				break;
 			case PERCENT_NoPTM:
-				final double percent3 = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._0,
-						MainFrame.getInstance().isSumIntensitiesAcrossReplicates()));
-				ret.add(percent3);
+				try {
+					final double percent3 = Maths.mean(groupedPeptide.getProportionsByPTMCode(PTMCode._0,
+							MainFrame.getInstance().isSumIntensitiesAcrossReplicates())) * 100.0;
+					ret.add(percent3);
+				} catch (final IllegalArgumentException e) {
+					ret.add("-");
+				}
 				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");

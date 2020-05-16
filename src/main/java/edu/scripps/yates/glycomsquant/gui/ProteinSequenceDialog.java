@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JFrame;
@@ -67,7 +68,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private TObjectIntHashMap<JLabel> positionsByLabels;
 
 	private int selectedAminoacidPosition = -1;
-	private TIntObjectHashMap<Set<GroupedQuantifiedPeptide>> peptidesByPositions;
+	private final TIntObjectHashMap<Set<GroupedQuantifiedPeptide>> peptidesByPositionsInProtein = new TIntObjectHashMap<Set<GroupedQuantifiedPeptide>>();
 	private final JPanel proteinSequencePanel;
 	private final JLabel proteinNameLabel;
 	private final JLabel numberOfPeptidesLabel;
@@ -76,18 +77,25 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private final JPanel graphsPanel;
 	private final boolean sumIntensitiesAcrossReplicates;
 	public final THashMap<JLabel, Color> defaultColorsByAminoacidLabels = new THashMap<JLabel, Color>();
+	private final String currentProteinAcc;
 
 	public ProteinSequenceDialog(String proteinOfInterest, String proteinSequence, List<GlycoSite> glycoSites,
 			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates) {
 		super(GuiUtils.getFractionOfScreenWidthSize(0.4));
+		this.currentProteinAcc = proteinOfInterest;
 		setTitle("Protein sequence of '" + proteinOfInterest + "'");
 		this.proteinSequence = proteinSequence;
 
 		this.glycoSites = glycoSites;
-		for (final GlycoSite site : glycoSites) {
-			this.groupedPeptides.addAll(GlycoPTMAnalyzerUtil
-					.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest, site.getPosition()).values());
-		}
+
+		// we create groupedPeptides not linked to any position
+		final Map<String, GroupedQuantifiedPeptide> groupedPeptideByKey = GlycoPTMAnalyzerUtil
+				.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest);
+
+		// add to this.groupedPeptides
+		this.groupedPeptides.addAll(groupedPeptideByKey.values());
+
+		//
 		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		glycoSites.stream().forEach(g -> glycoSitesByPosition.put(g.getPosition(), g));
 		// the width will be the size of a label * proteinSequenceLineLength + 50
@@ -219,7 +227,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		// load sequence
 		loadSequence(getProteinSequence(), getPeptideOccupancyArray());
 		// load peptides
-		loadPeptidesTable(getGroupedPeptides());
+		loadPeptidesTable(getGroupedPeptides(null), null);
 		// add keyboard listener to function with arrows
 		addKeyListener(getArrowKeyListener());
 		getPeptideListAttachedDialog().addKeyListener(getArrowKeyListener());
@@ -492,9 +500,10 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 				GuiUtils.setPlainFont(label);
 			}
 			// load all peptides in table
-			loadPeptidesTable(getGroupedPeptides());
-			updateNumberOfPeptides(getGroupedPeptides().size());
-			showChartsFromPeptides(getGroupedPeptides(), -1);
+			final List<GroupedQuantifiedPeptide> peptides = getGroupedPeptides(position);
+			loadPeptidesTable(peptides, position);
+			updateNumberOfPeptides(peptides.size());
+			showChartsFromPeptides(peptides, -1);
 			return;
 		}
 		// set red border
@@ -587,8 +596,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		return ret;
 	}
 
-	protected void loadPeptidesTable(Collection<GroupedQuantifiedPeptide> groupedPeptides) {
-		getPeptideListAttachedDialog().loadTable(groupedPeptides);
+	protected void loadPeptidesTable(Collection<GroupedQuantifiedPeptide> groupedPeptides, Integer positionInProtein) {
+		getPeptideListAttachedDialog().loadTable(groupedPeptides, positionInProtein);
 	}
 
 	protected void updateSelectedPosition(int position) {
@@ -608,29 +617,34 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	protected void showPeptidesCoveringPosition(int position) {
 		// get peptides covering that position
 		final Set<GroupedQuantifiedPeptide> peptidesToLoad = getPeptidesCoveringPosition(position);
-		loadPeptidesTable(peptidesToLoad);
+		// IMPORTANT: set the position for which we are getting the data
+		peptidesToLoad.stream().forEach(pep -> pep.setPositionInPeptideWithPositionInProtein(position));
+		// load table with these peptides
+		loadPeptidesTable(peptidesToLoad, position);
+		// update the number of peptides
 		updateNumberOfPeptides(peptidesToLoad.size());
 	}
 
-	private Set<GroupedQuantifiedPeptide> getPeptidesCoveringPosition(int position) {
-		if (peptidesByPositions == null) {
-			peptidesByPositions = new TIntObjectHashMap<Set<GroupedQuantifiedPeptide>>();
-			for (final GroupedQuantifiedPeptide peptide : getGroupedPeptides()) {
-				final TIntArrayList startingPositions = StringUtils.allPositionsOf(getProteinSequence(),
-						peptide.getSequence());
-				for (final int startingPosition : startingPositions.toArray()) {
-					for (int i = 0; i < peptide.getSequence().length(); i++) {
-						final int positionInPeptide = startingPosition + i;
-						if (!peptidesByPositions.containsKey(positionInPeptide)) {
-							peptidesByPositions.put(positionInPeptide, new THashSet<GroupedQuantifiedPeptide>());
-						}
-						peptidesByPositions.get(positionInPeptide).add(peptide);
+	private Set<GroupedQuantifiedPeptide> getPeptidesCoveringPosition(int positionInProtein) {
+		if (!peptidesByPositionsInProtein.containsKey(positionInProtein)) {
+			for (final GroupedQuantifiedPeptide peptide : getGroupedPeptides(positionInProtein)) {
+				final int firstPositionOfPeptideInProtein = GlycoPTMAnalyzerUtil
+						.getPositionsInProtein(peptide.getSequence(), this.currentProteinAcc);
+				final int lastPositionOfPeptideInProtein = firstPositionOfPeptideInProtein
+						+ peptide.getSequence().length() - 1;
+				if (positionInProtein >= firstPositionOfPeptideInProtein
+						&& positionInProtein <= lastPositionOfPeptideInProtein) {
+					if (!peptidesByPositionsInProtein.containsKey(positionInProtein)) {
+						peptidesByPositionsInProtein.put(positionInProtein, new THashSet<GroupedQuantifiedPeptide>());
 					}
+					peptidesByPositionsInProtein.get(positionInProtein).add(peptide);
 				}
 			}
 		}
-		if (peptidesByPositions.containsKey(position)) {
-			return peptidesByPositions.get(position);
+		if (peptidesByPositionsInProtein.containsKey(positionInProtein)) {
+			final Set<GroupedQuantifiedPeptide> ret = peptidesByPositionsInProtein.get(positionInProtein);
+			ret.stream().forEach(pep -> pep.setPositionInPeptideWithPositionInProtein(positionInProtein));
+			return ret;
 		}
 		return Collections.emptySet();
 	}
@@ -642,7 +656,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	 */
 	private TIntList getPeptideOccupancyArray() {
 		if (peptideOccupancyArray == null) {
-			peptideOccupancyArray = getPeptideOccupancyArray(this.getGroupedPeptides(), this.getProteinSequence());
+			peptideOccupancyArray = getPeptideOccupancyArray(this.getGroupedPeptides(null), this.getProteinSequence());
 		}
 		return peptideOccupancyArray;
 	}
@@ -702,7 +716,18 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		return this.glycoSites;
 	}
 
-	public List<GroupedQuantifiedPeptide> getGroupedPeptides() {
+	/**
+	 * Gets the complete list of peptides after setting the position in the protein
+	 * for which we want the data.<br>
+	 * Note that it doesn't mean that we get the list of GroupedQuantifiedPeptide
+	 * covering that position. For that purpose, call to
+	 * getPeptidesCoveringPosition(position) method.
+	 * 
+	 * @param position
+	 * @return
+	 */
+	public List<GroupedQuantifiedPeptide> getGroupedPeptides(Integer positionInProtein) {
+		this.groupedPeptides.stream().forEach(pep -> pep.setPositionInPeptideWithPositionInProtein(positionInProtein));
 		return this.groupedPeptides;
 	}
 
@@ -710,18 +735,21 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		return this.proteinSequence;
 	}
 
-	public void highlightPeptidesOnSequence(Collection<GroupedQuantifiedPeptide> selectedGroupedPeptides) {
+	public void highlightPeptidesOnSequence(Collection<GroupedQuantifiedPeptide> selectedGroupedPeptides,
+			Integer positionInProtein) {
 		TIntList peptideOccupancyArray = null;
 		if (selectedGroupedPeptides == null || selectedGroupedPeptides.isEmpty()) {
-			peptideOccupancyArray = getPeptideOccupancyArray(getGroupedPeptides(), getProteinSequence());
+			peptideOccupancyArray = getPeptideOccupancyArray(getGroupedPeptides(positionInProtein),
+					getProteinSequence());
 		} else {
 			peptideOccupancyArray = getPeptideOccupancyArray(selectedGroupedPeptides, getProteinSequence());
 		}
-
 		loadSequence(getProteinSequence(), peptideOccupancyArray);
 	}
 
-	public void showChartsFromPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides, int position) {
+	public void showChartsFromPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides, int positionInProtein) {
+		// set position as -1
+		selectedPeptides.stream().forEach(pep -> pep.setPositionInPeptide(-1));
 		final int width = 300;
 		final int height = 200;
 		graphsPanel.removeAll();
@@ -729,7 +757,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			final JPanel headerPanel = new JPanel();
 			headerPanel.setBackground(Color.white);
 			if (selectedPeptides.isEmpty()) {
-				final JLabel headerLabel = new JLabel("No peptides covering position " + position);
+				final JLabel headerLabel = new JLabel("No peptides covering position " + positionInProtein);
 				headerLabel.setFont(GuiUtils.headerFont());
 				headerPanel.add(headerLabel);
 				final GridBagConstraints c = new GridBagConstraints();
@@ -759,13 +787,111 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 					sumIntensitiesAcrossReplicates);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
-			if (position != -1) {
+			if (positionInProtein != -1) {
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
-							+ "<br> covering position " + position + ":";
+							+ "<br> covering position " + positionInProtein + ":";
 				} else {
 					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
-							+ numMeasurementsText + "<br> covering position " + position + ":";
+							+ numMeasurementsText + "<br> covering position " + positionInProtein + ":";
+				}
+			} else {
+				if (peptides.size() > 1) {
+					text = "Charts summarizing <br>the " + peptides.size() + " selected peptides <br>"
+							+ numMeasurementsText + ":";
+				} else {
+					text = "Charts summarizing <br>selected peptide " + peptides.iterator().next().getKey(false)
+							+ " <br>" + numMeasurementsText + ":";
+				}
+			}
+			final JLabel headerLabel = new JLabel("<html><div style='text-align: center;'>" + text + "</div></html>");
+			headerLabel.setFont(GuiUtils.headerFont());
+			headerPanel.add(headerLabel);
+			final GridBagConstraints c = new GridBagConstraints();
+			c.gridx = 0;
+			c.gridy = 0;
+			c.gridwidth = 2; // number of charts horizontally
+			c.fill = GridBagConstraints.HORIZONTAL;
+			c.ipady = 20;
+			c.anchor = GridBagConstraints.NORTH;
+			this.graphsPanel.add(headerPanel, c);
+
+			// starting in row 1
+			// proportions pie chart
+
+			// intensities whiskeyChart
+			final ChartPanel chart2 = createIntensitiesWhiskeyChartForPeptides(peptides, width, height);
+			final GridBagConstraints c3 = new GridBagConstraints();
+			c3.gridx = 0;
+			c3.gridy = 1;
+			c3.fill = GridBagConstraints.NONE;
+			c3.anchor = GridBagConstraints.FIRST_LINE_START;
+			this.graphsPanel.add(chart2, c3);
+			chart2.updateUI();
+
+			// intensities error bar
+			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, width, height);
+			final GridBagConstraints c2 = new GridBagConstraints();
+			c2.gridx = 1;
+			c2.gridy = 1;
+			c2.fill = GridBagConstraints.NONE;
+			c2.anchor = GridBagConstraints.FIRST_LINE_START;
+			this.graphsPanel.add(chart1, c2);
+			chart1.updateUI();
+		} finally {
+			this.graphsPanel.repaint();
+			this.repaint();
+		}
+	}
+
+	public void showChartsFromGlycoSite(GlycoSite glycoSite) {
+
+		final Collection<GroupedQuantifiedPeptide> selectedPeptides = glycoSite.getCoveredGroupedPeptides();
+		final int positionInProtein = glycoSite.getPosition();
+		final int width = 300;
+		final int height = 200;
+		graphsPanel.removeAll();
+		try {
+			final JPanel headerPanel = new JPanel();
+			headerPanel.setBackground(Color.white);
+			if (selectedPeptides.isEmpty()) {
+				final JLabel headerLabel = new JLabel("No peptides covering position " + positionInProtein);
+				headerLabel.setFont(GuiUtils.headerFont());
+				headerPanel.add(headerLabel);
+				final GridBagConstraints c = new GridBagConstraints();
+				c.gridx = 0;
+				c.gridy = 0;
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.ipady = 20;
+				c.anchor = GridBagConstraints.NORTH;
+				this.graphsPanel.add(headerPanel, c);
+				return;
+			}
+			// sort peptides in a list
+			final List<GroupedQuantifiedPeptide> peptides = new ArrayList<GroupedQuantifiedPeptide>();
+			peptides.addAll(selectedPeptides);
+			Collections.sort(peptides, new Comparator<GroupedQuantifiedPeptide>() {
+
+				@Override
+				public int compare(GroupedQuantifiedPeptide o1, GroupedQuantifiedPeptide o2) {
+
+					return o1.getKey(false).compareTo(o2.getKey(false));
+				}
+			});
+
+			String text = null;
+
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(peptides,
+					sumIntensitiesAcrossReplicates);
+
+			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
+			if (positionInProtein != -1) {
+				if (peptides.size() > 1) {
+					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
+							+ "<br> covering position " + positionInProtein + ":";
+				} else {
+					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
+							+ numMeasurementsText + "<br> covering position " + positionInProtein + ":";
 				}
 			} else {
 				if (peptides.size() > 1) {
@@ -810,7 +936,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			chart2.updateUI();
 
 			// proportions scatter plot
-			final ChartPanel chart4 = createScatterPlotChartForPeptides(peptides, width, height);
+			final ChartPanel chart4 = createProportionsScatterPlotChartForPeptides(peptides, width, height);
 			final GridBagConstraints c5 = new GridBagConstraints();
 			c5.gridx = 0;
 			c5.gridy = 2;
@@ -833,15 +959,9 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		}
 	}
 
-	public void showChartsFromGlycoSite(GlycoSite glycoSite) {
-
-		final Collection<GroupedQuantifiedPeptide> selectedPeptides = glycoSite.getCoveredGroupedPeptides();
-		showChartsFromPeptides(selectedPeptides, glycoSite.getPosition());
-	}
-
-	private ChartPanel createScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides, int width,
-			int height) {
-		final ChartPanel chartPanel = ChartUtils.createScatterPlotChartForPeptides(peptides,
+	private ChartPanel createProportionsScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
+			int width, int height) {
+		final ChartPanel chartPanel = ChartUtils.createProportionsScatterPlotChartForPeptides(peptides,
 				sumIntensitiesAcrossReplicates, "", "", width, height);
 
 		return chartPanel;
@@ -852,6 +972,22 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForPeptides(selectedPeptides, "", "",
 				false, ErrorType.SEM, width, height);
+		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
+		final ValueAxis rangeAxis = plot.getRangeAxis();
+		// font for the axis
+		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		rangeAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		final CategoryAxis domainAxis = plot.getDomainAxis();
+		domainAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		domainAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		return chartPanel;
+	}
+
+	private ChartPanel createIntensitiesWhiskeyChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
+			int width, int height) {
+
+		final ChartPanel chartPanel = ChartUtils.createIntensitiesBoxAndWhiskerChartForGroupedPeptides(selectedPeptides,
+				"", "", sumIntensitiesAcrossReplicates, width, height);
 		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis

@@ -509,7 +509,11 @@ public class GlycoPTMAnalyzerUtil {
 	private static Map<PTMCode, TDoubleList> getIntensitiesPerPTMCodeInReplicate(GroupedQuantifiedPeptide peptides,
 			String replicate) {
 		final Map<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();
-		final int positionInPeptide = peptides.getPositionInPeptide();
+		final Integer positionInPeptide = peptides.getPositionInPeptide();
+		if (positionInPeptide == null) {
+			throw new IllegalArgumentException("we need to know which position in the peptide we want the data for");
+		}
+
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList valuesPerPTMCode = new TDoubleArrayList();
 			// reduce list to have unique hashcodes
@@ -522,8 +526,10 @@ public class GlycoPTMAnalyzerUtil {
 				final THashMap<PTMCode, TIntList> positionsByPTMCodesFromPeptide = getPositionsByPTMCodesFromPeptide(
 						peptide, peptides.getProteinAcc());
 				// if the peptide has that ptmCode and it is in that position:
-				if (positionsByPTMCodesFromPeptide.containsKey(ptmCode)
-						&& positionsByPTMCodesFromPeptide.get(ptmCode).contains(positionInPeptide)) { // IMPORTANT!!
+				// IMPORTANT it can be positionInPeptide==-1, meaning that we dont care about
+				// position. It will probably be to get the intensities and plot them!!
+				if (positionsByPTMCodesFromPeptide.containsKey(ptmCode) && (positionInPeptide == -1
+						|| positionsByPTMCodesFromPeptide.get(ptmCode).contains(positionInPeptide))) {
 					final double intensityFromPeptideInReplicate = getIntensityFromPeptideInReplicate(peptide,
 							replicate);
 					// if it is NaN means that the peptide was not detected in that replicate
@@ -602,6 +608,31 @@ public class GlycoPTMAnalyzerUtil {
 	}
 
 	/**
+	 * creates a map of {@link GroupedQuantifiedPeptide} in which its key is the key
+	 * used to group the {@link QuantifiedPeptideInterface} and it is not linked to
+	 * any position in the protein
+	 * 
+	 * @param peptides
+	 * @param proteinAcc protein for which this {@link GroupedQuantifiedPeptide} is
+	 *                   created
+	 * 
+	 * @return
+	 */
+	public static Map<String, GroupedQuantifiedPeptide> getGroupedPeptidesFromPeptides(
+			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc) {
+		final Map<String, GroupedQuantifiedPeptide> ret = new THashMap<String, GroupedQuantifiedPeptide>();
+		for (final QuantifiedPeptideInterface peptide : peptides) {
+			final String peptideKey = getPeptideKey(peptide, true);
+			if (!ret.containsKey(peptideKey)) {
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc));
+			} else {
+				ret.get(peptideKey).add(peptide);
+			}
+		}
+		return ret;
+	}
+
+	/**
 	 * Gets the position in the peptide corresponding to the positionInProtein of a
 	 * peptide that is suppose to cover it.
 	 * 
@@ -652,5 +683,43 @@ public class GlycoPTMAnalyzerUtil {
 			}
 		}
 		return ret;
+	}
+
+	/**
+	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
+	 * class, so it must be initialized before this call. If peptide is not found is
+	 * maps to multiple locations of the protein, it throws an
+	 * {@link IllegalArgumentException}
+	 * 
+	 * @param peptide
+	 * @param proteinAcc
+	 * @return
+	 */
+	public static int getPositionsInProtein(QuantifiedPeptideInterface peptide, String proteinAcc) {
+		return getPositionsInProtein(peptide.getSequence(), proteinAcc);
+	}
+
+	/**
+	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
+	 * class, so it must be initialized before this call. If peptide is not found is
+	 * maps to multiple locations of the protein, it throws an
+	 * {@link IllegalArgumentException}
+	 * 
+	 * @param peptide
+	 * @param proteinAcc
+	 * @return
+	 */
+	public static int getPositionsInProtein(String peptideSequence, String proteinAcc) {
+		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
+		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence, peptideSequence);
+		if (positionsOfPeptideInProtein.isEmpty()) {
+			throw new IllegalArgumentException("Peptide " + peptideSequence + " doesn't map to protein " + proteinAcc
+					+ " in sequence " + proteinSequence);
+		}
+		if (positionsOfPeptideInProtein.size() > 1) {
+			throw new IllegalArgumentException("Peptide " + peptideSequence + " map to protein " + proteinAcc
+					+ " in sequence " + proteinSequence + " in multiple positions. It should be discarded.");
+		}
+		return positionsOfPeptideInProtein.get(0);
 	}
 }

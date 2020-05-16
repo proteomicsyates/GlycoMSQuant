@@ -121,7 +121,7 @@ public class AttachedPeptideListDialog extends JDialog {
 	}
 
 	private List<GroupedQuantifiedPeptide> getPeptides() {
-		return this.proteinSequenceDialog.getGroupedPeptides();
+		return this.proteinSequenceDialog.getGroupedPeptides(null);
 	}
 
 	private String getProteinSequence() {
@@ -132,7 +132,7 @@ public class AttachedPeptideListDialog extends JDialog {
 		return this.peptideTable.getTable();
 	}
 
-	public void loadTable(Collection<GroupedQuantifiedPeptide> peptidesToLoad) {
+	public void loadTable(Collection<GroupedQuantifiedPeptide> peptidesToLoad, Integer positionInProtein) {
 		peptideTable.getTable().clearData();
 
 		addColumnsInTable(peptideTable.getTable(), ColumnsGroupedPeptidesTable.getColumnsStringForTable());
@@ -171,7 +171,7 @@ public class AttachedPeptideListDialog extends JDialog {
 						final GroupedQuantifiedPeptide peptide = list.get(rowInModel);
 						selectedPeptides.add(peptide);
 					}
-					proteinSequenceDialog.highlightPeptidesOnSequence(selectedPeptides);
+					proteinSequenceDialog.highlightPeptidesOnSequence(selectedPeptides, null);
 					proteinSequenceDialog.showChartsFromPeptides(selectedPeptides, -1);
 				}
 			});
@@ -185,7 +185,7 @@ public class AttachedPeptideListDialog extends JDialog {
 				peptideTable.initializeSorter();
 			}
 		});
-		this.proteinSequenceDialog.highlightPeptidesOnSequence(peptidesToLoad);
+		this.proteinSequenceDialog.highlightPeptidesOnSequence(peptidesToLoad, positionInProtein);
 
 	}
 

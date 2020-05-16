@@ -172,6 +172,58 @@ public class ChartUtils {
 		return chartPanel;
 	}
 
+	public static ChartPanel createIntensitiesBoxAndWhiskerChartForGroupedPeptides(
+			Collection<GroupedQuantifiedPeptide> peptides, String title, String subtitle,
+			boolean sumIntensitiesAcrossReplicates, int width, int height) {
+
+		final BoxAndWhiskerCategoryDataset dataset = createIntensitiesErrorDatasetBoxAndWhiskerforGroupedPeptides(
+				peptides, sumIntensitiesAcrossReplicates);
+		final BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer() {
+			private static final long serialVersionUID = 7752611432598679547L;
+
+			@Override
+			public CategoryItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, CategoryPlot plot,
+					int rendererIndex, PlotRenderingInfo info) {
+				final CategoryItemRendererState state = super.initialise(g2, dataArea, plot, rendererIndex, info);
+				if (state.getBarWidth() > 20)
+					state.setBarWidth(20); // Keeps the circle and chart from being huge
+				return state;
+			}
+		};
+
+		renderer.setFillBox(true);
+		renderer.setDefaultEntityRadius(1);
+		renderer.setWhiskerWidth(0.7);
+
+		renderer.setDefaultToolTipGenerator(new BoxAndWhiskerToolTipGenerator());
+		for (int i = 0; i < ColorsUtil.getDefaultColorsSortedByPTMCode().length; i++) {
+			final Paint paint = ColorsUtil.getDefaultColorsSortedByPTMCode()[i];
+			renderer.setSeriesFillPaint(i, paint);
+			renderer.setSeriesPaint(i, paint);
+			renderer.setSeriesOutlinePaint(i, ColorsUtil.getBlack());
+		}
+		final CategoryAxis xAxis = new CategoryAxis("PTM state");
+		xAxis.setCategoryLabelPositions(CategoryLabelPositions.createUpRotationLabelPositions(Math.PI / 6.0));
+
+		final NumberAxis yAxis = new NumberAxis("Intensity");
+		final CategoryPlot plot = new CategoryPlot(dataset, xAxis, yAxis, renderer);
+		plot.setBackgroundPaint(Color.white);
+		plot.setOutlinePaint(Color.white);
+		plot.setOutlineVisible(false);
+		final JFreeChart chart = new JFreeChart(title, GuiUtils.getFontForSmallChartTitle(), plot, true);
+		if (subtitle != null) {
+			final TextTitle textSubtitle = new TextTitle(subtitle);
+			chart.addSubtitle(textSubtitle);
+		}
+		chart.setBackgroundPaint(Color.white);
+		chart.setBorderVisible(false);
+		final ChartPanel chartPanel = new ChartPanel(chart);
+		final Dimension dimension = new Dimension(width, height);
+		chartPanel.setPreferredSize(dimension);
+		chartPanel.setSize(dimension);
+		return chartPanel;
+	}
+
 	public static BoxAndWhiskerCategoryDataset createProportionsErrorDatasetBoxAndWhiskerforGroupedPeptides(
 			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
 		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
@@ -189,6 +241,33 @@ public class ChartUtils {
 				}
 				for (final double percentage : proportions.toArray()) {
 					valuesPerPTMCode.get(ptmCode).add(percentage);
+				}
+			}
+
+		}
+		for (final PTMCode ptmCode : PTMCode.values()) {
+			final String columnKey = "";
+			final List<Double> list = valuesPerPTMCode.get(ptmCode);
+			dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
+		}
+
+		return dataset;
+	}
+
+	public static BoxAndWhiskerCategoryDataset createIntensitiesErrorDatasetBoxAndWhiskerforGroupedPeptides(
+			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
+		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
+
+		final Map<PTMCode, List<Double>> valuesPerPTMCode = new THashMap<PTMCode, List<Double>>();
+		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+
+			for (final PTMCode ptmCode : PTMCode.values()) {
+				final TDoubleList intensities = groupedPeptide.getIntensitiesByPTMCode(ptmCode);
+				if (!valuesPerPTMCode.containsKey(ptmCode)) {
+					valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+				}
+				for (final double intensity : intensities.toArray()) {
+					valuesPerPTMCode.get(ptmCode).add(intensity);
 				}
 			}
 
@@ -328,7 +407,7 @@ public class ChartUtils {
 		return chartPanel;
 	}
 
-	public static ChartPanel createScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
+	public static ChartPanel createProportionsScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
 			boolean sumIntensitiesAcrossReplicates, String title, String subtitle, Integer width, Integer height) {
 		final Pair<XYDataset, MyXYItemLabelGenerator> pair = createProportionsScatteredDataSetForPeptides(peptides,
 				sumIntensitiesAcrossReplicates);

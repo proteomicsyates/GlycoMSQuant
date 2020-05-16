@@ -27,7 +27,8 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	private String sequence;
 	private TMap<PTMCode, TDoubleList> intensitiesByPTMCode;
 	private final String proteinAcc;
-	private final int positionInPeptide;
+	private Integer positionInPeptide;
+	private final int startingPositionInProtein;
 
 	/**
 	 * 
@@ -36,11 +37,26 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	 * @param positionInPeptide position in the peptide for which this
 	 *                          {@link GroupedQuantifiedPeptide} was created
 	 */
-	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, int positionInPeptide) {
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, Integer positionInPeptide) {
 		this.proteinAcc = proteinAcc;
-		add(peptide);
+		this.startingPositionInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide, proteinAcc);
 		this.positionInPeptide = positionInPeptide;
 		chargeState = peptide.getPSMs().get(0).getChargeState();
+		add(peptide);
+
+	}
+
+	/**
+	 * Same constructor as the other but not specifying the position in peptide for
+	 * which we want the data. This is used in the advanced inspection, because
+	 * sometimes we want data from other positions.
+	 * 
+	 * @param peptide
+	 * @param proteinAcc
+	 * 
+	 */
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc) {
+		this(peptide, proteinAcc, null);
 	}
 
 	/**
@@ -136,7 +152,31 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	 * 
 	 * @return
 	 */
-	public int getPositionInPeptide() {
+	public Integer getPositionInPeptide() {
 		return positionInPeptide;
+	}
+
+	public void setPositionInPeptide(Integer positionInPeptide) {
+		this.positionInPeptide = positionInPeptide;
+	}
+
+	/**
+	 * Sets the position in peptide that determines the current position to look,
+	 * but using the position in the protein, so this function wil translate that
+	 * position to a position in the peptide.
+	 * 
+	 * @param positionInProtein if null, the position in peptide will be set to null
+	 */
+	public void setPositionInPeptideWithPositionInProtein(Integer positionInProtein) {
+		if (positionInProtein == null) {
+			setPositionInPeptide(null);
+		} else {
+			final int positionInPeptide2 = positionInProtein - startingPositionInProtein + 1;
+			if (positionInPeptide2 < 1 || positionInPeptide2 > getSequence().length()) {
+				setPositionInPeptide(null);
+			} else {
+				setPositionInPeptide(positionInPeptide2);
+			}
+		}
 	}
 }
