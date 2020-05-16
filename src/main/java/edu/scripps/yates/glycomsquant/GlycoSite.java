@@ -220,6 +220,7 @@ public class GlycoSite {
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
 
 				final GroupedQuantifiedPeptide peptides = peptidesByNoPTMPeptideKey.get(peptideKey);
+				peptides.setPositionInPeptideWithPositionInProtein(getPosition());
 				final Map<PTMCode, TDoubleList> individualProportions = GlycoPTMAnalyzerUtil
 						.getIndividualProportionsByPTMCode(peptides, sumIntensitiesAcrossReplicates);
 

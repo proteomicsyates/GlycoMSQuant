@@ -666,7 +666,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	protected void compareExperiments() {
-		final List<String> selectedRuns = getRunsAttachedDialog().getSelectedRuns();
+		final List<String> selectedRuns = getRunsAttachedDialog().getSelectedRunPathss();
 		final StringBuilder sb = new StringBuilder();
 		for (final String string : selectedRuns) {
 			sb.append("\t" + string);

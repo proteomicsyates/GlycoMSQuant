@@ -117,20 +117,24 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 		for (final int position : sites1.keys()) {
 			if (sites2.containsKey(position)) {
 				final Map<PTMCode, MyMannWhitneyTestResult> compareSites = compareSites(sites1.get(position),
-						sites2.get(position));
+						results1.getResultProperties().isSumIntensitiesAcrossReplicates(), sites2.get(position),
+						results2.getResultProperties().isSumIntensitiesAcrossReplicates());
 				ret.addTTestsForPosition(position, compareSites);
 			}
 		}
 		return ret;
 	}
 
-	private Map<PTMCode, MyMannWhitneyTestResult> compareSites(GlycoSite glycoSite1, GlycoSite glycoSite2) {
+	private Map<PTMCode, MyMannWhitneyTestResult> compareSites(GlycoSite glycoSite1,
+			boolean sumIntensitiesAcrossReplicates1, GlycoSite glycoSite2, boolean sumIntensitiesAcrossReplicates2) {
 		final Map<PTMCode, MyMannWhitneyTestResult> ret = new THashMap<PTMCode, MyMannWhitneyTestResult>();
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			// the value of sumIntensitiesAcrossReplicates here doesn't matter because each
 			// glycoSite will have already the values and the boolean will not be used
-			final TDoubleList percentages1 = glycoSite1.getIndividualPeptideProportionsByPTMCode(ptmCode, true);
-			final TDoubleList percentages2 = glycoSite2.getIndividualPeptideProportionsByPTMCode(ptmCode, true);
+			final TDoubleList percentages1 = glycoSite1.getIndividualPeptideProportionsByPTMCode(ptmCode,
+					sumIntensitiesAcrossReplicates1);
+			final TDoubleList percentages2 = glycoSite2.getIndividualPeptideProportionsByPTMCode(ptmCode,
+					sumIntensitiesAcrossReplicates2);
 // 			System.out.println("Test: " + ptmCode.getCode() + " in " + glycoSite1.getPosition());
 //			if (ptmCode == PTMCode._2 && glycoSite1.getPosition() == 363) {
 //				System.out.println("asfd");

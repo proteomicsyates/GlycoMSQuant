@@ -248,7 +248,7 @@ public class AttachedRunsDialog extends JDialog {
 		this.minimized = b;
 	}
 
-	public List<String> getSelectedRuns() {
+	public List<String> getSelectedRunPathss() {
 		final List<ColumnsRunTable> columns = ColumnsRunTable.getColumns();
 		final int runPathIndex = columns.indexOf(ColumnsRunTable.RUN_PATH);
 		final int[] selectedRows = this.table.getTable().getSelectedRows();
