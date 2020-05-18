@@ -1,17 +1,28 @@
-package edu.scripps.yates.glycomsquant;
+package edu.scripps.yates.glycomsquant.comparison;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
+/**
+ * A single comparison between two experiments
+ * 
+ * @author salvador
+ *
+ */
 public class RunComparisonTest extends TIntObjectHashMap<Map<PTMCode, MyMannWhitneyTestResult>> {
 	private final ResultsLoadedFromDisk results1;
 	private final ResultsLoadedFromDisk results2;
+	private final List<MyMannWhitneyTestResult> comparisons = new ArrayList<MyMannWhitneyTestResult>();
 	private final static DecimalFormat format = new DecimalFormat("#.##");
 	private final static DecimalFormat formatPercentage = new DecimalFormat("#.#%");
 
@@ -38,7 +49,7 @@ public class RunComparisonTest extends TIntObjectHashMap<Map<PTMCode, MyMannWhit
 
 	public void addTTestsForPosition(int position, Map<PTMCode, MyMannWhitneyTestResult> tests) {
 		this.put(position, tests);
-
+		this.comparisons.addAll(tests.values());
 	}
 
 	private String formatPValue(double pvalue) {
@@ -81,5 +92,10 @@ public class RunComparisonTest extends TIntObjectHashMap<Map<PTMCode, MyMannWhit
 		}
 
 		return sb.toString();
+	}
+
+	public List<MyMannWhitneyTestResult> getComparisons() {
+		return comparisons;
+
 	}
 }

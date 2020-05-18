@@ -27,11 +27,10 @@ public class PeptidesTableDialog extends JFrame {
 	private static final long serialVersionUID = -1119185903108814297L;
 	private static final Logger log = Logger.getLogger(PeptidesTableDialog.class);
 	private ScrollablePeptidesTable scrollableTable;
-	private final Dimension preferredSize;
 
 	public PeptidesTableDialog() {
 		super();
-		preferredSize = new Dimension(GuiUtils.getFractionOfScreenWidthSize(3.0 / 5),
+		final Dimension preferredSize = new Dimension(GuiUtils.getFractionOfScreenWidthSize(3.0 / 5),
 				GuiUtils.getFractionOfScreenHeightSize(3.0 / 4));
 		setPreferredSize(preferredSize);
 		getContentPane().setBackground(SystemColor.info);

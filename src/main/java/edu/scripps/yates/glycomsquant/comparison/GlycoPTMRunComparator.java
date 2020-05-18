@@ -1,4 +1,4 @@
-package edu.scripps.yates.glycomsquant;
+package edu.scripps.yates.glycomsquant.comparison;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -10,6 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.swing.SwingWorker;
 
+import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.gui.tasks.ResultLoaderFromDisk;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
@@ -96,6 +98,7 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 						final RunComparisonTest compareResults = compareResults(results1, results2);
 						comparison.addPairComparison(compareResults);
 					} catch (final Exception e) {
+						e.printStackTrace();
 						firePropertyChange(COMPARATOR_ERROR, null,
 								"Error comparing " + results1.getResultProperties().getName() + " vs "
 										+ results2.getResultProperties().getName());
@@ -140,8 +143,8 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 //				System.out.println("asfd");
 //			}
 
-			final MyMannWhitneyTestResult result = new MyMannWhitneyTestResult(percentages1.toArray(),
-					percentages2.toArray());
+			final MyMannWhitneyTestResult result = new MyMannWhitneyTestResult(ptmCode, glycoSite1.getPosition(),
+					percentages1.toArray(), percentages2.toArray());
 			ret.put(ptmCode, result);
 
 //			if (isValidForTTest(percentages1) && isValidForTTest(percentages2)) {

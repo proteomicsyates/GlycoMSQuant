@@ -1,10 +1,16 @@
-package edu.scripps.yates.glycomsquant;
+package edu.scripps.yates.glycomsquant.comparison;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
 
+/**
+ * A set of comparisons between experiments
+ * 
+ * @author salvador
+ *
+ */
 public class RunComparisonResult {
 	private final List<ResultsLoadedFromDisk> resultsFromDisk;
 	private final List<RunComparisonTest> tests = new ArrayList<RunComparisonTest>();
@@ -13,7 +19,7 @@ public class RunComparisonResult {
 		this.resultsFromDisk = resultsFromDisk;
 	}
 
-	public void addPairComparison(RunComparisonTest compareResultsTest) {
+	protected void addPairComparison(RunComparisonTest compareResultsTest) {
 		tests.add(compareResultsTest);
 	}
 
@@ -25,5 +31,9 @@ public class RunComparisonResult {
 			sb.append(test.toString() + "\n");
 		}
 		return sb.toString();
+	}
+
+	public List<RunComparisonTest> getTests() {
+		return tests;
 	}
 }

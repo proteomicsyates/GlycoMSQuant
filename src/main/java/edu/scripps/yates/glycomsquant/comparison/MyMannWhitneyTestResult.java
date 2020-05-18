@@ -1,9 +1,10 @@
-package edu.scripps.yates.glycomsquant;
+package edu.scripps.yates.glycomsquant.comparison;
 
 import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.apache.commons.math3.stat.ranking.NaNStrategy;
 import org.apache.commons.math3.stat.ranking.TiesStrategy;
 
+import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.maths.PValueCorrection;
 import edu.scripps.yates.utilities.maths.PValueCorrectionResult;
@@ -14,6 +15,14 @@ import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
 
+/**
+ * A test results for comparison data between two groups. In GlycoMSQuant, that
+ * is a comparison between the individual proportions of a PTM in a site between
+ * 2 experiments.
+ * 
+ * @author salvador
+ *
+ */
 public class MyMannWhitneyTestResult {
 
 	private final double u;
@@ -22,17 +31,24 @@ public class MyMannWhitneyTestResult {
 	private final double pvalue;
 	private Double correctedPValue;
 	private final PValueCorrectionType method = PValueCorrectionType.BH;
+	private final PTMCode ptm;
+	private final int position;
 	private static TObjectDoubleMap<Integer> pvaluesByID = new TObjectDoubleHashMap<Integer>();
 	private static int id = 0;
 	private static TIntObjectMap<MyMannWhitneyTestResult> instancesByID = new TIntObjectHashMap<MyMannWhitneyTestResult>();
 
+	/**
+	 * Needed to call before starting a new comparison to clear the pvalues
+	 */
 	public static void startComparison() {
 		pvaluesByID.clear();
 		id = 0;
 		instancesByID.clear();
 	}
 
-	public MyMannWhitneyTestResult(double[] x, double y[]) {
+	public MyMannWhitneyTestResult(PTMCode ptm, int position, double[] x, double y[]) {
+		this.ptm = ptm;
+		this.position = position;
 		final MannWhitneyUTest test = new MannWhitneyUTest(NaNStrategy.REMOVED, TiesStrategy.AVERAGE);
 		this.x = x;
 		this.y = y;
@@ -103,5 +119,13 @@ public class MyMannWhitneyTestResult {
 			sb.append("*");
 		}
 		return sb.toString();
+	}
+
+	public int getPosition() {
+		return position;
+	}
+
+	public PTMCode getPtm() {
+		return ptm;
 	}
 }

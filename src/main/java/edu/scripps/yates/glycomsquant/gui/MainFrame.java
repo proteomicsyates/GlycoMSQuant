@@ -58,15 +58,17 @@ import edu.scripps.yates.glycomsquant.CurrentInputParameters;
 import edu.scripps.yates.glycomsquant.GlycoPTMAnalyzer;
 import edu.scripps.yates.glycomsquant.GlycoPTMPeptideAnalyzer;
 import edu.scripps.yates.glycomsquant.GlycoPTMResultGenerator;
-import edu.scripps.yates.glycomsquant.GlycoPTMRunComparator;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.InputDataReader;
 import edu.scripps.yates.glycomsquant.InputParameters;
 import edu.scripps.yates.glycomsquant.ProteinSequences;
-import edu.scripps.yates.glycomsquant.RunComparisonResult;
+import edu.scripps.yates.glycomsquant.comparison.GlycoPTMRunComparator;
+import edu.scripps.yates.glycomsquant.comparison.RunComparisonResult;
+import edu.scripps.yates.glycomsquant.comparison.RunComparisonTest;
 import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedRunsDialog;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
+import edu.scripps.yates.glycomsquant.gui.tables.comparison.ComparisonTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.PeptidesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tables.sites.SitesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tasks.IterationGraphGenerator;
@@ -419,7 +421,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		c5.gridy = 1;
 		analysisParametersPanel.add(discardWrongPositionedPTMsPanel, c5);
 
-		discardWrongPositionedPTMsCheckBox = new JCheckBox("Discard PTMs in non-valid motifs");
+		discardWrongPositionedPTMsCheckBox = new JCheckBox("Discard peptides PTMs in non-valid motifs");
 		discardWrongPositionedPTMsCheckBox.setToolTipText(
 				"If selected, peptides having PTMs of interest that are not in valid motifs are discarded regardless of having other positions with PTMs in valid motifs.");
 		discardWrongPositionedPTMsCheckBox.setSelected(true);
@@ -1289,6 +1291,16 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			final RunComparisonResult comparison = (RunComparisonResult) evt.getNewValue();
 			showMessage(comparison.toString());
+			showComparisonTables(comparison);
+		}
+	}
+
+	private void showComparisonTables(RunComparisonResult comparison) {
+		final List<RunComparisonTest> tests = comparison.getTests();
+		for (final RunComparisonTest runComparisonTest : tests) {
+			final ComparisonTableDialog table = new ComparisonTableDialog();
+			table.loadTable(runComparisonTest);
+			table.setVisible(true);
 		}
 	}
 
