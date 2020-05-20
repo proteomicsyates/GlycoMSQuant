@@ -14,6 +14,8 @@ import org.apache.log4j.Logger;
 
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.PTMCode;
+import edu.scripps.yates.utilities.strings.StringUtils;
+import gnu.trove.list.TIntList;
 
 public class ColumnsSitesTableUtil {
 	private static Logger log = Logger.getLogger("log4j.logger.org.proteored");
@@ -137,7 +139,17 @@ public class ColumnsSitesTableUtil {
 			case TOTAL_SPC:
 				ret.add(glycoSite.getTotalSPC());
 				break;
+			case ISSUE:
+				if (glycoSite.isAmbiguous()) {
+					final TIntList positions = glycoSite.getAmbiguousSites();
+					final String plural = positions.size() > 1 ? "s" : "";
 
+					final String positionsString = StringUtils.getSortedSeparatedValueString(positions, ",");
+					ret.add("Ambiguous with site" + plural + ": " + positionsString);
+				} else {
+					ret.add("");
+				}
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

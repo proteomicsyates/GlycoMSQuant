@@ -30,13 +30,13 @@ public class ScrollableSitesTable extends JScrollPane {
 
 	private Comparator comp;
 
-	public ScrollableSitesTable(int wide) {
+	public ScrollableSitesTable() {
 
 		table.setModel(new MySitesTableModel());
 
 		// Set renderer for painting different background colors
 		table.setDefaultRenderer(Object.class, new MySitesTableCellRenderer());
-		initializeUI(wide);
+		initializeUI();
 	}
 
 	public void initializeSorter() {
@@ -48,7 +48,7 @@ public class ScrollableSitesTable extends JScrollPane {
 		table.setRowSorter(sorter);
 	}
 
-	private void initializeUI(int wide) {
+	private void initializeUI() {
 		setViewportView(table);
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		super.repaint();

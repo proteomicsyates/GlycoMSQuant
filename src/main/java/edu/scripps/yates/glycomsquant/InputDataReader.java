@@ -262,19 +262,19 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		}
 		firePropertyChange("progress", null, "Filtering done.");
 		firePropertyChange(NUM_VALID_PEPTIDES, null, ret.size());
-		log.info(peptidesDiscardedByWrongProtein + " peptides discarded because they do not belong to protein "
-				+ this.proteinOfInterestACC);
-		log.info(peptidesDiscardedByPTMInWrongMotif
+		firePropertyChange("progress", null, peptidesDiscardedByWrongProtein
+				+ " peptides discarded because they do not belong to protein " + this.proteinOfInterestACC);
+		firePropertyChange("progress", null, peptidesDiscardedByPTMInWrongMotif
 				+ " peptides discarded because they had a PTM of interest but in a wrong motif");
-		log.info(peptidesDiscardedByNotHavingMotifs
+		firePropertyChange("progress", null, peptidesDiscardedByNotHavingMotifs
 				+ " peptides discarded because they do not contain motifs of interest");
-		log.info(peptidesDiscardedByIntensityThreshold
+		firePropertyChange("progress", null, peptidesDiscardedByIntensityThreshold
 				+ " peptides discarded because none of their intensities in the different experiments pass intensity threshold of '"
 				+ intensityThreshold + "'");
-		log.info(intensitiesDiscardedByIntensityThreshold
-				+ " intensities discarded because they do not pass intensity threshold of '" + intensityThreshold
-				+ "'");
-		log.info(ret.size() + " peptides valid for analysis out of " + initialNumberOfPeptides);
+		firePropertyChange("progress", null,
+				intensitiesDiscardedByIntensityThreshold
+						+ " intensities discarded because they do not pass intensity threshold of '"
+						+ intensityThreshold + "'");
 		firePropertyChange("progress", null,
 				ret.size() + " peptides valid for analysis out of " + initialNumberOfPeptides);
 		if (ret.size() == 0) {

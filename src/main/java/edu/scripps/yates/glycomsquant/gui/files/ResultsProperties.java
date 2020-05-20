@@ -30,6 +30,8 @@ public class ResultsProperties implements InputParameters {
 	private static final String PROTEIN_OF_INTEREST = "protein_of_interest";
 	private static final String MOTIF_REGEXP = "motif_regexp";
 	private static final String DISCARD_WRONG_POSITIONED_PTMS = "discard_peptides_with_ptms_in_wrong_motifs";
+	private static final String DISCARD_NON_UNIQUE_PEPTIDES = "discard_non_unique_peptides";
+	private static final String DONT_ALLOW_CONSECUTIVE_MOTIFS = "dont_allow_consecutive_motifs";
 	private final File individualResultsFolder;
 	private File inputDataFile;
 	private File resultsTableFile;
@@ -44,6 +46,8 @@ public class ResultsProperties implements InputParameters {
 	private Boolean sumIntensitiesAcrossReplicates;
 	private String motifRegexp;
 	private Boolean discardWrongPositionedPTMs;
+	private Boolean discardNonUniquePeptides;
+	private Boolean dontAllowConsecutiveMotifs;
 
 	/**
 	 * 
@@ -114,6 +118,15 @@ public class ResultsProperties implements InputParameters {
 				if (properties.containsKey(DISCARD_WRONG_POSITIONED_PTMS)) {
 					this.discardWrongPositionedPTMs = Boolean
 							.valueOf(properties.getProperty(DISCARD_WRONG_POSITIONED_PTMS));
+				}
+
+				if (properties.containsKey(DISCARD_NON_UNIQUE_PEPTIDES)) {
+					this.discardNonUniquePeptides = Boolean
+							.valueOf(properties.getProperty(DISCARD_NON_UNIQUE_PEPTIDES));
+				}
+				if (properties.containsKey(DONT_ALLOW_CONSECUTIVE_MOTIFS)) {
+					this.dontAllowConsecutiveMotifs = Boolean
+							.valueOf(properties.getProperty(DONT_ALLOW_CONSECUTIVE_MOTIFS));
 				}
 				loaded = true;
 			}
@@ -219,6 +232,12 @@ public class ResultsProperties implements InputParameters {
 			if (discardWrongPositionedPTMs != null) {
 				properties.put(DISCARD_WRONG_POSITIONED_PTMS, String.valueOf(discardWrongPositionedPTMs));
 			}
+			if (discardNonUniquePeptides != null) {
+				properties.put(DISCARD_NON_UNIQUE_PEPTIDES, String.valueOf(discardNonUniquePeptides));
+			}
+			if (dontAllowConsecutiveMotifs != null) {
+				properties.put(DONT_ALLOW_CONSECUTIVE_MOTIFS, String.valueOf(dontAllowConsecutiveMotifs));
+			}
 			final FileWriter writer = new FileWriter(propertiesFile);
 			properties.store(writer, "Properties of the GlycoMSAnalyzer run performed on "
 					+ dateFormatter.format(FileManager.getDateFromFolderName(individualResultsFolder)));
@@ -316,5 +335,27 @@ public class ResultsProperties implements InputParameters {
 	public void setDiscardWrongPositionedPTMs(Boolean discardWrongPositionedPTMs2) {
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs2;
 		updateProperties();
+	}
+
+	public void setDiscardNonUniquePeptides(Boolean discardNonUniquePeptides) {
+		this.discardNonUniquePeptides = discardNonUniquePeptides;
+		updateProperties();
+	}
+
+	@Override
+	public Boolean isDiscardNonUniquePeptides() {
+		loadProperties();
+		return this.discardNonUniquePeptides;
+	}
+
+	public void setDontAllowConsecutiveMotifs(Boolean dontAllowConsecutiveMotifs) {
+		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
+		updateProperties();
+	}
+
+	@Override
+	public Boolean isDontAllowConsecutiveMotifs() {
+		loadProperties();
+		return this.dontAllowConsecutiveMotifs;
 	}
 }

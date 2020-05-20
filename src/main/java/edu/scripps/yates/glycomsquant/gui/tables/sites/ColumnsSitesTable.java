@@ -57,7 +57,11 @@ public enum ColumnsSitesTable {
 			PTMCode._203), //
 	SPC_203("SPC 203.079", 5, "Spectral counts with sites modified with PTM 203.079", Integer.class, PTMCode._203),
 	PEPTIDES_203("Peps. 203.079", 5, "Number of peptides with sites modified with PTM 203.079", Integer.class,
-			PTMCode._203),;
+			PTMCode._203),
+	//
+	ISSUE("ISSUE", 40, "Issue related to this site", String.class)
+
+	;
 
 	private final String name;
 	private final int defaultWidth;

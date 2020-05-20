@@ -73,7 +73,7 @@ public class SitesTableDialog extends JFrame {
 		northPanel.setLayout(new BorderLayout());
 
 		contentPanel.add(northPanel, BorderLayout.NORTH);
-		scrollableTable = new ScrollableSitesTable(200);
+		scrollableTable = new ScrollableSitesTable();
 		contentPanel.add(scrollableTable, BorderLayout.CENTER);
 		scrollableTable.getTable().clearData();
 

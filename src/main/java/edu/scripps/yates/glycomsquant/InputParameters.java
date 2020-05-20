@@ -19,9 +19,13 @@ public interface InputParameters {
 
 	public Boolean isNormalizeReplicates();
 
+	public Boolean isDiscardNonUniquePeptides();
+
 	public Boolean isSumIntensitiesAcrossReplicates();
 
 	public String getMotifRegexp();
 
 	public Boolean isDiscardWrongPositionedPTMs();
+
+	public Boolean isDontAllowConsecutiveMotifs();
 }

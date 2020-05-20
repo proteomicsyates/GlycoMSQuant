@@ -33,15 +33,20 @@ import java.util.concurrent.TimeUnit;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EtchedBorder;
@@ -57,6 +62,7 @@ import edu.scripps.yates.glycomsquant.AppDefaults;
 import edu.scripps.yates.glycomsquant.CurrentInputParameters;
 import edu.scripps.yates.glycomsquant.GlycoPTMAnalyzer;
 import edu.scripps.yates.glycomsquant.GlycoPTMPeptideAnalyzer;
+import edu.scripps.yates.glycomsquant.GlycoPTMPeptideAnalyzer.PeptidesRemovedBecauseOfConsecutiveSitesWithPTM;
 import edu.scripps.yates.glycomsquant.GlycoPTMResultGenerator;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.InputDataReader;
@@ -103,6 +109,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JButton btnShowPeptidesTable;
 	private boolean isSumIntensitiesAcrossReplicatesFromLoadedResults;
 	private JCheckBox discardWrongPositionedPTMsCheckBox;
+	private JCheckBoxMenuItem discardNonUniquePeptidesMenuItem;
+	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
@@ -169,18 +177,151 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final JPanel menusPanel = new JPanel();
 		getContentPane().add(menusPanel, BorderLayout.NORTH);
 		final GridBagLayout gbl_menusPanel = new GridBagLayout();
-		gbl_menusPanel.columnWidths = new int[] { 0 };
-		gbl_menusPanel.rowHeights = new int[] { 0 };
-		gbl_menusPanel.columnWeights = new double[] { 1.0 };
+		gbl_menusPanel.columnWidths = new int[] { 0, 0, 0 };
+		gbl_menusPanel.rowHeights = new int[] { 0, 0 };
+		gbl_menusPanel.columnWeights = new double[] { 1.0, 0.0, 0.0 };
 		gbl_menusPanel.rowWeights = new double[] { 0.0, 0.0 };
 		menusPanel.setLayout(gbl_menusPanel);
+
+		final GridBagLayout gbl_analysisParametersPanel = new GridBagLayout();
+		gbl_analysisParametersPanel.columnWeights = new double[] { 1.0 };
+		final JPanel analysisParametersPanel = new JPanel(gbl_analysisParametersPanel);
+		final GridBagConstraints gbc_analysisParametersPanel = new GridBagConstraints();
+		gbc_analysisParametersPanel.anchor = GridBagConstraints.NORTH;
+		gbc_analysisParametersPanel.gridheight = 2;
+		gbc_analysisParametersPanel.insets = new Insets(0, 0, 0, 5);
+		gbc_analysisParametersPanel.gridx = 0;
+		gbc_analysisParametersPanel.gridy = 0;
+		menusPanel.add(analysisParametersPanel, gbc_analysisParametersPanel);
+		analysisParametersPanel.setBorder(
+				new TitledBorder(null, "Analysis parameters", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+
+		final JPanel normalizeIntensityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c3 = new GridBagConstraints();
+		c3.insets = new Insets(0, 0, 5, 0);
+		c3.fill = GridBagConstraints.BOTH;
+		c3.gridx = 0;
+		c3.gridy = 2;
+		analysisParametersPanel.add(normalizeIntensityPanel, c3);
+
+		normalizeIntensityCheckBox = new JCheckBox("Normalize replicates");
+		normalizeIntensityCheckBox.setToolTipText(
+				"Click to enable or disable the application of the normalization of the intensities in the input data file by replicates.");
+		normalizeIntensityPanel.add(normalizeIntensityCheckBox);
+
+		final JPanel iterativeAnalysisPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c2 = new GridBagConstraints();
+		c2.insets = new Insets(0, 0, 5, 0);
+		c2.fill = GridBagConstraints.BOTH;
+		c2.gridx = 0;
+		c2.gridy = 3;
+		analysisParametersPanel.add(iterativeAnalysisPanel, c2);
+
+		iterativeThresholdAnalysisCheckBox = new JCheckBox("Iterative Threshold Analysis");
+		iterativeThresholdAnalysisCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				iterativeThresholdAnalysisClicked(iterativeThresholdAnalysisCheckBox.isSelected());
+			}
+		});
+		iterativeThresholdAnalysisCheckBox.setToolTipText(
+				"<html>If this option is activated, different intensity thresholds will be calculated <b>iterativelly</b>, and the averaged proportion of each PTM across all glyco-sites will be shown in a graph vs the number of peptides that pass the threshold.<br>\r\nThis may help to decide the optimal threshold.</html>");
+		iterativeAnalysisPanel.add(iterativeThresholdAnalysisCheckBox);
+
+		intensityThresholdIntervalLabel = new JLabel("Factor:");
+		intensityThresholdIntervalLabel.setEnabled(false);
+		iterativeAnalysisPanel.add(intensityThresholdIntervalLabel);
+		intensityThresholdIntervalLabel.setToolTipText(
+				"If the iterative threshold analysis is activated, this parameter will determine the factor by which the intensity threshold will be multiplied in every iteration.");
+
+		intensityThresholdIntervalTextField = new JTextField("10");
+		intensityThresholdIntervalTextField.setEnabled(false);
+		intensityThresholdIntervalTextField.setToolTipText(
+				"If the iterative threshold analysis is activated, this parameter will determine the factor by which the intensity threshold will be multiplied in every iteration.");
+		iterativeAnalysisPanel.add(intensityThresholdIntervalTextField);
+		intensityThresholdIntervalTextField.setColumns(5);
+
+		final JPanel sumIntensitiesAcrossReplicatesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c4 = new GridBagConstraints();
+		c4.insets = new Insets(0, 0, 5, 0);
+		c4.fill = GridBagConstraints.BOTH;
+		c4.gridx = 0;
+		c4.gridy = 0;
+
+		analysisParametersPanel.add(sumIntensitiesAcrossReplicatesPanel, c4);
+
+		sumIntensitiesAcrossReplicatesCheckBox = new JCheckBox("Sum intensities across replicates");
+		sumIntensitiesAcrossReplicatesCheckBox.setToolTipText(
+				"<html>If selected, for each peptide(+charge), the intensities are sum acrosss replicates before calculating the proportions.<br>If not selected, the proportions of each peptide(+charge) will be calculated in each replicate and then averaged among all the proportions covering a site.</html>");
+		sumIntensitiesAcrossReplicatesCheckBox.setSelected(true);
+		sumIntensitiesAcrossReplicatesPanel.add(sumIntensitiesAcrossReplicatesCheckBox);
+
+		final JPanel discardWrongPositionedPTMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c5 = new GridBagConstraints();
+		c5.insets = new Insets(0, 0, 5, 0);
+		c5.fill = GridBagConstraints.BOTH;
+		c5.gridx = 0;
+		c5.gridy = 1;
+		analysisParametersPanel.add(discardWrongPositionedPTMsPanel, c5);
+
+		discardWrongPositionedPTMsCheckBox = new JCheckBox("Discard peptides with PTMs in non-valid motifs");
+		discardWrongPositionedPTMsCheckBox.setToolTipText(
+				"If selected, peptides having PTMs of interest that are not in valid motifs are discarded regardless of having other positions with PTMs in valid motifs.");
+		discardWrongPositionedPTMsCheckBox.setSelected(true);
+		discardWrongPositionedPTMsPanel.add(discardWrongPositionedPTMsCheckBox);
+
+		final JPanel intensityThresholdPanel = new JPanel();
+		final GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(0, 0, 5, 0);
+		c.fill = GridBagConstraints.BOTH;
+		c.anchor = GridBagConstraints.NORTH;
+		c.gridx = 0;
+		c.gridy = 4;
+		analysisParametersPanel.add(intensityThresholdPanel, c);
+		final GridBagLayout gbl_intensityThresholdPanel = new GridBagLayout();
+		gbl_intensityThresholdPanel.columnWidths = new int[] { 125, 86, 0 };
+		gbl_intensityThresholdPanel.rowHeights = new int[] { 23, 0 };
+		gbl_intensityThresholdPanel.columnWeights = new double[] { 0.0, 0.0, Double.MIN_VALUE };
+		gbl_intensityThresholdPanel.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
+		intensityThresholdPanel.setLayout(gbl_intensityThresholdPanel);
+		intensityThresholdCheckBox = new JCheckBox("Peak area threshold:");
+		final GridBagConstraints gbc_intensityThresholdCheckBox = new GridBagConstraints();
+		gbc_intensityThresholdCheckBox.anchor = GridBagConstraints.NORTHWEST;
+		gbc_intensityThresholdCheckBox.insets = new Insets(5, 5, 5, 5);
+		gbc_intensityThresholdCheckBox.gridx = 0;
+		gbc_intensityThresholdCheckBox.gridy = 0;
+		intensityThresholdPanel.add(intensityThresholdCheckBox, gbc_intensityThresholdCheckBox);
+		intensityThresholdCheckBox.setToolTipText(
+				"Click to enable or disable the application of the peak area threshold over the peak areas in the input data file.");
+		intensityThresholdCheckBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				intensityThresholdText.setEnabled(intensityThresholdCheckBox.isSelected());
+				if (!intensityThresholdCheckBox.isSelected()) {
+					intensityThresholdText.setText(null);
+				}
+			}
+		});
+
+		intensityThresholdText = new JTextField();
+		final GridBagConstraints gbc_intensityThresholdText = new GridBagConstraints();
+		gbc_intensityThresholdText.fill = GridBagConstraints.HORIZONTAL;
+		gbc_intensityThresholdText.anchor = GridBagConstraints.WEST;
+		gbc_intensityThresholdText.gridx = 1;
+		gbc_intensityThresholdText.gridy = 0;
+		intensityThresholdPanel.add(intensityThresholdText, gbc_intensityThresholdText);
+		intensityThresholdText.setEnabled(false);
+		intensityThresholdText.setToolTipText(
+				"If enabled and > 0.0, an intensity threshold will be applied over the intensities in the input data file. Any peptide with an intensity below this value, will be discarded.");
+		intensityThresholdText.setColumns(10);
 
 		final JPanel inputPanel = new JPanel();
 		inputPanel.setBorder(new TitledBorder(null, "Input", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		final GridBagConstraints gbc_inputPanel = new GridBagConstraints();
+		gbc_inputPanel.gridwidth = 2;
 		gbc_inputPanel.anchor = GridBagConstraints.NORTHWEST;
 		gbc_inputPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_inputPanel.gridx = 0;
+		gbc_inputPanel.gridx = 1;
 		gbc_inputPanel.gridy = 0;
 		menusPanel.add(inputPanel, gbc_inputPanel);
 		final GridBagLayout gbl_inputPanel = new GridBagLayout();
@@ -306,134 +447,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		}
 
-		final JPanel analysisPanel = new JPanel();
-		analysisPanel.setBorder(null);
-		final GridBagConstraints gbc_analysisPanel = new GridBagConstraints();
-		gbc_analysisPanel.anchor = GridBagConstraints.NORTHWEST;
-		gbc_analysisPanel.gridx = 0;
-		gbc_analysisPanel.gridy = 1;
-		menusPanel.add(analysisPanel, gbc_analysisPanel);
-		final GridBagLayout gbl_analysisPanel = new GridBagLayout();
-		analysisPanel.setLayout(gbl_analysisPanel);
-
-		final GridBagLayout gbl_analysisParametersPanel = new GridBagLayout();
-		gbl_analysisParametersPanel.columnWeights = new double[] { 1.0 };
-		final JPanel analysisParametersPanel = new JPanel(gbl_analysisParametersPanel);
-		analysisParametersPanel.setBorder(
-				new TitledBorder(null, "Analysis parameters", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-
-		final GridBagConstraints gbc_analysisParametersPanel = new GridBagConstraints();
-		gbc_analysisParametersPanel.anchor = GridBagConstraints.NORTH;
-		analysisPanel.add(analysisParametersPanel, gbc_analysisParametersPanel);
-
-		final JPanel intensityThresholdPanel = new JPanel();
-		final GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.NONE;
-		c.anchor = GridBagConstraints.NORTH;
-		c.gridx = 1;
-		c.gridy = 1;
-		analysisParametersPanel.add(intensityThresholdPanel, c);
-
-		intensityThresholdPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		intensityThresholdCheckBox = new JCheckBox("Peak area threshold:");
-		intensityThresholdPanel.add(intensityThresholdCheckBox);
-		intensityThresholdCheckBox.setToolTipText(
-				"Click to enable or disable the application of the peak area threshold over the peak areas in the input data file.");
-		intensityThresholdCheckBox.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				intensityThresholdText.setEnabled(intensityThresholdCheckBox.isSelected());
-				if (!intensityThresholdCheckBox.isSelected()) {
-					intensityThresholdText.setText(null);
-				}
-			}
-		});
-
-		intensityThresholdText = new JTextField();
-		intensityThresholdPanel.add(intensityThresholdText);
-		intensityThresholdText.setEnabled(false);
-		intensityThresholdText.setToolTipText(
-				"If enabled and > 0.0, an intensity threshold will be applied over the intensities in the input data file. Any peptide with an intensity below this value, will be discarded.");
-		intensityThresholdText.setColumns(10);
-
-		final JPanel iterativeAnalysisPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		final GridBagConstraints c2 = new GridBagConstraints();
-		c2.fill = GridBagConstraints.BOTH;
-		c2.gridx = 0;
-		c2.gridy = 2;
-		c2.gridwidth = 2;
-		analysisParametersPanel.add(iterativeAnalysisPanel, c2);
-
-		iterativeThresholdAnalysisCheckBox = new JCheckBox("Iterative Threshold Analysis");
-		iterativeThresholdAnalysisCheckBox.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				iterativeThresholdAnalysisClicked(iterativeThresholdAnalysisCheckBox.isSelected());
-			}
-		});
-		iterativeThresholdAnalysisCheckBox.setToolTipText(
-				"<html>If this option is activated, different intensity thresholds will be calculated <b>iterativelly</b>, and the averaged proportion of each PTM across all glyco-sites will be shown in a graph vs the number of peptides that pass the threshold.<br>\r\nThis may help to decide the optimal threshold.</html>");
-		iterativeAnalysisPanel.add(iterativeThresholdAnalysisCheckBox);
-
-		intensityThresholdIntervalLabel = new JLabel("Factor:");
-		intensityThresholdIntervalLabel.setEnabled(false);
-		iterativeAnalysisPanel.add(intensityThresholdIntervalLabel);
-		intensityThresholdIntervalLabel.setToolTipText(
-				"If the iterative threshold analysis is activated, this parameter will determine the factor by which the intensity threshold will be multiplied in every iteration.");
-
-		intensityThresholdIntervalTextField = new JTextField("10");
-		intensityThresholdIntervalTextField.setEnabled(false);
-		intensityThresholdIntervalTextField.setToolTipText(
-				"If the iterative threshold analysis is activated, this parameter will determine the factor by which the intensity threshold will be multiplied in every iteration.");
-		iterativeAnalysisPanel.add(intensityThresholdIntervalTextField);
-		intensityThresholdIntervalTextField.setColumns(5);
-
-		final JPanel normalizeIntensityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		final GridBagConstraints c3 = new GridBagConstraints();
-		c3.fill = GridBagConstraints.BOTH;
-		c3.gridx = 1;
-		c3.gridy = 0;
-		analysisParametersPanel.add(normalizeIntensityPanel, c3);
-
-		normalizeIntensityCheckBox = new JCheckBox("Normalize replicates");
-		normalizeIntensityCheckBox.setToolTipText(
-				"Click to enable or disable the application of the normalization of the intensities in the input data file by replicates.");
-		normalizeIntensityPanel.add(normalizeIntensityCheckBox);
-
-		final JPanel sumIntensitiesAcrossReplicatesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		final GridBagConstraints c4 = new GridBagConstraints();
-		c4.fill = GridBagConstraints.BOTH;
-		c4.gridx = 0;
-		c4.gridy = 0;
-
-		analysisParametersPanel.add(sumIntensitiesAcrossReplicatesPanel, c4);
-
-		sumIntensitiesAcrossReplicatesCheckBox = new JCheckBox("Sum intensities across replicates");
-		sumIntensitiesAcrossReplicatesCheckBox.setToolTipText(
-				"<html>If selected, for each peptide(+charge), the intensities are sum acrosss replicates before calculating the proportions.<br>If not selected, the proportions of each peptide(+charge) will be calculated in each replicate and then averaged among all the proportions covering a site.</html>");
-		sumIntensitiesAcrossReplicatesCheckBox.setSelected(true);
-		sumIntensitiesAcrossReplicatesPanel.add(sumIntensitiesAcrossReplicatesCheckBox);
-
-		final JPanel discardWrongPositionedPTMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		final GridBagConstraints c5 = new GridBagConstraints();
-		c5.fill = GridBagConstraints.BOTH;
-		c5.gridx = 0;
-		c5.gridy = 1;
-		analysisParametersPanel.add(discardWrongPositionedPTMsPanel, c5);
-
-		discardWrongPositionedPTMsCheckBox = new JCheckBox("Discard peptides PTMs in non-valid motifs");
-		discardWrongPositionedPTMsCheckBox.setToolTipText(
-				"If selected, peptides having PTMs of interest that are not in valid motifs are discarded regardless of having other positions with PTMs in valid motifs.");
-		discardWrongPositionedPTMsCheckBox.setSelected(true);
-		discardWrongPositionedPTMsPanel.add(discardWrongPositionedPTMsCheckBox);
-
 		final JPanel outputPanel = new JPanel();
 		final GridBagConstraints gbc_outputPanel = new GridBagConstraints();
-		gbc_outputPanel.anchor = GridBagConstraints.NORTH;
-		gbc_outputPanel.insets = new Insets(0, 5, 0, 5);
+		gbc_outputPanel.insets = new Insets(0, 0, 0, 5);
 		gbc_outputPanel.gridx = 1;
-		gbc_outputPanel.gridy = 0;
-		analysisPanel.add(outputPanel, gbc_outputPanel);
+		gbc_outputPanel.gridy = 1;
+		menusPanel.add(outputPanel, gbc_outputPanel);
 		outputPanel.setBorder(new TitledBorder(null, "Output", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		final GridBagLayout gbl_outputPanel = new GridBagLayout();
 		gbl_outputPanel.columnWidths = new int[] { 0 };
@@ -550,18 +569,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				showSitesResultsTableDialog();
 			}
 		});
-		if (AppDefaults.getInstance().getRunName() != null) {
-			nameTextField.setText(AppDefaults.getInstance().getRunName());
-		}
 
 		final JPanel startButtonPanel = new JPanel();
+		final GridBagConstraints gbc_startButtonPanel = new GridBagConstraints();
+		gbc_startButtonPanel.anchor = GridBagConstraints.NORTHWEST;
+		gbc_startButtonPanel.gridx = 2;
+		gbc_startButtonPanel.gridy = 1;
+		menusPanel.add(startButtonPanel, gbc_startButtonPanel);
 		startButtonPanel
 				.setBorder(new TitledBorder(null, "Control", TitledBorder.CENTER, TitledBorder.TOP, null, null));
-		final GridBagConstraints gbc_startButtonPanel = new GridBagConstraints();
-		gbc_startButtonPanel.anchor = GridBagConstraints.NORTH;
-		gbc_startButtonPanel.gridx = 2;
-		gbc_startButtonPanel.gridy = 0;
-		analysisPanel.add(startButtonPanel, gbc_startButtonPanel);
 		final GridBagLayout gbl_startButtonPanel = new GridBagLayout();
 		gbl_startButtonPanel.columnWidths = new int[] { 0 };
 		gbl_startButtonPanel.rowHeights = new int[] { 0, 0 };
@@ -624,13 +640,17 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				showRunsDialog();
 			}
 		});
+		if (AppDefaults.getInstance().getRunName() != null) {
+			nameTextField.setText(AppDefaults.getInstance().getRunName());
+		}
 
 		final JPanel panelForCharts = new JPanel();
 		panelForCharts.setPreferredSize(new Dimension(10, 400));
 		panelForCharts.setBorder(new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Charts",
 				TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		getContentPane().add(panelForCharts, BorderLayout.CENTER);
+
+//		getContentPane().add(panelForCharts, BorderLayout.CENTER);
 		panelForCharts.setLayout(new BorderLayout(0, 0));
 
 		chartPanelScroll = new JScrollPane();
@@ -646,11 +666,22 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel statusPanel = new JPanel();
 		statusPanel.setBorder(new TitledBorder(null, "Status", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		getContentPane().add(statusPanel, BorderLayout.SOUTH);
+//		getContentPane().add(statusPanel, BorderLayout.SOUTH);
+
 		statusPanel.setLayout(new BorderLayout(0, 0));
+		final JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		split.setTopComponent(panelForCharts);
+		split.setBottomComponent(statusPanel);
+		split.setContinuousLayout(true);
+		split.setOneTouchExpandable(true);
+// set minimum dimensions of components
+		panelForCharts.setMinimumSize(new Dimension(500, 50));
+		statusPanel.setMinimumSize(new Dimension(500, 50));
+		getContentPane().add(split, BorderLayout.CENTER);
 
 		final JScrollPane scrollPane = new JScrollPane();
 		componentStateKeeper.addInvariableComponent(scrollPane);
+		componentStateKeeper.addInvariableComponent(split);
 		scrollPane.setToolTipText("Status");
 		statusPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -660,11 +691,33 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		statusTextArea.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		statusTextArea.setRows(5);
 		scrollPane.setViewportView(statusTextArea);
+		// create menu
+		createMenuBar();
 		//
 		pack();
 		final java.awt.Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 		final java.awt.Dimension dialogSize = getSize();
 		setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
+	}
+
+	private void createMenuBar() {
+		final JMenuBar menuBar = new JMenuBar();
+
+		// create menus
+		final JMenu advancedParametersMenu = new JMenu("Advanced parameters");
+		menuBar.add(advancedParametersMenu);
+		discardNonUniquePeptidesMenuItem = new JCheckBoxMenuItem("Discard non-unique peptides", false);
+		discardNonUniquePeptidesMenuItem
+				.setToolTipText("<html>If enabled, peptides shared by multiple proteins will be discarded.</html>");
+		advancedParametersMenu.add(discardNonUniquePeptidesMenuItem);
+		dontAllowConsecutiveMotifsMenuItem = new JCheckBoxMenuItem("Don't allow consecutive motifs", true);
+		dontAllowConsecutiveMotifsMenuItem
+				.setToolTipText("<html>If enabled, motifs found in consecutive positions will be marked as ambiguous."
+						+ "<br>Additionally, if a peptide is found modified in both positions, will be discarded."
+						+ "<br>This is usually done when PTMs in consecutive positions are not physically possible.</html>");
+		advancedParametersMenu.add(dontAllowConsecutiveMotifsMenuItem);
+
+		setJMenuBar(menuBar);
 	}
 
 	protected void compareExperiments() {
@@ -715,7 +768,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			return;
 		}
 		final PeptidesTableDialog tableDialog = new PeptidesTableDialog();
-		tableDialog.loadResultTable(currentPeptides, currentGlycoSites, getProteinSequence());
+		tableDialog.getTable().loadResultTable(currentPeptides, currentGlycoSites, getProteinSequence());
 		tableDialog.setVisible(true);
 	}
 
@@ -1069,6 +1122,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private AmountType amountType = AmountType.INTENSITY;
 
 	public static void main(String[] args) {
+		// set to not disapear all tooltips
+		ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
+
 		final MainFrame frame = MainFrame.getInstance();
 		frame.setVisible(true);
 		CurrentInputParameters.getInstance().setInputParameters(frame);
@@ -1173,6 +1229,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setMotifRegexp(getMotifRegexp());
 		resultsProperties.setFastaFile(getFastaFile());
 		resultsProperties.setDiscardWrongPositionedPTMs(isDiscardWrongPositionedPTMs());
+		resultsProperties.setDiscardNonUniquePeptides(isDiscardNonUniquePeptides());
+		resultsProperties.setDontAllowConsecutiveMotifs(isDontAllowConsecutiveMotifs());
 	}
 
 	@Override
@@ -1185,7 +1243,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				showMessage(currentPeptides.size() + " peptides read from input file ");
 				log.info("Analyzing peptides...");
 				final GlycoPTMPeptideAnalyzer peptideAnalyzer = new GlycoPTMPeptideAnalyzer(currentPeptides,
-						getProteinOfInterestACC(), getFastaFile(), getAmountType(), getMotifRegexp());
+						getProteinOfInterestACC(), getFastaFile(), getAmountType(), getMotifRegexp(),
+						isDontAllowConsecutiveMotifs());
 				peptideAnalyzer.addPropertyChangeListener(this);
 				peptideAnalyzer.execute();
 			} else {
@@ -1292,6 +1351,18 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			final RunComparisonResult comparison = (RunComparisonResult) evt.getNewValue();
 			showMessage(comparison.toString());
 			showComparisonTables(comparison);
+		} else if (evt.getPropertyName().equals(GlycoPTMPeptideAnalyzer.HIVPOSITIONS_PEPTIDES_TO_REMOVE)) {
+			final PeptidesRemovedBecauseOfConsecutiveSitesWithPTM peptidesToRemove = (PeptidesRemovedBecauseOfConsecutiveSitesWithPTM) evt
+					.getNewValue();
+			final int peptidesBefore = currentPeptides.size();
+			for (final QuantifiedPeptideInterface peptide : peptidesToRemove.getPeptides()) {
+				currentPeptides.remove(peptide);
+			}
+			final int peptidesAfter = currentPeptides.size();
+			showMessage(peptidesToRemove.size() + " peptides were removed because they contain a PTM at positions "
+					+ peptidesToRemove.getPosition1() + " and " + peptidesToRemove.getPosition2()
+					+ " but it is not physically possible. Peptide list reduced from " + peptidesBefore + " to "
+					+ peptidesAfter);
 		}
 	}
 
@@ -1342,8 +1413,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	public void updateControlsWithParametersFromDisk(File resultsFolder) {
 		final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
 		this.dataFileText.setText(resultsProperties.getInputFile().getAbsolutePath());
-		this.intensityThresholdText.setText(String.valueOf(resultsProperties.getIntensityThreshold()));
-		this.normalizeIntensityCheckBox.setSelected(resultsProperties.isNormalizeReplicates());
+		if (resultsProperties.getIntensityThreshold() != null) {
+			this.intensityThresholdText.setText(String.valueOf(resultsProperties.getIntensityThreshold()));
+		} else {
+			this.intensityThresholdText.setText("0.0");
+		}
+		if (resultsProperties.isNormalizeReplicates() != null) {
+			this.normalizeIntensityCheckBox.setSelected(resultsProperties.isNormalizeReplicates());
+		}
 		this.nameTextField.setText(resultsProperties.getName());
 		this.proteinOfInterestText.setText(resultsProperties.getProteinOfInterestACC());
 		if (resultsProperties.getFastaFile() != null) {
@@ -1352,7 +1429,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.fastaFileText.setText("");
 		}
 		this.motifRegexp = resultsProperties.getMotifRegexp();
-		this.discardWrongPositionedPTMsCheckBox.setSelected(resultsProperties.isDiscardWrongPositionedPTMs());
+		if (resultsProperties.isDiscardWrongPositionedPTMs() != null) {
+			this.discardWrongPositionedPTMsCheckBox.setSelected(resultsProperties.isDiscardWrongPositionedPTMs());
+		}
+		if (resultsProperties.isDiscardNonUniquePeptides() != null) {
+			this.discardNonUniquePeptidesMenuItem.setSelected(resultsProperties.isDiscardNonUniquePeptides());
+		}
+		if (resultsProperties.isDontAllowConsecutiveMotifs() != null) {
+			this.dontAllowConsecutiveMotifsMenuItem.setSelected(resultsProperties.isDontAllowConsecutiveMotifs());
+		}
 		this.amountType = resultsProperties.getAmountType();
 		ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
 
@@ -1562,5 +1647,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	@Override
 	public Boolean isDiscardWrongPositionedPTMs() {
 		return this.discardWrongPositionedPTMsCheckBox.isSelected();
+	}
+
+	@Override
+	public Boolean isDiscardNonUniquePeptides() {
+		return this.discardNonUniquePeptidesMenuItem.isSelected();
+	}
+
+	@Override
+	public Boolean isDontAllowConsecutiveMotifs() {
+		return this.dontAllowConsecutiveMotifsMenuItem.isSelected();
 	}
 }

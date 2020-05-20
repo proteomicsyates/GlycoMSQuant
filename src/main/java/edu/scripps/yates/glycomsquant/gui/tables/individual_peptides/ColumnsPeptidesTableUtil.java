@@ -64,8 +64,14 @@ public class ColumnsPeptidesTableUtil {
 		final String peptideFullSequence = peptide.getFullSequence();
 		final String peptideSequence = peptide.getSequence();
 		final int length = peptideSequence.length();
-		final List<GlycoSite> coveredGlycoSites = getCoveredGlycoSites(glycoSites, peptide);
-		final TIntList starts = StringUtils.allPositionsOf(proteinSequence, peptideSequence);
+		List<GlycoSite> coveredGlycoSites = null;
+		if (glycoSites != null) {
+			coveredGlycoSites = getCoveredGlycoSites(glycoSites, peptide);
+		}
+		TIntList starts = null;
+		if (proteinSequence != null) {
+			starts = StringUtils.allPositionsOf(proteinSequence, peptideSequence);
+		}
 		final List<String> replicates = GlycoPTMAnalyzerUtil.getReplicateNamesFromPeptide(peptide);
 		final Set<QuantifiedPSMInterface> quantifiedPSMs = peptide.getQuantifiedPSMs();
 		StringBuilder sb = new StringBuilder();

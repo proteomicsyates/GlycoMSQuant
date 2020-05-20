@@ -3,6 +3,7 @@ package edu.scripps.yates.glycomsquant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,10 +16,16 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
+import edu.scripps.yates.utilities.sequence.PTMInPeptide;
+import edu.scripps.yates.utilities.strings.StringUtils;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.THashSet;
+import gnu.trove.set.hash.TIntHashSet;
 
 public class GlycoSite {
 	private final static Logger log = Logger.getLogger(GlycoSite.class);
@@ -45,12 +52,11 @@ public class GlycoSite {
 	private final String protein;
 	private Integer totalSPC;
 	private final Set<String> replicates = new THashSet<String>();
+	private final TIntList ambiguousSites = new TIntArrayList();
 
 	public GlycoSite(int position, String protein) {
 		super();
-		if (position == 167) {
-			log.info("asdf");
-		}
+
 		this.position = position;
 		this.protein = protein;
 
@@ -305,5 +311,94 @@ public class GlycoSite {
 	public Collection<GroupedQuantifiedPeptide> getCoveredGroupedPeptides() {
 		return GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(getCoveredPeptides(), protein, getPosition())
 				.values();
+	}
+
+	public void addAmbiguousSitePosition(int position) {
+		if (!ambiguousSites.contains(position)) {
+			this.ambiguousSites.add(position);
+		}
+	}
+
+	public boolean isAmbiguous() {
+		return !ambiguousSites.isEmpty();
+	}
+
+	private Map<PTMCode, List<QuantifiedPeptideInterface>> getPeptidesByPTMCode() {
+		return this.peptidesByPTMCode;
+
+	}
+
+	private Map<PTMCode, TDoubleList> getPeptideIntensitiesByPTMCode() {
+		return this.peptideIntensitiesByPTMCode;
+
+	}
+
+	public TIntList getAmbiguousSites() {
+		return this.ambiguousSites;
+	}
+
+	public Set<QuantifiedPeptideInterface> removePeptidesWithPTMInPositions(int position1, int position2) {
+		final Set<QuantifiedPeptideInterface> removed = new THashSet<QuantifiedPeptideInterface>();
+		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(protein);
+		final Iterator<QuantifiedPeptideInterface> iterator = coveredPeptides.iterator();
+		while (iterator.hasNext()) {
+			final QuantifiedPeptideInterface peptide = iterator.next();
+			final List<PTMInPeptide> ptmsInPeptide = peptide.getPTMsInPeptide();
+			final TIntArrayList peptideStarts = StringUtils.allPositionsOf(proteinSequence, peptide.getSequence());
+			final TIntSet ptmsPositionsInProtein = new TIntHashSet();
+			for (final int peptideStart : peptideStarts.toArray()) {
+				for (final PTMInPeptide ptmInPeptide : ptmsInPeptide) {
+					if (PTMCode.getByValue(ptmInPeptide.getDeltaMass()) != null) {
+						final int positionInProtein = ptmInPeptide.getPosition() + peptideStart - 1;
+						ptmsPositionsInProtein.add(positionInProtein);
+					}
+				}
+			}
+			if (ptmsPositionsInProtein.contains(position1) && ptmsPositionsInProtein.contains(position2)) {
+				iterator.remove();
+				removed.add(peptide);
+			}
+		}
+		// remove from other collections
+		if (!removed.isEmpty()) {
+			for (final QuantifiedPeptideInterface peptideToRemove : removed) {
+
+				for (final PTMCode ptmCode : this.nonRedundantPeptidesByPTMCode.keySet()) {
+					final Set<QuantifiedPeptideInterface> set = this.nonRedundantPeptidesByPTMCode.get(ptmCode);
+					if (set.contains(peptideToRemove)) {
+						set.remove(peptideToRemove);
+					}
+				}
+				for (final PTMCode ptmCode : this.peptidesByPTMCode.keySet()) {
+					final List<QuantifiedPeptideInterface> list = this.peptidesByPTMCode.get(ptmCode);
+					final int index = list.indexOf(peptideToRemove);
+					if (index != -1) {
+						final TDoubleList proportions = this.individualProportionsByPTMCode.get(ptmCode);
+						if (proportions != null) {
+							proportions.removeAt(index);
+						}
+						final TDoubleList intensities = this.peptideIntensitiesByPTMCode.get(ptmCode);
+						if (intensities != null) {
+							intensities.removeAt(index);
+						}
+						list.remove(index);
+					}
+				}
+				final Set<String> keysToRemove = new THashSet<String>();
+				for (final String key : this.peptidesByNoPTMPeptideKey.keySet()) {
+					final GroupedQuantifiedPeptide groupedPeptide = this.peptidesByNoPTMPeptideKey.get(key);
+					if (groupedPeptide.contains(peptideToRemove)) {
+						groupedPeptide.remove(peptideToRemove);
+					}
+					if (groupedPeptide.isEmpty()) {
+						keysToRemove.add(key);
+					}
+				}
+				for (final String key : keysToRemove) {
+					this.peptidesByNoPTMPeptideKey.remove(key);
+				}
+			}
+		}
+		return removed;
 	}
 }

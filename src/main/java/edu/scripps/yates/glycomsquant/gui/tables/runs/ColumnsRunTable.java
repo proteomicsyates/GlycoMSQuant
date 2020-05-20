@@ -5,15 +5,18 @@ import java.util.List;
 
 enum ColumnsRunTable {
 	NUMBER("#", 3, "", Integer.class), //
-	RUN_PATH("Path", 30, "Path of the results", String.class), //
-	NAME("Name", 10, "Name set when results were created", String.class),
-	INPUT_DATA_FILE("Input file", 30, "Input data file", String.class), //
-	THRESHOLD("Int threshold", 10, "Intensity threshold", Double.class),
-	NORMALIZE_REPLICATES("Normalize replicates", 10,
+	RUN_PATH("Path", 50, "Path of the results", String.class), //
+	NAME("Name", 50, "Name set when results were created", String.class),
+	INPUT_DATA_FILE("Input file", 50, "Input data file", String.class), //
+	THRESHOLD("thr", 30, "Intensity threshold", Double.class),
+	NORMALIZE_REPLICATES("norm", 5,
 			"Normalize the intensity of the replicates by dividing by the total sum of intensities", Boolean.class),
-	SUM_INTENSITIES_ACROSS_REPLICATES("Sum int rep", 10, "Sum intensities across replicates", Boolean.class),
-	DISCARD_PEPTIDES_WITH_PTMS_IN_WRONG_MOTIFS("Dis. wrong motif peps", 10,
-			"Discard peptides with PTMs of interest located in non-valid motifs", Boolean.class)
+	SUM_INTENSITIES_ACROSS_REPLICATES("sum", 5,
+			"Sum intensities across replicates per peptide before calculating proportions", Boolean.class),
+	DISCARD_PEPTIDES_WITH_PTMS_IN_WRONG_MOTIFS("dis", 5, "Discard peptides with PTMs in non-valid motifs",
+			Boolean.class),
+	DISCARD_NON_UNIQUE_PEPTIDES("dnu", 5, "Discard non-unique peptides", Boolean.class),
+	NOT_ALLOW_CONSECUTIVE_SITES("con", 5, "Don't allow consecutive motifs", Boolean.class)
 	// RESEARCHER("researcher", 20, "Researcher name (internal data for the
 	// Spanish HPP consortium)"), //
 	// GENE_CLASSIFICATION("gene class", 15, "Gene classification (internal data

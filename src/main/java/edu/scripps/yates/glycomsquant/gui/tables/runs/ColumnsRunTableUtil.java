@@ -84,6 +84,12 @@ public class ColumnsRunTableUtil {
 			case DISCARD_PEPTIDES_WITH_PTMS_IN_WRONG_MOTIFS:
 				ret.add(resultsProperties.isDiscardWrongPositionedPTMs());
 				break;
+			case DISCARD_NON_UNIQUE_PEPTIDES:
+				ret.add(resultsProperties.isDiscardNonUniquePeptides());
+				break;
+			case NOT_ALLOW_CONSECUTIVE_SITES:
+				ret.add(resultsProperties.isDontAllowConsecutiveMotifs());
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

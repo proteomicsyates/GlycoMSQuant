@@ -8,21 +8,21 @@ import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 
 enum ColumnsPeptidesTable {
-	FULL_SEQUENCE("Sequence", 300, "Sequence of the peptide", String.class, true), //
-	KEY("key", 250, "Unmodified sequence + charge", String.class), //
-	CHARGE("charge", 20, "Charge state of the peptide", Integer.class, true),
-	TOTAL_SPC("SPC", 20, "Spectral counts that contributed to this peptide", Integer.class, true),
+	FULL_SEQUENCE("Sequence", 300, "Sequence of the peptide", String.class), //
+	KEY("key", 250, "Unmodified sequence + charge", String.class, true), //
+	CHARGE("z", 20, "Charge state of the peptide", Integer.class),
+	TOTAL_SPC("SPC", 20, "Spectral counts that contributed to this peptide", Integer.class),
 	SPC_PER_REPLICATE("SPC/rep", 40, "Spectral counts that contributed to this peptide in each of the replicates",
 			Integer.class),
 	REPLICATES("Replicate", 80, "Replicate", Integer.class),
 
-	LENGTH("Len", 20, "Length of the peptide", Integer.class), //
+	LENGTH("Len", 20, "Length of the peptide", Integer.class, true), //
 	SITES("Glyco site(s)", 60, "Site position(s) covered by the peptide in the protein sequence", String.class, true), //
-	STARTING_POSITION("Start", 20, "Starting position of peptide in protein", String.class), //
-	ENDING_POSITION("End", 20, "Ending position of peptide in protein", String.class), //
+	STARTING_POSITION("Start", 20, "Starting position of peptide in protein", String.class, true), //
+	ENDING_POSITION("End", 20, "Ending position of peptide in protein", String.class, true), //
 
 	INTENSITY("Intensity", 80, "Intensity measured (usually as area under the curve) of the peptide in the replicate",
-			Double.class, true), //
+			Double.class), //
 //	PERCENT_2("% 2.988", 10, "Percentage of abundance of sites modified with PTM 2.988", Double.class, true,
 //			PTMCode._2),
 //	PERCENT_203("% 203.079", 10, "Percentage of abundance of sites modified with PTM 203.079", Double.class, true,
@@ -82,7 +82,7 @@ enum ColumnsPeptidesTable {
 	public static List<ColumnsPeptidesTable> getColumns(boolean extended) {
 		final List<ColumnsPeptidesTable> ret = new ArrayList<ColumnsPeptidesTable>();
 		for (final ColumnsPeptidesTable exportedColumns : ColumnsPeptidesTable.values()) {
-			if (!extended && !exportedColumns.isExtended()) {
+			if (!extended && exportedColumns.isExtended()) {
 				continue;
 			}
 			ret.add(exportedColumns);

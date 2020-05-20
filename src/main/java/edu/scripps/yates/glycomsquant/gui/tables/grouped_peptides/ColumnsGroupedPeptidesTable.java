@@ -9,7 +9,7 @@ import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 
 enum ColumnsGroupedPeptidesTable {
 	SEQUENCE("Sequence", 300, "Sequence of the peptide with no modifications of interest", String.class), //
-	CHARGE("charge", 20, "Charge state of the peptide", Integer.class),
+	CHARGE("z", 20, "Charge state of the peptide", Integer.class),
 	TOTAL_SPC("SPC", 20, "Spectral counts that contributed to this peptide", Integer.class),
 	SPC_PER_REPLICATE("SPC/rep", 40, "Spectral counts that contributed to this peptide in each of the replicates",
 			Integer.class),

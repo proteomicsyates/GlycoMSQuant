@@ -4,53 +4,61 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JTable;
-import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.UIResource;
+import javax.swing.table.TableCellRenderer;
 
 import org.apache.log4j.Logger;
 
-class MyRunsTableCellRenderer extends DefaultTableCellRenderer {
+class MyRunsTableBooleanCellRenderer extends JCheckBox implements TableCellRenderer, UIResource {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 2779255416435904762L;
-	private static Logger log = Logger.getLogger(MyRunsTableCellRenderer.class);
+	private static Logger log = Logger.getLogger(MyRunsTableBooleanCellRenderer.class);
+
+	private static final Border noFocusBorder = new EmptyBorder(1, 1, 1, 1);
+
+	public MyRunsTableBooleanCellRenderer() {
+		super();
+		setHorizontalAlignment(JLabel.CENTER);
+		setBorderPainted(true);
+	}
 
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
 			int row, int column) {
+		if (isSelected) {
+			setForeground(table.getSelectionForeground());
+			super.setBackground(table.getSelectionBackground());
+		} else {
+			setForeground(table.getForeground());
+			setBackground(table.getBackground());
+		}
+		setSelected((value != null && ((Boolean) value).booleanValue()));
 
-		final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-		final Color defaultColor = getColor(row);
-		c.setBackground(defaultColor);
-		String defaultToolTip = null;
-		if (value == null) {
-			value = "";
+		if (hasFocus) {
+			setBorder(UIManager.getBorder("Table.focusCellHighlightBorder"));
+		} else {
+			setBorder(noFocusBorder);
 		}
 		try {
 			for (final ColumnsRunTable tableColumn : ColumnsRunTable.values()) {
 				final int columnIndex = table.getColumnModel().getColumnIndex(tableColumn.toString());
-				if (columnIndex >= 0 && columnIndex == column) {
-					defaultToolTip = getToolTip(value.toString(), tableColumn);
+				if (columnIndex >= 0 && columnIndex == column && value != null) {
+					final String defaultToolTip = getToolTip(value.toString(), tableColumn);
+					setToolTipText(defaultToolTip);
 				}
 			}
 
 		} catch (final IllegalArgumentException e) {
 			e.printStackTrace();
 		}
-
-		try {
-			if (defaultToolTip == null) {
-				defaultToolTip = getToolTip(value.toString(), null);
-			}
-		} catch (final IllegalArgumentException e) {
-
-		}
-
-		if (defaultToolTip == null && value != null) {
-			defaultToolTip = value.toString();
-		}
-		setToolTipText(defaultToolTip);
 
 		if (isSelected) {
 			this.setForeground(Color.RED);
@@ -65,7 +73,7 @@ class MyRunsTableCellRenderer extends DefaultTableCellRenderer {
 		} else {
 			this.setForeground(Color.BLACK);
 		}
-		return c;
+		return this;
 	}
 
 	private String getToolTip(String value, ColumnsRunTable column) {

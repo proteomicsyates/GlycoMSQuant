@@ -61,7 +61,8 @@ class ScrollableRunsTable extends JPanel {
 
 		// Set renderer for painting different background colors
 		table.setDefaultRenderer(Object.class, new MyRunsTableCellRenderer());
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+		table.setDefaultRenderer(Boolean.class, new MyRunsTableBooleanCellRenderer());
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 		initializeUI(wide);
 	}
 

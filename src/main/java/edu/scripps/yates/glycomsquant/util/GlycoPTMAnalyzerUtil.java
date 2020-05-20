@@ -102,14 +102,18 @@ public class GlycoPTMAnalyzerUtil {
 		for (final String extendedSequence : extendedSequences) {
 
 			final Matcher matcher = getPattern(motifRegexp).matcher(extendedSequence);
-			while (matcher.find()) {
-				final int position = matcher.start() + 1;
-				if (position > peptide.getSequence().length()) {
-					continue;
-				}
-				ret.add(position);
+			if (matcher.find()) {
+				do {
+					final int position = matcher.start(1) + 1;
+					if (position > peptide.getSequence().length()) {
+						continue;
+					}
+					ret.add(position);
+
+				} while (matcher.find(matcher.start(1) + 1));
 			}
 		}
+
 		return ret;
 	}
 
@@ -721,5 +725,12 @@ public class GlycoPTMAnalyzerUtil {
 					+ " in sequence " + proteinSequence + " in multiple positions. It should be discarded.");
 		}
 		return positionsOfPeptideInProtein.get(0);
+	}
+
+	public static List<QuantifiedPeptideInterface> getPeptidesFromGroupedPeptides(
+			List<GroupedQuantifiedPeptide> groupedPeptides) {
+		final List<QuantifiedPeptideInterface> ret = new ArrayList<QuantifiedPeptideInterface>();
+		groupedPeptides.stream().forEach(groupedPeptide -> ret.addAll(groupedPeptide));
+		return ret;
 	}
 }

@@ -893,6 +893,12 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
 							+ numMeasurementsText + "<br> covering position " + positionInProtein + ":";
 				}
+				if (glycoSite.isAmbiguous()) {
+					text = "This site is ambiguous between position " + glycoSite.getPosition() + " and position "
+							+ StringUtils.getSortedSeparatedValueString(glycoSite.getAmbiguousSites(), ",") + ".<br>"
+							+ "It is not possible to have PTMs in consecutive sites in the protein.<br>(<i>'Don't allow consecutive motifs'</i> was enabled).<br><br>"
+							+ text;
+				}
 			} else {
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>the " + peptides.size() + " selected peptides <br>"

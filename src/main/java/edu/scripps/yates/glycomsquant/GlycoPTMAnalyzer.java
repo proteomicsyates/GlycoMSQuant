@@ -48,9 +48,11 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private int peptidesValid;
 	private final AmountType amountType;
 	private final boolean normalizeReplicates;
-	private final boolean calculateProportionsByPeptidesFirst;
+	private final boolean sumIntensitiesAcrossReplicates;
 	private final String motifRegexp;
 	private final boolean discardWrongPositionedPTMs;
+	private final Boolean discardNonUniquePeptides;
+	private final Boolean dontAllowConsecutiveMotifs;
 
 	private static final DecimalFormat f = new DecimalFormat("#.#E0");
 
@@ -63,15 +65,18 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.intensityThreshold = inputParams.getIntensityThreshold();
 		this.amountType = inputParams.getAmountType();
 		this.normalizeReplicates = inputParams.isNormalizeReplicates();
-		this.calculateProportionsByPeptidesFirst = inputParams.isSumIntensitiesAcrossReplicates();
+		this.sumIntensitiesAcrossReplicates = inputParams.isSumIntensitiesAcrossReplicates();
 		this.motifRegexp = inputParams.getMotifRegexp();
 		this.discardWrongPositionedPTMs = inputParams.isDiscardWrongPositionedPTMs();
+		this.discardNonUniquePeptides = inputParams.isDiscardNonUniquePeptides();
+		this.dontAllowConsecutiveMotifs = inputParams.isDontAllowConsecutiveMotifs();
 		printWelcome();
 	}
 
 	public GlycoPTMAnalyzer(File inputFile, String proteinOfInterestACC, File fastaFile, String prefix, String suffix,
 			double intensityThreshold, AmountType amountType, boolean normalizeExperimentsByProtein,
-			boolean calculateProportionsByPeptidesFirst, String motifRegexp, boolean discardWrongPositionedPTMs) {
+			boolean sumIntensitiesAcrossReplicates, String motifRegexp, boolean discardWrongPositionedPTMs,
+			boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
@@ -80,8 +85,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.amountType = amountType;
 		this.normalizeReplicates = normalizeExperimentsByProtein;
 		this.motifRegexp = motifRegexp;
-		this.calculateProportionsByPeptidesFirst = calculateProportionsByPeptidesFirst;
+		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
+		this.discardNonUniquePeptides = discardNonUniquePeptides;
+		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
 		printWelcome();
 
 		CurrentInputParameters.getInstance().setInputParameters(this);
@@ -111,7 +118,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		option4.setRequired(false);
 		options.addOption(option4);
 
-		final Option option5 = new Option("int", "intensityThreshold", true,
+		final Option option5 = new Option("thr", "intensityThreshold", true,
 				"[OPTIONAL] Intensity threshold to discard all PSM with intensity below that value. If not provided, no threshold will be applied.");
 		option5.setRequired(false);
 		options.addOption(option5);
@@ -126,8 +133,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		option7.setRequired(false);
 		options.addOption(option7);
 
-		final Option option8 = new Option("pep", "analysis_by_peptides", true,
-				"[OPTIONAL] If present, boolean parameters (true/false) to set whether to calculate PTM amount ratios per peptides or not.");
+		final Option option8 = new Option("sum", "sum_across_replicates", true,
+				"[OPTIONAL] If present, boolean parameter (true/false) to set whether to sum intensities per peptide across replicates before calculate the proportions or not.");
 		option8.setRequired(false);
 		options.addOption(option8);
 
@@ -135,6 +142,17 @@ public class GlycoPTMAnalyzer implements InputParameters {
 				"[OPTIONAL] If present, peptides having PTMs of interest that are not in motifs are discarded regardless of having other positions with valid PTMs in motifs.");
 		option9.setRequired(false);
 		options.addOption(option9);
+
+		final Option option10 = new Option("dnu", "discard_non_unique_peptides", false,
+				"[OPTIONAL] If present, peptides shared by multiple proteins will be discarded.");
+		option10.setRequired(false);
+		options.addOption(option10);
+
+		final Option option11 = new Option("con", "consecutive_motifs", true,
+				"[OPTIONAL] Determines if motifs in consecutive sites are allowed or not. If not, they will be flagged and peptides with PTMs in consecutive positions will be discarded.");
+		option11.setRequired(false);
+		options.addOption(option11);
+
 	}
 
 	public static void main(String[] args) {
@@ -166,8 +184,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 				suffix = cmd.getOptionValue("suf");
 			}
 			double intensityThreshold = 0.0;
-			if (cmd.hasOption("int")) {
-				intensityThreshold = Double.valueOf(cmd.getOptionValue("int"));
+			if (cmd.hasOption("thr")) {
+				intensityThreshold = Double.valueOf(cmd.getOptionValue("thr"));
 			}
 
 			final AmountType amountType = AmountType.INTENSITY;
@@ -176,9 +194,9 @@ public class GlycoPTMAnalyzer implements InputParameters {
 				normalizeExperimentsByProtein = true;
 			}
 
-			final boolean analysisByPeptides = true;
-			if (cmd.hasOption("pep")) {
-				normalizeExperimentsByProtein = Boolean.valueOf(cmd.getOptionValue("pep"));
+			final boolean sumIntensitiesByReplicates = true;
+			if (cmd.hasOption("sum")) {
+				normalizeExperimentsByProtein = Boolean.valueOf(cmd.getOptionValue("sum"));
 			}
 			final String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
 
@@ -186,10 +204,17 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("dis")) {
 				discardWrongPositionedPTMs = Boolean.valueOf(cmd.getOptionValue("dis"));
 			}
-
+			boolean discardNonUniquePeptides = false;
+			if (cmd.hasOption("dnu")) {
+				discardNonUniquePeptides = Boolean.valueOf(cmd.getOptionValue("dnu"));
+			}
+			boolean dontAllowConsecutiveMotifs = false;
+			if (cmd.hasOption("con")) {
+				dontAllowConsecutiveMotifs = Boolean.valueOf(cmd.getOptionValue("con"));
+			}
 			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, prefix,
-					suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, analysisByPeptides,
-					motifRegexp, discardWrongPositionedPTMs);
+					suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, sumIntensitiesByReplicates,
+					motifRegexp, discardWrongPositionedPTMs, discardNonUniquePeptides, dontAllowConsecutiveMotifs);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {
@@ -234,7 +259,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 
 		log.info("Now analyzing the " + peptides.size() + " peptides...");
 		final GlycoPTMPeptideAnalyzer glycoPTMPeptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
-				proteinOfInterestACC, amountType, this.motifRegexp);
+				proteinOfInterestACC, amountType, this.motifRegexp, this.dontAllowConsecutiveMotifs);
 		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getGlycoSites();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
@@ -351,7 +376,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 
 	@Override
 	public Boolean isSumIntensitiesAcrossReplicates() {
-		return this.calculateProportionsByPeptidesFirst;
+		return this.sumIntensitiesAcrossReplicates;
 	}
 
 	@Override
@@ -362,5 +387,15 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	@Override
 	public Boolean isDiscardWrongPositionedPTMs() {
 		return this.discardWrongPositionedPTMs;
+	}
+
+	@Override
+	public Boolean isDiscardNonUniquePeptides() {
+		return this.discardNonUniquePeptides;
+	}
+
+	@Override
+	public Boolean isDontAllowConsecutiveMotifs() {
+		return this.dontAllowConsecutiveMotifs;
 	}
 }

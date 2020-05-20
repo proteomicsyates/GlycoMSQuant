@@ -40,7 +40,7 @@ public class AttachedRunsDialog extends JDialog {
 		this.maxWidth = maxWidth;
 		getContentPane().setBackground(SystemColor.info);
 		setTitle("GlycoMSQuant runs");
-		setFocusableWindowState(false);
+//		setFocusableWindowState(false);
 		setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
