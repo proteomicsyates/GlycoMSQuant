@@ -47,7 +47,7 @@ public class AttachedPeptideListDialog extends JDialog {
 		this.proteinSequenceDialog = (ProteinSequenceDialog) parentFrame;
 		this.maxWidth = maxWidth;
 		getContentPane().setBackground(SystemColor.info);
-		setTitle("GlycoMSQuant runs");
+		setTitle("GlycoMSQuant peptides table");
 		setFocusableWindowState(false);
 		setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 		try {
