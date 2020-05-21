@@ -804,7 +804,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualProportions(peptides,
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides,
 					sumIntensitiesAcrossReplicates);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
