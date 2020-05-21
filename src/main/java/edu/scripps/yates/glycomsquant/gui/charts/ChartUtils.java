@@ -63,10 +63,10 @@ public class ChartUtils {
 		for (final GlycoSite site : glycoSites) {
 			String columnKey = null;
 			if (psms) {
-				columnKey = site.getPosition() + " (" + site.getSPCByPTMCode(PTMCode._0) + "/"
+				columnKey = site.getReferencePosition() + " (" + site.getSPCByPTMCode(PTMCode._0) + "/"
 						+ site.getSPCByPTMCode(PTMCode._2) + "/" + site.getSPCByPTMCode(PTMCode._203) + ")";
 			} else {
-				columnKey = site.getPosition() + " (" + site.getPeptidesByPTMCode(PTMCode._0).size() + "/"
+				columnKey = site.getReferencePosition() + " (" + site.getPeptidesByPTMCode(PTMCode._0).size() + "/"
 						+ site.getPeptidesByPTMCode(PTMCode._2).size() + "/"
 						+ site.getPeptidesByPTMCode(PTMCode._203).size() + ")";
 			}
@@ -576,11 +576,12 @@ public class ChartUtils {
 		for (final GlycoSite hivPosition : glycoSites) {
 			String columnKey = "";
 			if (psms) {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getSPCByPTMCode(PTMCode._0) + "/"
+				columnKey = hivPosition.getReferencePosition() + " (" + hivPosition.getSPCByPTMCode(PTMCode._0) + "/"
 						+ hivPosition.getSPCByPTMCode(PTMCode._2) + "/" + hivPosition.getSPCByPTMCode(PTMCode._203)
 						+ ")";
 			} else {
-				columnKey = hivPosition.getPosition() + " (" + hivPosition.getPeptidesByPTMCode(PTMCode._0).size() + "/"
+				columnKey = hivPosition.getReferencePosition() + " ("
+						+ hivPosition.getPeptidesByPTMCode(PTMCode._0).size() + "/"
 						+ hivPosition.getPeptidesByPTMCode(PTMCode._2).size() + "/"
 						+ hivPosition.getPeptidesByPTMCode(PTMCode._203).size() + ")";
 			}

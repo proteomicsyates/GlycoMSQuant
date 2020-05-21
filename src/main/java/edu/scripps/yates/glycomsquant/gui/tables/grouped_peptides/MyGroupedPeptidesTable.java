@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
@@ -106,8 +107,19 @@ public class MyGroupedPeptidesTable extends JTable {
 		peptidesByPeptideKey = null;
 		final TableModel model = getModel();
 		if (model instanceof MyGroupedPeptidesTableModel) {
+			// get listeners
+			final ListSelectionListener[] listSelectionListeners = ((DefaultListSelectionModel) getSelectionModel())
+					.getListSelectionListeners();
+			// remove listeners
+			for (final ListSelectionListener listSelectionListener : listSelectionListeners) {
+				getSelectionModel().removeListSelectionListener(listSelectionListener);
+			}
 			((MyGroupedPeptidesTableModel) model).setRowCount(0);
 			((MyGroupedPeptidesTableModel) model).setColumnCount(0);
+			// add listeners
+			for (final ListSelectionListener listSelectionListener : listSelectionListeners) {
+				getSelectionModel().addListSelectionListener(listSelectionListener);
+			}
 		}
 	}
 

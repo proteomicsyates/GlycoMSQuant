@@ -136,6 +136,6 @@ public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 	}
 
 	protected String getChartTitle(GlycoSite glycoSite) {
-		return "Site " + glycoSite.getPosition();
+		return "Site " + glycoSite.getReferencePosition();
 	}
 }

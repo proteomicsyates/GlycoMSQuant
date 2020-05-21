@@ -53,14 +53,20 @@ public class GlycoSite {
 	private Integer totalSPC;
 	private final Set<String> replicates = new THashSet<String>();
 	private final TIntList ambiguousSites = new TIntArrayList();
-	private final String referencePosition;
+	private String referencePosition;
 
 	public GlycoSite(int position, String protein) {
 		super();
 
 		this.position = position;
 		this.protein = protein;
-		this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position);
+		try {
+			this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position);
+		} catch (final IllegalArgumentException e) {
+			// in this case, there is map to reference no reference
+			this.referencePosition = String.valueOf(position);
+		}
+
 	}
 
 	public String printOut() {

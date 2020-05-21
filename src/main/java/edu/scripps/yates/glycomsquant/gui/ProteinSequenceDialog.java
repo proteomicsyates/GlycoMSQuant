@@ -392,13 +392,18 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			for (int index = 0; index < proteinSequenceLine.length(); index++) {
 				final int indexInProtein = index + proteinSequenceIndex;
 				final int positionInProtein = indexInProtein + 1;
-
+				final String positionInReference = ProteinSequences.getInstance()
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
 				final JLabel label = new JLabel("" + proteinSequence.charAt(indexInProtein));
 				label.setOpaque(true);
 				label.setFont(GuiUtils.aminoacidLabelFont);
-				label.setToolTipText("<html>Aminoacid '<b>" + proteinSequence.charAt(indexInProtein)
-						+ "</b>' at position " + positionInProtein + ""
-						+ "<br>Click on it to filter the peptide list with only the peptides covering this position.<html>");
+				String tooltip = "<html>Aminoacid '<b>" + proteinSequence.charAt(indexInProtein) + "</b>' at position "
+						+ positionInProtein;
+				if (positionInReference != null) {
+					tooltip += " - Position in reference " + ProteinSequences.REFERENCE + ": " + positionInReference;
+				}
+				tooltip += "<br>Click on it to filter the peptide list with only the peptides covering this position.<html>";
+				label.setToolTipText(tooltip);
 				if (isGlycoSite(positionInProtein)) {
 					label.setBackground(GLYCO_SITE_BACKGROUND_COLOR);
 					label.addMouseListener(getMouseListenerForGlycoSitePosition(positionInProtein));
@@ -603,7 +608,13 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 	protected void updateSelectedPosition(int position) {
 		if (position > 0) {
+			final String positionInReference = ProteinSequences.getInstance()
+					.mapPositionToReferenceProtein(currentProteinAcc, position);
 			this.selectedPositionLabel.setText(position + "");
+			if (positionInReference != null) {
+				this.selectedPositionLabel.setText(this.selectedPositionLabel.getText() + " - (Position in reference "
+						+ ProteinSequences.REFERENCE + ": " + positionInReference + ")");
+			}
 		} else {
 			this.selectedPositionLabel.setText("");
 		}
@@ -758,7 +769,16 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			final JPanel headerPanel = new JPanel();
 			headerPanel.setBackground(Color.white);
 			if (selectedPeptides.isEmpty()) {
-				final JLabel headerLabel = new JLabel("No peptides covering position " + positionInProtein);
+				String text = "No peptides covering position " + positionInProtein;
+
+				if (positionInProtein != -1) {
+					final String positionInReference = ProteinSequences.getInstance()
+							.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
+					if (positionInReference != null) {
+						text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE + ")</i>";
+					}
+				}
+				final JLabel headerLabel = new JLabel("<html>" + text + "</html>");
 				headerLabel.setFont(GuiUtils.headerFont());
 				headerPanel.add(headerLabel);
 				final GridBagConstraints c = new GridBagConstraints();
@@ -789,13 +809,19 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (positionInProtein != -1) {
+				final String positionInReference = ProteinSequences.getInstance()
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
-							+ "<br> covering position " + positionInProtein + ":";
+							+ "<br> covering position " + positionInProtein;
 				} else {
 					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
-							+ numMeasurementsText + "<br> covering position " + positionInProtein + ":";
+							+ numMeasurementsText + "<br> covering position " + positionInProtein;
 				}
+				if (positionInReference != null) {
+					text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE + ")</i>";
+				}
+				text += ":";
 			} else {
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>the " + peptides.size() + " selected peptides <br>"
@@ -887,17 +913,23 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (positionInProtein != -1) {
+				final String positionInReference = ProteinSequences.getInstance()
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
-							+ "<br> covering position " + positionInProtein + " <i>(" + glycoSite.getReferencePosition()
-							+ " in " + ProteinSequences.REFERENCE + ")</i>:";
+							+ "<br> covering position " + positionInProtein;
 				} else {
 					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
-							+ numMeasurementsText + "<br> covering position " + positionInProtein + " <i>("
-							+ glycoSite.getReferencePosition() + " in " + ProteinSequences.REFERENCE + ")</i>:";
+							+ numMeasurementsText + "<br> covering position " + positionInProtein;
 				}
+				if (positionInReference != null) {
+					text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE + ")</i>";
+				}
+				text += ":";
 				if (glycoSite.isAmbiguous()) {
-					text = "This site is ambiguous between position " + glycoSite.getPosition() + " and position "
+					text = "This site is ambiguous between position " + glycoSite.getPosition() + " <i>("
+							+ glycoSite.getReferencePosition() + " in " + ProteinSequences.REFERENCE
+							+ ")</i> and position "
 							+ StringUtils.getSortedSeparatedValueString(glycoSite.getAmbiguousSites(), ",") + ".<br>"
 							+ "It is not possible to have PTMs in consecutive sites in the protein.<br>(<i>'Don't allow consecutive motifs'</i> was enabled).<br><br>"
 							+ text;
