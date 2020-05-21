@@ -150,6 +150,9 @@ public class ColumnsSitesTableUtil {
 					ret.add("");
 				}
 				break;
+			case REFERENCE_SITE:
+				ret.add(glycoSite.getReferencePosition());
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

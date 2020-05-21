@@ -17,7 +17,11 @@ enum ColumnsPeptidesTable {
 	REPLICATES("Replicate", 80, "Replicate", Integer.class),
 
 	LENGTH("Len", 20, "Length of the peptide", Integer.class, true), //
-	SITES("Glyco site(s)", 60, "Site position(s) covered by the peptide in the protein sequence", String.class, true), //
+	SITES("Site(s)", 60, "Position(s) with PTMs of interest covered by the peptide in the protein sequence",
+			String.class, true), //
+	REF_SITES("Ref Site(s)", 60,
+			"Position(s) with PTMs of interest covered by the peptide mapped to reference protein sequence",
+			String.class, true), //
 	STARTING_POSITION("Start", 20, "Starting position of peptide in protein", String.class, true), //
 	ENDING_POSITION("End", 20, "Ending position of peptide in protein", String.class, true), //
 

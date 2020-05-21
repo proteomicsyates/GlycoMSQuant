@@ -34,6 +34,7 @@ import org.jfree.chart.plot.CategoryPlot;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
+import edu.scripps.yates.glycomsquant.ProteinSequences;
 import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedPeptideListDialog;
 import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.charts.ErrorType;
@@ -783,7 +784,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(peptides,
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualProportions(peptides,
 					sumIntensitiesAcrossReplicates);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
@@ -881,17 +882,19 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(peptides,
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides,
 					sumIntensitiesAcrossReplicates);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (positionInProtein != -1) {
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
-							+ "<br> covering position " + positionInProtein + ":";
+							+ "<br> covering position " + positionInProtein + " <i>(" + glycoSite.getReferencePosition()
+							+ " in " + ProteinSequences.REFERENCE + ")</i>:";
 				} else {
 					text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
-							+ numMeasurementsText + "<br> covering position " + positionInProtein + ":";
+							+ numMeasurementsText + "<br> covering position " + positionInProtein + " <i>("
+							+ glycoSite.getReferencePosition() + " in " + ProteinSequences.REFERENCE + ")</i>:";
 				}
 				if (glycoSite.isAmbiguous()) {
 					text = "This site is ambiguous between position " + glycoSite.getPosition() + " and position "

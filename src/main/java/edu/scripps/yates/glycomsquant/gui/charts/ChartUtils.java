@@ -501,7 +501,7 @@ public class ChartUtils {
 			final String code = GuiUtils.translateCode(ptmCode.getCode());
 			final XYSeries series = new XYSeries(code);
 			double x = -1;
-			final double step = 2.0 / (GlycoPTMAnalyzerUtil.getNumIndividualPeptideMeasurements(ptmCode, peptides,
+			final double step = 2.0 / (GlycoPTMAnalyzerUtil.getNumIndividualProportions(ptmCode, peptides,
 					sumIntensitiesAcrossReplicates) + 1);
 
 			for (final GroupedQuantifiedPeptide peptide : peptides) {

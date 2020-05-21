@@ -133,6 +133,17 @@ public class ColumnsPeptidesTableUtil {
 				ret.add(sb.toString());
 
 				break;
+			case REF_SITES:
+				sb = new StringBuilder();
+				for (final GlycoSite site : coveredGlycoSites) {
+					if (!"".equals(sb.toString())) {
+						sb.append(VALUE_SEPARATOR);
+					}
+					sb.append(site.getReferencePosition());
+				}
+				ret.add(sb.toString());
+
+				break;
 			case INTENSITY:
 				sb = new StringBuilder();
 				for (final String replicate : replicates) {

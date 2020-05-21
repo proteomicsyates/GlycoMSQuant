@@ -11,11 +11,15 @@ enum ColumnsGroupedPeptidesTable {
 	SEQUENCE("Sequence", 300, "Sequence of the peptide with no modifications of interest", String.class), //
 	CHARGE("z", 20, "Charge state of the peptide", Integer.class),
 	TOTAL_SPC("SPC", 20, "Spectral counts that contributed to this peptide", Integer.class),
-	SPC_PER_REPLICATE("SPC/rep", 40, "Spectral counts that contributed to this peptide in each of the replicates",
-			Integer.class),
+	SPC_PER_REPLICATE(
+			"SPC/rep", 40, "Spectral counts that contributed to this peptide in each of the replicates", Integer.class),
 	REPLICATES("Replicate", 80, "Replicate", Integer.class),
 
-	SITES("Glyco site(s)", 60, "Site position(s) covered by the peptide in the protein sequence", String.class), //
+	SITES("Site(s)", 60, "Position(s) with PTMs of interest covered by the peptide in the protein sequence",
+			String.class), //
+	REF_SITES("Ref Site(s)", 60,
+			"Position(s) with PTMs of interest covered by the peptide mapped to reference protein sequence",
+			String.class), //
 	STARTING_POSITION("Start", 10, "Starting position of peptide in protein", String.class), //
 
 	PERCENT_NoPTM("% No-PTM", 20, "Percentage of abundance of non-modified sites", Double.class, PTMCode._0), //

@@ -107,7 +107,17 @@ public class ColumnsGroupedPeptidesTableUtil {
 				ret.add(sb.toString());
 
 				break;
+			case REF_SITES:
+				sb = new StringBuilder();
+				for (final GlycoSite site : coveredGlycoSites) {
+					if (!"".equals(sb.toString())) {
+						sb.append(VALUE_SEPARATOR);
+					}
+					sb.append(site.getReferencePosition());
+				}
+				ret.add(sb.toString());
 
+				break;
 			case SPC_PER_REPLICATE:
 				sb = new StringBuilder();
 

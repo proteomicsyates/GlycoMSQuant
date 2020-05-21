@@ -320,11 +320,11 @@ public class GlycoPTMAnalyzerUtil {
 		return peptidePercentagesByPTMCode;
 	}
 
-	public static int getNumIndividualPeptideMeasurements(Collection<GroupedQuantifiedPeptide> peptides,
+	public static int getNumIndividualProportions(Collection<GroupedQuantifiedPeptide> peptides,
 			boolean sumIntensitiesAcrossReplicates) {
 		int ret = -Integer.MAX_VALUE;
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			final int num = getNumIndividualPeptideMeasurements(ptmCode, peptides, sumIntensitiesAcrossReplicates);
+			final int num = getNumIndividualProportions(ptmCode, peptides, sumIntensitiesAcrossReplicates);
 			if (num > ret) {
 				ret = num;
 			}
@@ -333,8 +333,28 @@ public class GlycoPTMAnalyzerUtil {
 
 	}
 
-	public static int getNumIndividualPeptideMeasurements(PTMCode ptmCode,
-			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
+	public static int getNumIndividualIntensities(Collection<GroupedQuantifiedPeptide> peptides,
+			boolean sumIntensitiesAcrossReplicates) {
+		int num = 0;
+		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+			if (!sumIntensitiesAcrossReplicates) {
+				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
+					// the number of replicates in which it is will be the number of intensities
+					// because when intensity is 0.0, the replicate is not counted
+					num += getReplicateNamesFromPeptide(peptide).size();
+				}
+			} else {
+				// if we sum across replicates, each individual measurements comes from each
+				// grouped peptide after summing intensities across replicates for each them
+				num += groupedPeptide.size();
+			}
+		}
+		return num;
+
+	}
+
+	public static int getNumIndividualProportions(PTMCode ptmCode, Collection<GroupedQuantifiedPeptide> peptides,
+			boolean sumIntensitiesAcrossReplicates) {
 		if (sumIntensitiesAcrossReplicates) {
 			return peptides.size();
 		} else {

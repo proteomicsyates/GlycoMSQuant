@@ -53,13 +53,14 @@ public class GlycoSite {
 	private Integer totalSPC;
 	private final Set<String> replicates = new THashSet<String>();
 	private final TIntList ambiguousSites = new TIntArrayList();
+	private final String referencePosition;
 
 	public GlycoSite(int position, String protein) {
 		super();
 
 		this.position = position;
 		this.protein = protein;
-
+		this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position);
 	}
 
 	public String printOut() {
@@ -401,4 +402,9 @@ public class GlycoSite {
 		}
 		return removed;
 	}
+
+	public String getReferencePosition() {
+		return referencePosition;
+	}
+
 }

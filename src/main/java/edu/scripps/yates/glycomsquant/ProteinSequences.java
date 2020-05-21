@@ -11,6 +11,7 @@ import com.compomics.dbtoolkit.io.implementations.FASTADBLoader;
 import com.compomics.util.protein.Protein;
 
 import edu.scripps.yates.annotations.uniprot.UniprotFastaRetriever;
+import edu.scripps.yates.glycomsquant.util.MappingToReferenceHXB2;
 import edu.scripps.yates.utilities.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.proteomicsmodel.Accession;
@@ -29,6 +30,9 @@ public class ProteinSequences {
 	private String motifRegexp;
 	private final Map<String, String> proteinSequencesByAcc = new THashMap<String, String>();
 	private boolean loaded;
+	private final Map<String, MappingToReferenceHXB2> mappingsByProtein = new THashMap<String, MappingToReferenceHXB2>();
+
+	public final static String REFERENCE = "HXB2";
 
 	private ProteinSequences(File fastaFile, String motifRegexp) {
 		this.fastaFile = fastaFile;
@@ -177,4 +181,12 @@ public class ProteinSequences {
 		return this.motifRegexp;
 	}
 
+	public String mapPositionToReferenceProtein(String proteinAcc, int position) {
+		if (!mappingsByProtein.containsKey(proteinAcc)) {
+
+			mappingsByProtein.put(proteinAcc, new MappingToReferenceHXB2(proteinAcc));
+		}
+		final MappingToReferenceHXB2 alignment = mappingsByProtein.get(proteinAcc);
+		return alignment.get(position);
+	}
 }
