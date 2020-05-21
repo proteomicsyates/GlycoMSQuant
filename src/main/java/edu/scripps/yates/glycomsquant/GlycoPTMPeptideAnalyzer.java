@@ -87,6 +87,9 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 					continue;
 				}
 				final int position = ptmPositionInProtein.getPosition();
+				if (position == 609) {
+					log.info("asfd");
+				}
 				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmPositionInProtein.getDeltaMass());
 				if (!map.containsKey(position)) {
 					map.put(position, new GlycoSite(position, proteinOfInterestACC));
@@ -143,6 +146,10 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 						+ " has been removed after removing physically not possible peptides");
 			}
 
+		}
+		// add the last one
+		if (!sites.get(sites.size() - 1).getCoveredPeptides().isEmpty()) {
+			ret.add(sites.get(sites.size() - 1));
 		}
 		return ret;
 	}

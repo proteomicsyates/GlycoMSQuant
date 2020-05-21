@@ -187,6 +187,7 @@ public class ProteinSequences {
 			mappingsByProtein.put(proteinAcc, new MappingToReferenceHXB2(proteinAcc));
 		}
 		final MappingToReferenceHXB2 alignment = mappingsByProtein.get(proteinAcc);
-		return alignment.get(position);
+		final String positionInReference = alignment.get(position);
+		return positionInReference;
 	}
 }
