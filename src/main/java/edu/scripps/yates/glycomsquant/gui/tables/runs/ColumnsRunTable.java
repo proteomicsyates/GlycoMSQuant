@@ -3,7 +3,7 @@ package edu.scripps.yates.glycomsquant.gui.tables.runs;
 import java.util.ArrayList;
 import java.util.List;
 
-enum ColumnsRunTable {
+public enum ColumnsRunTable {
 	NUMBER("#", 3, "", Integer.class), //
 	RUN_PATH("Path", 50, "Path of the results", String.class), //
 	NAME("Name", 50, "Name set when results were created", String.class),
@@ -61,25 +61,9 @@ enum ColumnsRunTable {
 		return ret;
 	}
 
-	private static List<ColumnsRunTable> getColumnsForTable() {
-		return getColumns();
-	}
-
 	public static List<String> getColumnsString() {
 		final List<String> ret = new ArrayList<String>();
 		final List<ColumnsRunTable> columns = getColumns();
-
-		for (final ColumnsRunTable exportedColumns : columns) {
-			ret.add(exportedColumns.toString());
-		}
-
-		return ret;
-	}
-
-	public static List<String> getColumnsStringForTable() {
-		final List<String> ret = new ArrayList<String>();
-
-		final List<ColumnsRunTable> columns = getColumnsForTable();
 
 		for (final ColumnsRunTable exportedColumns : columns) {
 			ret.add(exportedColumns.toString());

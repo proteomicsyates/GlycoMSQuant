@@ -1,6 +1,7 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -127,8 +128,14 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	}
 
 	public TDoubleList getProportionsByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
-		return GlycoPTMAnalyzerUtil.getIndividualProportionsByPTMCode(this, sumIntensitiesAcrossReplicates)
-				.get(ptmCode);
+
+		final Map<PTMCode, TDoubleList> individualProportionsByPTMCode = GlycoPTMAnalyzerUtil
+				.getIndividualProportionsByPTMCode(this, sumIntensitiesAcrossReplicates);
+		if (individualProportionsByPTMCode.containsKey(ptmCode)) {
+			return individualProportionsByPTMCode.get(ptmCode);
+		}
+		throw new IllegalArgumentException(
+				"No proportion data for position " + getPositionInPeptide() + " in peptide " + getKey(false));
 	}
 
 	public String getSequence() {

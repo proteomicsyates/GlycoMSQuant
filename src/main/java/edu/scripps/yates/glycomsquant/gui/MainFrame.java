@@ -74,15 +74,17 @@ import edu.scripps.yates.glycomsquant.comparison.RunComparisonTest;
 import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedRunsDialog;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
+import edu.scripps.yates.glycomsquant.gui.tables.PeptidesTableDialog;
+import edu.scripps.yates.glycomsquant.gui.tables.SitesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tables.comparison.ComparisonTableDialog;
-import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.PeptidesTableDialog;
-import edu.scripps.yates.glycomsquant.gui.tables.sites.SitesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tasks.IterationGraphGenerator;
 import edu.scripps.yates.glycomsquant.gui.tasks.ResultLoaderFromDisk;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterationGraphPanel;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterativeThresholdAnalysis;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
+import edu.scripps.yates.utilities.appversion.AppVersion;
+import edu.scripps.yates.utilities.properties.PropertiesUtil;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
 import uk.ac.ebi.pride.utilities.pridemod.ModReader;
@@ -96,6 +98,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JPanel chartPanel;
 	private final static SimpleDateFormat format = new SimpleDateFormat("yyy-MM-dd HH:mm:ss:SSS");
 	private static MainFrame instance;
+	private static AppVersion version;
+	private static final String APP_PROPERTIES = "app.properties";
 	private final ComponentEnableStateKeeper componentStateKeeper = new ComponentEnableStateKeeper(true);
 	private JButton separateChartsButton;
 	private final List<JComponent> chartsInMainPanel = new ArrayList<JComponent>();
@@ -154,7 +158,17 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				componentStateKeeper.keepEnableStates(MainFrame.this);
 				try {
 					componentStateKeeper.disable(MainFrame.this);
-
+					// title with app version
+					try {
+						version = getVersion();
+						if (version != null) {
+							final String suffix = " (v" + version.toString() + ")";
+							if (!getTitle().endsWith(suffix))
+								setTitle(getTitle() + suffix);
+						}
+					} catch (final Exception e1) {
+					}
+					// mode reader
 					ModReader.getInstance();
 					final String motifRegexp = getMotifRegexp();
 					final File fastaFile = getFastaFile();
@@ -721,7 +735,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	protected void compareExperiments() {
-		final List<String> selectedRuns = getRunsAttachedDialog().getSelectedRunPathss();
+		final List<String> selectedRuns = getRunsAttachedDialog().getScrollableTable().getTable().getSelectedRunPaths();
 		final StringBuilder sb = new StringBuilder();
 		for (final String string : selectedRuns) {
 			sb.append("\t" + string);
@@ -1657,5 +1671,22 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	@Override
 	public Boolean isDontAllowConsecutiveMotifs() {
 		return this.dontAllowConsecutiveMotifsMenuItem.isSelected();
+	}
+
+	public static AppVersion getVersion() {
+		if (version == null) {
+			try {
+				final String tmp = PropertiesUtil.getProperties(new File(APP_PROPERTIES)).getProperty("assembly.dir");
+				if (tmp.contains("v")) {
+					version = new AppVersion(tmp.split("v")[1]);
+				} else {
+					version = new AppVersion(tmp);
+				}
+			} catch (final Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return version;
+
 	}
 }

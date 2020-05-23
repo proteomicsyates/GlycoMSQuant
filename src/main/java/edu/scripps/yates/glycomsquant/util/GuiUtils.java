@@ -1,15 +1,24 @@
 package edu.scripps.yates.glycomsquant.util;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
+import java.io.File;
+import java.io.IOException;
 import java.text.DecimalFormat;
 
 import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 
+import org.apache.commons.io.FilenameUtils;
+
+import edu.scripps.yates.glycomsquant.AppDefaults;
 import edu.scripps.yates.glycomsquant.PTMCode;
+import edu.scripps.yates.glycomsquant.gui.tables.MyAbstractTable;
 import edu.scripps.yates.utilities.maths.Maths;
 
 public class GuiUtils {
@@ -100,5 +109,47 @@ public class GuiUtils {
 	public static Font headerFont() {
 		final Font font = new JLabel().getFont();
 		return new Font(font.getName(), font.getStyle(), font.getSize() + 5);
+	}
+
+	/**
+	 * Save contents of a table to a file, asking the user for where to save the
+	 * file, warning if file already exists
+	 * 
+	 * @param parentComponent the parent component that will be disabled when user
+	 *                        dialogs are shown
+	 * @param table
+	 */
+	public static void saveTableToFile(Component parentComponent, MyAbstractTable table) {
+		File currentDirectory = new File(System.getProperty("user.dir"));
+		final File file = new File(AppDefaults.getInstance().getInputFile());
+		if (file != null && file.getParentFile() != null && file.getParentFile().exists()) {
+			currentDirectory = file.getParentFile();
+		}
+		final JFileChooser fileChooser = new JFileChooser(currentDirectory);
+		final int ret = fileChooser.showSaveDialog(parentComponent);
+		if (ret == JFileChooser.APPROVE_OPTION) {
+			File outputFile = fileChooser.getSelectedFile();
+			if (FilenameUtils.getExtension(outputFile.getAbsolutePath()).equals("")) {
+				outputFile = new File(outputFile.getAbsolutePath() + ".tsv");
+			}
+			if (outputFile.exists()) {
+				final int option = JOptionPane.showConfirmDialog(parentComponent,
+						"File '" + FilenameUtils.getName(outputFile.getAbsolutePath())
+								+ "' already exist. Do you want to override it?",
+						"File override", JOptionPane.YES_NO_OPTION);
+				if (option != JOptionPane.YES_OPTION) {
+					return;
+				}
+			}
+			try {
+				table.saveToFile(outputFile);
+				JOptionPane.showMessageDialog(parentComponent, "File saved at: " + outputFile.getAbsolutePath(),
+						"File saved", JOptionPane.PLAIN_MESSAGE);
+			} catch (final IOException e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(parentComponent, e.getMessage(), "Error saving file",
+						JOptionPane.ERROR_MESSAGE);
+			}
+		}
 	}
 }

@@ -12,14 +12,14 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.glycomsquant.gui.tables.runs.ColumnsRunTableUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
-public class MyGroupedPeptidesTableCellRenderer extends DefaultTableCellRenderer {
+class MyGroupedPeptidesTableCellRenderer extends DefaultTableCellRenderer {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 2779255416435904762L;
 	private static Logger log = Logger.getLogger(MyGroupedPeptidesTableCellRenderer.class);
 
-	public MyGroupedPeptidesTableCellRenderer() {
+	protected MyGroupedPeptidesTableCellRenderer() {
 	}
 
 	@Override

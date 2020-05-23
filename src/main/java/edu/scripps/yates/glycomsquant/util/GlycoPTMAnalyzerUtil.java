@@ -242,7 +242,7 @@ public class GlycoPTMAnalyzerUtil {
 		} else {
 			final Map<PTMCode, TDoubleList> individualProportions = getIndividualProportionsByPTMCodeNotSummingAcrossReplicates(
 					peptides);
-			for (final PTMCode ptmCode : PTMCode.values()) {
+			for (final PTMCode ptmCode : individualProportions.keySet()) {
 				if (!ret.containsKey(ptmCode)) {
 					ret.put(ptmCode, new TDoubleArrayList());
 				}

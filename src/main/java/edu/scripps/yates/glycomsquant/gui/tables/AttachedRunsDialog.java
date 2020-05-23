@@ -1,4 +1,4 @@
-package edu.scripps.yates.glycomsquant.gui.tables.runs;
+package edu.scripps.yates.glycomsquant.gui.tables;
 
 import java.awt.BorderLayout;
 import java.awt.Point;
@@ -8,17 +8,15 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.JDialog;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.log4j.Logger;
+
+import edu.scripps.yates.glycomsquant.gui.tables.runs.ColumnsRunTableUtil;
+import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableRunsTable;
 
 public class AttachedRunsDialog extends JDialog {
 	/**
@@ -31,8 +29,8 @@ public class AttachedRunsDialog extends JDialog {
 	private boolean minimized = false;
 	private final int maxWidth;
 
-	private final JScrollPane scrollPane;
-	private ScrollableRunsTable table;
+//	private final JScrollPane scrollPane;
+	private final ScrollableRunsTable scrollableRunsTable;
 
 	public AttachedRunsDialog(Window parentWindow, int maxWidth) {
 		super(parentWindow, ModalityType.MODELESS);
@@ -50,33 +48,22 @@ public class AttachedRunsDialog extends JDialog {
 		}
 		this.parentFrame = parentWindow;
 
-		scrollPane = new JScrollPane();
-		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-		getContentPane().add(scrollPane, BorderLayout.CENTER);
-		// contentPanel.setBackground(SystemColor.info);
+		scrollableRunsTable = new ScrollableRunsTable(200);
+
+		getContentPane().add(scrollableRunsTable, BorderLayout.CENTER);
 
 		addWindowListeners();
+	}
+
+	public ScrollableRunsTable getScrollableTable() {
+		return this.scrollableRunsTable;
 	}
 
 	public void loadResultFolders() {
 
 		log.info("Loading result folders");
 
-		final JPanel contentPanel = new JPanel();
-		scrollPane.setViewportView(contentPanel);
-
-		contentPanel.setLayout(new BorderLayout());
-
-		log.info("adding panels");
-		final JPanel northPanel = new JPanel();
-		// panel.setMaximumSize(new Dimension(100, Integer.MAX_VALUE));
-		northPanel.setLayout(new BorderLayout());
-
-		contentPanel.add(northPanel, BorderLayout.NORTH);
-		table = new ScrollableRunsTable(200);
-		contentPanel.add(table, BorderLayout.CENTER);
-		table.loadRunsToTable();
+		scrollableRunsTable.getTable().loadRunsToTable();
 
 	}
 
@@ -222,7 +209,7 @@ public class AttachedRunsDialog extends JDialog {
 	public void forceVisible() {
 		minimized = false;
 		setVisible(true);
-		ColumnsRunTableUtil.scrollToBeginning(this.scrollPane);
+		ColumnsRunTableUtil.scrollToBeginning(this.scrollableRunsTable.getScrollPane());
 
 	}
 
@@ -246,20 +233,6 @@ public class AttachedRunsDialog extends JDialog {
 
 	public void setMinimized(boolean b) {
 		this.minimized = b;
-	}
-
-	public List<String> getSelectedRunPathss() {
-		final List<ColumnsRunTable> columns = ColumnsRunTable.getColumns();
-		final int runPathIndex = columns.indexOf(ColumnsRunTable.RUN_PATH);
-		final int[] selectedRows = this.table.getTable().getSelectedRows();
-		final List<String> ret = new ArrayList<String>();
-		for (final int row : selectedRows) {
-			final int rowInModel = this.table.getTable().getRowSorter().convertRowIndexToModel(row);
-			String runPath = table.getTable().getModel().getValueAt(rowInModel, runPathIndex).toString();
-			runPath = runPath.replaceAll(ColumnsRunTableUtil.PREFIX, "");
-			ret.add(runPath);
-		}
-		return ret;
 	}
 
 }

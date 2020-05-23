@@ -16,6 +16,10 @@ class MyRunsTableCellRenderer extends DefaultTableCellRenderer {
 	private static final long serialVersionUID = 2779255416435904762L;
 	private static Logger log = Logger.getLogger(MyRunsTableCellRenderer.class);
 
+	protected MyRunsTableCellRenderer() {
+		super();
+	}
+
 	@Override
 	public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
 			int row, int column) {

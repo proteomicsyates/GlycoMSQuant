@@ -1,66 +1,107 @@
 package edu.scripps.yates.glycomsquant.gui.tables.runs;
 
-import java.awt.event.MouseEvent;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JTable;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableModel;
+import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
-public class MyRunsTable extends JTable {
+import edu.scripps.yates.glycomsquant.gui.files.FileManager;
+import edu.scripps.yates.glycomsquant.gui.tables.MyAbstractTable;
+import edu.scripps.yates.glycomsquant.gui.tables.MyTableModel;
+
+public class MyRunsTable extends MyAbstractTable {
+
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 8076770198048519994L;
+	private static final long serialVersionUID = -8869264818162494905L;
 	private static Logger log = Logger.getLogger(MyRunsTable.class);
 
 	public MyRunsTable() {
-		super();
+		super(new MyTableModel() {
+
+			@Override
+			protected Class<?> getMyColumnClass(int columnIndex) {
+				return ColumnsRunTable.getColumns().get(columnIndex).getClass();
+			}
+		});
+		// Set renderer for painting different background colors
+		setDefaultRenderer(Object.class, new MyRunsTableCellRenderer());
+		setDefaultRenderer(Boolean.class, new MyRunsTableBooleanCellRenderer());
+		setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 	}
 
 	@Override
-	protected JTableHeader createDefaultTableHeader() {
-		return new JTableHeader(columnModel) {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 5284334431623105059L;
-
-			@Override
-			public String getToolTipText(MouseEvent e) {
-				final java.awt.Point p = e.getPoint();
-				final int index = columnModel.getColumnIndexAtX(p.x);
-				// int realIndex =
-				// columnModel.getColumn(index).getModelIndex();
-				final String columnName = (String) columnModel.getColumn(index).getHeaderValue();
-				final String tip = getToolTipTextForColumn(columnName);
-				// log.info("Tip = " + tip);
-				if (tip != null)
-					return tip;
-				else
-					return super.getToolTipText(e);
-			}
-		};
+	public List<String> getColumnNames() {
+		return ColumnsRunTable.getColumnsString();
 	}
 
-	private String getToolTipTextForColumn(String columnName) {
-		final ColumnsRunTable[] values = ColumnsRunTable.values();
-		for (final ColumnsRunTable exportedColumns : values) {
-			if (exportedColumns.getName().equals(columnName)) {
-				return exportedColumns.getDescription();
-			}
+	@Override
+	public String getColumnDescription(String columnName) {
+		final ColumnsRunTable column = getColumnByName(columnName);
+		if (column != null) {
+			return column.getDescription();
 		}
 		return null;
 	}
 
-	public void clearData() {
-		log.info("Clearing data of the table");
-		final TableModel model = getModel();
-		if (model instanceof MyRunsTableModel) {
-			((MyRunsTableModel) model).setRowCount(0);
-			((MyRunsTableModel) model).setColumnCount(0);
+	@Override
+	public int getColumnDefaultWidth(String columnName) {
+		final ColumnsRunTable column = getColumnByName(columnName);
+		if (column != null) {
+			return column.getDefaultWidth();
 		}
+		return 0;
+	}
 
+	public ColumnsRunTable getColumnByName(String columnName) {
+		return ColumnsRunTable.getColumns().stream().filter(c -> c.getName().equals(columnName)).findAny().get();
+	}
+
+	public void loadRunsToTable() {
+
+		clearData();
+
+		addColumnsInTable(ColumnsRunTable.getColumnsString());
+		final List<File> resultFolders = FileManager.getResultFolders();
+		if (resultFolders != null) {
+			for (int i = 0; i < resultFolders.size(); i++) {
+				final File folder = resultFolders.get(i);
+				final MyTableModel model = getModel();
+
+				final List<Object> runInfoList = ColumnsRunTableUtil.getInstance(folder).getRunInfoList(folder,
+						ColumnsRunTable.getColumns(), i + 1);
+				model.addRow(runInfoList.toArray());
+				log.info("Table now with " + model.getRowCount() + " rows");
+			}
+
+			log.info(resultFolders.size() + " folders added to attached window");
+		}
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				repaint();
+				initializeSorter();
+			}
+		});
+	}
+
+	public List<String> getSelectedRunPaths() {
+		final List<ColumnsRunTable> columns = ColumnsRunTable.getColumns();
+		final int runPathIndex = columns.indexOf(ColumnsRunTable.RUN_PATH);
+		final int[] selectedRows = getSelectedRows();
+		final List<String> ret = new ArrayList<String>();
+		for (final int row : selectedRows) {
+			final int rowInModel = getRowSorter().convertRowIndexToModel(row);
+			String runPath = getModel().getValueAt(rowInModel, runPathIndex).toString();
+			runPath = runPath.replaceAll(ColumnsRunTableUtil.PREFIX, "");
+			ret.add(runPath);
+		}
+		return ret;
 	}
 }

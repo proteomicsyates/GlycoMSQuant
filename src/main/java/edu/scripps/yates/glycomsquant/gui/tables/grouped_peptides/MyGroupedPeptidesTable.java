@@ -1,8 +1,5 @@
 package edu.scripps.yates.glycomsquant.gui.tables.grouped_peptides;
 
-import java.awt.event.MouseEvent;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,15 +9,10 @@ import java.util.Map;
 
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JTable;
-import javax.swing.RowFilter;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 import org.apache.log4j.Logger;
 
@@ -28,12 +20,14 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
 import edu.scripps.yates.glycomsquant.gui.ProteinSequenceDialog;
-import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.ScrollablePeptidesTable;
+import edu.scripps.yates.glycomsquant.gui.tables.MyAbstractTable;
+import edu.scripps.yates.glycomsquant.gui.tables.MyTableModel;
+import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.MyPeptidesTable;
+import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableTable;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.THashMap;
 
-public class MyGroupedPeptidesTable extends JTable {
+public class MyGroupedPeptidesTable extends MyAbstractTable {
 	/**
 	 * 
 	 */
@@ -41,12 +35,16 @@ public class MyGroupedPeptidesTable extends JTable {
 	private static Logger log = Logger.getLogger(MyGroupedPeptidesTable.class);
 	private Map<String, GroupedQuantifiedPeptide> peptidesByPeptideKey;
 	private final ProteinSequenceDialog proteinSequenceDialog;
-	private TableRowSorter<TableModel> sorter = null;
-	private Comparator comp;
 	private List<GroupedQuantifiedPeptide> groupedPeptideList;
 
 	public MyGroupedPeptidesTable(ProteinSequenceDialog proteinSequenceDialog) {
-		super();
+		super(new MyTableModel() {
+
+			@Override
+			protected Class<?> getMyColumnClass(int columnIndex) {
+				return ColumnsGroupedPeptidesTable.getColumns().get(columnIndex).getClass();
+			}
+		});
 		this.proteinSequenceDialog = proteinSequenceDialog;
 		// add listener to selection
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
@@ -65,65 +63,32 @@ public class MyGroupedPeptidesTable extends JTable {
 				proteinSequenceDialog.showChartsFromPeptides(selectedPeptides, -1);
 			}
 		});
+		// Set renderer for painting different background colors
+		setDefaultRenderer(Object.class, new MyGroupedPeptidesTableCellRenderer());
+		setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+		setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 	}
 
 	@Override
-	protected JTableHeader createDefaultTableHeader() {
-		return new JTableHeader(columnModel) {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 5284334431623105059L;
-
-			@Override
-			public String getToolTipText(MouseEvent e) {
-				final java.awt.Point p = e.getPoint();
-				final int index = columnModel.getColumnIndexAtX(p.x);
-				// int realIndex =
-				// columnModel.getColumn(index).getModelIndex();
-				final String columnName = (String) columnModel.getColumn(index).getHeaderValue();
-				final String tip = getToolTipTextForColumn(columnName);
-				// log.info("Tip = " + tip);
-				if (tip != null)
-					return tip;
-				else
-					return super.getToolTipText(e);
-			}
-		};
-	}
-
-	private String getToolTipTextForColumn(String columnName) {
-		final ColumnsGroupedPeptidesTable[] values = ColumnsGroupedPeptidesTable.values();
-		for (final ColumnsGroupedPeptidesTable exportedColumns : values) {
-			if (exportedColumns.getName().equals(columnName)) {
-				return exportedColumns.getDescription();
-			}
-		}
-		return null;
-	}
-
 	public void clearData() {
 		log.info("Clearing data of the table");
 		peptidesByPeptideKey = null;
-		final TableModel model = getModel();
-		if (model instanceof MyGroupedPeptidesTableModel) {
-			// get listeners
-			final ListSelectionListener[] listSelectionListeners = ((DefaultListSelectionModel) getSelectionModel())
-					.getListSelectionListeners();
-			// remove listeners
-			for (final ListSelectionListener listSelectionListener : listSelectionListeners) {
-				getSelectionModel().removeListSelectionListener(listSelectionListener);
-			}
-			((MyGroupedPeptidesTableModel) model).setRowCount(0);
-			((MyGroupedPeptidesTableModel) model).setColumnCount(0);
-			// add listeners
-			for (final ListSelectionListener listSelectionListener : listSelectionListeners) {
-				getSelectionModel().addListSelectionListener(listSelectionListener);
-			}
+		// get listeners
+		final ListSelectionListener[] listSelectionListeners = ((DefaultListSelectionModel) getSelectionModel())
+				.getListSelectionListeners();
+		// remove listeners
+		for (final ListSelectionListener listSelectionListener : listSelectionListeners) {
+			getSelectionModel().removeListSelectionListener(listSelectionListener);
 		}
+		super.clearData();
+		// add listeners
+		for (final ListSelectionListener listSelectionListener : listSelectionListeners) {
+			getSelectionModel().addListSelectionListener(listSelectionListener);
+		}
+
 	}
 
-	public void setSelectionListenerIndividualPeptidesTable(ScrollablePeptidesTable individualPeptidesTable) {
+	public void setSelectionListenerIndividualPeptidesTable(ScrollableTable<MyPeptidesTable> individualPeptidesTable) {
 		selectionModel.addListSelectionListener(new ListSelectionListener() {
 
 			@Override
@@ -174,7 +139,7 @@ public class MyGroupedPeptidesTable extends JTable {
 	public void loadTable(Collection<GroupedQuantifiedPeptide> peptidesToLoad, Integer positionInProtein) {
 		clearData();
 
-		addColumnsInTable(this, ColumnsGroupedPeptidesTable.getColumnsStringForTable());
+		addColumnsInTable(ColumnsGroupedPeptidesTable.getColumnsString());
 
 		if (getGlycoSites() != null && peptidesToLoad != null) {
 			// sort peptides by key with sequence and charge
@@ -189,7 +154,7 @@ public class MyGroupedPeptidesTable extends JTable {
 				}
 			});
 			for (final GroupedQuantifiedPeptide peptide : groupedPeptideList) {
-				final MyGroupedPeptidesTableModel model = (MyGroupedPeptidesTableModel) getModel();
+				final MyTableModel model = getModel();
 				final List<Object> glycoSiteInfoList = ColumnsGroupedPeptidesTableUtil.getInstance().getPeptideInfoList(
 						peptide, getGlycoSites(), ColumnsGroupedPeptidesTable.getColumns(), getProteinSequence());
 				model.addRow(glycoSiteInfoList.toArray());
@@ -211,44 +176,6 @@ public class MyGroupedPeptidesTable extends JTable {
 
 	}
 
-	public void initializeSorter() {
-		sorter = new TableRowSorter<TableModel>(getModel());
-		final int columnCount = getModel().getColumnCount();
-		for (int i = 0; i < columnCount; i++) {
-			sorter.setComparator(i, getMyComparator2());
-		}
-		setRowSorter(sorter);
-	}
-
-	private void addColumnsInTable(MyGroupedPeptidesTable table, List<String> columnsStringList) {
-		final DefaultTableModel defaultModel = (DefaultTableModel) table.getModel();
-		log.info("Adding colums " + columnsStringList.size() + " columns");
-		if (columnsStringList != null) {
-
-			for (final String columnName : columnsStringList) {
-				defaultModel.addColumn(columnName);
-			}
-			log.info("Added " + table.getColumnCount() + " colums");
-			for (int i = 0; i < table.getColumnCount(); i++) {
-				final TableColumn column = table.getColumnModel().getColumn(i);
-				final ColumnsGroupedPeptidesTable[] columHeaders = ColumnsGroupedPeptidesTable.values();
-				boolean set = false;
-				for (final ColumnsGroupedPeptidesTable header : columHeaders) {
-					if (column.getHeaderValue().equals(header.getName())) {
-						column.setPreferredWidth(header.getDefaultWidth());
-						set = true;
-					}
-//					column.setMaxWidth(header.getDefaultWidth());
-//					column.setMinWidth(header.getDefaultWidth());
-				}
-				if (!set) {
-					log.info("äsdf ");
-				}
-				column.setResizable(true);
-			}
-		}
-	}
-
 	private List<GlycoSite> getGlycoSites() {
 		return this.proteinSequenceDialog.getGlycoSites();
 	}
@@ -261,133 +188,32 @@ public class MyGroupedPeptidesTable extends JTable {
 		return this.proteinSequenceDialog.getProteinSequence();
 	}
 
-	private Comparator<?> getMyComparator2() {
-		if (comp == null)
-			comp = new Comparator() {
-
-				@Override
-				public int compare(Object obj1, Object obj2) {
-					try {
-						final Number n1 = NumberFormat.getInstance().parse(obj1.toString());
-						final Number n2 = NumberFormat.getInstance().parse(obj2.toString());
-						final Double d1 = getDouble(obj1);
-						final Double d2 = getDouble(obj2);
-						return d1.compareTo(d2);
-					} catch (final java.text.ParseException e1) {
-
-						if (obj1 instanceof String && obj2 instanceof String) {
-							final String n1 = (String) obj1;
-							final String n2 = (String) obj2;
-
-							final String n3 = getHighesNumberIfAreCommaSeparated(n1);
-							final String n4 = getHighesNumberIfAreCommaSeparated(n2);
-							if (n3 != null && n4 != null)
-								return compare(n3, n4);
-							return n1.compareTo(n2);
-
-						} else if (obj1 instanceof String && obj2 instanceof Double) {
-							final String n1 = (String) obj1;
-							final String n2 = String.valueOf(obj2);
-							return n1.compareTo(n2);
-						} else if (obj2 instanceof String && obj1 instanceof Double) {
-							final String n2 = (String) obj2;
-							final String n1 = String.valueOf(obj1);
-							return n1.compareTo(n2);
-						} else {
-							final String n1 = obj1.toString();
-							final String n2 = obj2.toString();
-							return n1.compareTo(n2);
-						}
-
-					}
-
-				}
-
-				private String getHighesNumberIfAreCommaSeparated(String string) {
-					if (string.contains(";")) {
-						final String[] split = string.split(";");
-						try {
-							final TIntArrayList ints = new TIntArrayList();
-							for (final String string2 : split) {
-								ints.add(Integer.valueOf(string2));
-							}
-							return String.valueOf(ints.max());
-						} catch (final NumberFormatException e) {
-							try {
-								final String[] split2 = string.split(";");
-								final List<Double> doubles = new ArrayList<Double>();
-								for (final String string2 : split2) {
-									doubles.add(getDouble(string2));
-								}
-								return String.valueOf(getMaxFromDoubles(doubles));
-							} catch (final NumberFormatException e2) {
-							} catch (final ParseException e3) {
-
-							}
-						}
-					}
-
-					return null;
-				}
-
-				private Double getDouble(Object value) throws ParseException {
-					final Number n1 = NumberFormat.getInstance().parse(value.toString());
-					return n1.doubleValue();
-				}
-
-				private String getMaxFromDoubles(List<Double> doubles) {
-					double max = Double.MIN_VALUE;
-					for (final Double dou : doubles) {
-						if (max < dou)
-							max = dou;
-					}
-					return String.valueOf(max);
-				}
-
-				private String getMaxFromIntegers(List<Integer> ints) {
-					int max = Integer.MIN_VALUE;
-					for (final Integer integer : ints) {
-						if (max < integer)
-							max = integer;
-					}
-					return String.valueOf(max);
-				}
-			};
-		return comp;
+	@Override
+	public List<String> getColumnNames() {
+		return ColumnsGroupedPeptidesTable.getColumnsString();
 	}
 
-	public void setFilter(String columnName, String regexp) {
-
-		try {
-
-			final RowFilter<Object, Object> paginatorFilter = getColumnFilter(columnName, regexp);
-			// if (paginatorFilter != null)
-			// filters.add(paginatorFilter);
-
-			if (sorter != null) {
-				sorter.setRowFilter(paginatorFilter);
-				setRowSorter(sorter);
-			}
-		} catch (final java.util.regex.PatternSyntaxException e) {
-			return;
-		}
-	}
-
-	private RowFilter<Object, Object> getColumnFilter(final String columnName, final String regexp) {
-		if (regexp != null && !"".equals(regexp)) {
-			final int columnIndex = getColumnIndex(columnName);
-			if (columnIndex >= 0)
-				return RowFilter.regexFilter(regexp, columnIndex);
+	@Override
+	public String getColumnDescription(String columnName) {
+		final ColumnsGroupedPeptidesTable column = getColumnByName(columnName);
+		if (column != null) {
+			return column.getDescription();
 		}
 		return null;
 	}
 
-	public int getColumnIndex(String columnName) {
-		for (int i = 0; i < getColumnCount(); i++) {
-			if (getColumnName(i).equals(columnName))
-				return i;
+	public ColumnsGroupedPeptidesTable getColumnByName(String columnName) {
+		return ColumnsGroupedPeptidesTable.getColumns().stream().filter(c -> c.getName().equals(columnName)).findAny()
+				.get();
+	}
+
+	@Override
+	public int getColumnDefaultWidth(String columnName) {
+		final ColumnsGroupedPeptidesTable column = getColumnByName(columnName);
+		if (column != null) {
+			return column.getDefaultWidth();
 		}
-		return -1;
+		return 0;
 	}
 
 }

@@ -123,25 +123,9 @@ public enum ColumnsSitesTable {
 		return ret;
 	}
 
-	private static List<ColumnsSitesTable> getColumnsForTable() {
-		return getColumns();
-	}
-
 	public static List<String> getColumnsString() {
 		final List<String> ret = new ArrayList<String>();
 		final List<ColumnsSitesTable> columns = getColumns();
-
-		for (final ColumnsSitesTable exportedColumns : columns) {
-			ret.add(exportedColumns.toString());
-		}
-
-		return ret;
-	}
-
-	public static List<String> getColumnsStringForTable() {
-		final List<String> ret = new ArrayList<String>();
-
-		final List<ColumnsSitesTable> columns = getColumnsForTable();
 
 		for (final ColumnsSitesTable exportedColumns : columns) {
 			ret.add(exportedColumns.toString());

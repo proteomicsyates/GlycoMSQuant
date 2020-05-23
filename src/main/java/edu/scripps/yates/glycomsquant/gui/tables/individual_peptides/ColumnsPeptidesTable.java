@@ -94,25 +94,9 @@ enum ColumnsPeptidesTable {
 		return ret;
 	}
 
-	private static List<ColumnsPeptidesTable> getColumnsForTable(boolean extended) {
-		return getColumns(extended);
-	}
-
 	public static List<String> getColumnsString(boolean extended) {
 		final List<String> ret = new ArrayList<String>();
 		final List<ColumnsPeptidesTable> columns = getColumns(extended);
-
-		for (final ColumnsPeptidesTable exportedColumns : columns) {
-			ret.add(exportedColumns.toString());
-		}
-
-		return ret;
-	}
-
-	public static List<String> getColumnsStringForTable(boolean extended) {
-		final List<String> ret = new ArrayList<String>();
-
-		final List<ColumnsPeptidesTable> columns = getColumnsForTable(extended);
 
 		for (final ColumnsPeptidesTable exportedColumns : columns) {
 			ret.add(exportedColumns.toString());

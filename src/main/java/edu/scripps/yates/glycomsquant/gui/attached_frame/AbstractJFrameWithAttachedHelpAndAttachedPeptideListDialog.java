@@ -1,10 +1,10 @@
 package edu.scripps.yates.glycomsquant.gui.attached_frame;
 
-import edu.scripps.yates.glycomsquant.gui.tables.grouped_peptides.AttachedPeptideListDialog;
+import edu.scripps.yates.glycomsquant.gui.tables.GroupedPeptideListDialog;
 
 public abstract class AbstractJFrameWithAttachedHelpAndAttachedPeptideListDialog
 		extends AbstractJFrameWithAttachedHelpDialog implements HasPeptideListDialogAttached {
-	private AttachedPeptideListDialog peptideListDialog;
+	private GroupedPeptideListDialog peptideListDialog;
 	/**
 	 * 
 	 */
@@ -17,7 +17,7 @@ public abstract class AbstractJFrameWithAttachedHelpAndAttachedPeptideListDialog
 
 	@Override
 	public void showAttachedPeptideListDialog() {
-		final AttachedPeptideListDialog attacheDialod = getPeptideListAttachedDialog();
+		final GroupedPeptideListDialog attacheDialod = getPeptideListAttachedDialog();
 
 		attacheDialod.forceVisible();
 	}
@@ -31,9 +31,9 @@ public abstract class AbstractJFrameWithAttachedHelpAndAttachedPeptideListDialog
 	}
 
 	@Override
-	public AttachedPeptideListDialog getPeptideListAttachedDialog() {
+	public GroupedPeptideListDialog getPeptideListAttachedDialog() {
 		if (peptideListDialog == null) {
-			peptideListDialog = new AttachedPeptideListDialog(this, this.maxWidth);
+			peptideListDialog = new GroupedPeptideListDialog(this, this.maxWidth);
 		}
 		return peptideListDialog;
 	}

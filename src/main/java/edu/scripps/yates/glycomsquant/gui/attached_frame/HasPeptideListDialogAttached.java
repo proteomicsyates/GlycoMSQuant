@@ -1,10 +1,10 @@
 package edu.scripps.yates.glycomsquant.gui.attached_frame;
 
-import edu.scripps.yates.glycomsquant.gui.tables.grouped_peptides.AttachedPeptideListDialog;
+import edu.scripps.yates.glycomsquant.gui.tables.GroupedPeptideListDialog;
 
 public interface HasPeptideListDialogAttached {
 
 	public void showAttachedPeptideListDialog();
 
-	public AttachedPeptideListDialog getPeptideListAttachedDialog();
+	public GroupedPeptideListDialog getPeptideListAttachedDialog();
 }

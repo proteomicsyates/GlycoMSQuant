@@ -1,4 +1,4 @@
-package edu.scripps.yates.glycomsquant.gui.tables.sites;
+package edu.scripps.yates.glycomsquant.gui.tables;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -10,15 +10,15 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
 
 import org.apache.log4j.Logger;
 
 import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableTable;
+import edu.scripps.yates.glycomsquant.gui.tables.sites.ColumnsSitesTableUtil;
+import edu.scripps.yates.glycomsquant.gui.tables.sites.MySitesTable;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
 public class SitesTableDialog extends JFrame {
@@ -29,7 +29,7 @@ public class SitesTableDialog extends JFrame {
 	private static final Logger log = Logger.getLogger(SitesTableDialog.class);
 
 	private final JScrollPane scrollPane;
-	private ScrollableSitesTable scrollableTable;
+	private ScrollableTable<MySitesTable> scrollableTable;
 
 	public SitesTableDialog() {
 		super();
@@ -73,56 +73,10 @@ public class SitesTableDialog extends JFrame {
 		northPanel.setLayout(new BorderLayout());
 
 		contentPanel.add(northPanel, BorderLayout.NORTH);
-		scrollableTable = new ScrollableSitesTable();
+		scrollableTable = new ScrollableTable<MySitesTable>(new MySitesTable());
 		contentPanel.add(scrollableTable, BorderLayout.CENTER);
-		scrollableTable.getTable().clearData();
 
-		addColumnsInTable(scrollableTable.getTable(), ColumnsSitesTable.getColumnsStringForTable());
-
-		if (glycoSites != null) {
-			for (int i = 0; i < glycoSites.size(); i++) {
-				final GlycoSite glycoSite = glycoSites.get(i);
-				final MySitesTableModel model = (MySitesTableModel) scrollableTable.getTable().getModel();
-
-				final List<Object> glycoSiteInfoList = ColumnsSitesTableUtil.getInstance().getGlycoSiteInfoList(
-						glycoSite, sumIntensitiesAcrossReplicates, ColumnsSitesTable.getColumns());
-				model.addRow(glycoSiteInfoList.toArray());
-				log.info("Table now with " + model.getRowCount() + " rows");
-			}
-
-			log.info(glycoSites.size() + " glycoSites added to attached window");
-		}
-		SwingUtilities.invokeLater(new Runnable() {
-
-			@Override
-			public void run() {
-				scrollableTable.getTable().repaint();
-				scrollableTable.initializeSorter();
-			}
-		});
-	}
-
-	private void addColumnsInTable(MySitesTable table, List<String> columnsStringList) {
-		final DefaultTableModel defaultModel = (DefaultTableModel) table.getModel();
-		log.info("Adding colums " + columnsStringList.size() + " columns");
-		if (columnsStringList != null) {
-
-			for (final String columnName : columnsStringList) {
-				defaultModel.addColumn(columnName);
-			}
-			log.info("Added " + table.getColumnCount() + " colums");
-			for (int i = 0; i < table.getColumnCount(); i++) {
-				final TableColumn column = table.getColumnModel().getColumn(i);
-				final ColumnsSitesTable[] columHeaders = ColumnsSitesTable.values();
-				for (final ColumnsSitesTable header : columHeaders) {
-					if (column.getHeaderValue().equals(header.getName()))
-						column.setPreferredWidth(header.getDefaultWidth());
-//					column.setMaxWidth(header.getDefaultWidth());
-					column.setMinWidth(header.getDefaultWidth());
-				}
-				column.setResizable(true);
-			}
-		}
+		scrollableTable.getTable().loadResultTable(glycoSites, sumIntensitiesAcrossReplicates);
 	}
 
 	public void forceVisible() {

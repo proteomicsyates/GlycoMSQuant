@@ -1,6 +1,6 @@
 package edu.scripps.yates.glycomsquant.gui.attached_frame;
 
-import edu.scripps.yates.glycomsquant.gui.tables.runs.AttachedRunsDialog;
+import edu.scripps.yates.glycomsquant.gui.tables.AttachedRunsDialog;
 
 public interface HasRunsDialogAttached {
 

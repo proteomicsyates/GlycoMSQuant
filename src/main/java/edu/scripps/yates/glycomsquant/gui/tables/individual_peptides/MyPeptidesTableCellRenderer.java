@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.glycomsquant.gui.tables.runs.ColumnsRunTableUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
-public class MyPeptidesTableCellRenderer extends DefaultTableCellRenderer {
+class MyPeptidesTableCellRenderer extends DefaultTableCellRenderer {
 	/**
 	 * 
 	 */
@@ -20,7 +20,7 @@ public class MyPeptidesTableCellRenderer extends DefaultTableCellRenderer {
 	private static Logger log = Logger.getLogger(MyPeptidesTableCellRenderer.class);
 	private final boolean extended;
 
-	public MyPeptidesTableCellRenderer(boolean extended) {
+	protected MyPeptidesTableCellRenderer(boolean extended) {
 		this.extended = extended;
 	}
 

@@ -1,4 +1,4 @@
-package edu.scripps.yates.glycomsquant.gui.tables.grouped_peptides;
+package edu.scripps.yates.glycomsquant.gui.tables;
 
 import java.awt.BorderLayout;
 import java.awt.Point;
@@ -7,41 +7,36 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.Collection;
 
 import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.log4j.Logger;
 
-import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
 import edu.scripps.yates.glycomsquant.gui.ProteinSequenceDialog;
-import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.ScrollablePeptidesTable;
+import edu.scripps.yates.glycomsquant.gui.tables.grouped_peptides.MyGroupedPeptidesTable;
+import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.MyPeptidesTable;
 import edu.scripps.yates.glycomsquant.gui.tables.runs.ColumnsRunTableUtil;
+import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableTable;
 
-public class AttachedPeptideListDialog extends JDialog {
+public class GroupedPeptideListDialog extends JDialog {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -1119185903108814297L;
-	private static final Logger log = Logger.getLogger(AttachedPeptideListDialog.class);
+	private static final Logger log = Logger.getLogger(GroupedPeptideListDialog.class);
 
 	private boolean minimized = false;
 	private final int maxWidth;
 
-	private final JScrollPane scrollPane1;
-	private ScrollableGroupedPeptidesTable table;
 	private final ProteinSequenceDialog proteinSequenceDialog;
-	private final ScrollableGroupedPeptidesTable scrollableGroupedPeptidesTable;
-	private final JScrollPane scrollPane2;
-	private final ScrollablePeptidesTable individualPeptidesTable;
+	private final ScrollableTable<MyGroupedPeptidesTable> scrollableGroupedPeptidesTable;
+	private final ScrollableTable<MyPeptidesTable> scrollableIndividualPeptidesTable;
 
-	public AttachedPeptideListDialog(JFrame parentFrame, int maxWidth) {
+	public GroupedPeptideListDialog(JFrame parentFrame, int maxWidth) {
 
 		super(parentFrame, ModalityType.MODELESS);
 		this.proteinSequenceDialog = (ProteinSequenceDialog) parentFrame;
@@ -60,30 +55,28 @@ public class AttachedPeptideListDialog extends JDialog {
 		final JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		getContentPane().add(split, BorderLayout.CENTER);
 		// grouped peptides
-		scrollPane1 = new JScrollPane();
-		scrollPane1.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scrollPane1.getVerticalScrollBar().setUnitIncrement(20);
-		scrollableGroupedPeptidesTable = new ScrollableGroupedPeptidesTable(proteinSequenceDialog);
-		scrollPane1.setViewportView(scrollableGroupedPeptidesTable);
-		split.setTopComponent(scrollPane1);
+
+		scrollableGroupedPeptidesTable = new ScrollableTable<MyGroupedPeptidesTable>(
+				new MyGroupedPeptidesTable(proteinSequenceDialog));
+		split.setTopComponent(scrollableGroupedPeptidesTable);
+		//
+		//
 		// individual peptides
-		scrollPane2 = new JScrollPane();
-		scrollPane2.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scrollPane2.getVerticalScrollBar().setUnitIncrement(20);
-		individualPeptidesTable = new ScrollablePeptidesTable(false);
+
+		scrollableIndividualPeptidesTable = new ScrollableTable<MyPeptidesTable>(new MyPeptidesTable(false));
 		// if we select a grouped peptide, we show individual peptides
-		scrollableGroupedPeptidesTable.getTable().setSelectionListenerIndividualPeptidesTable(individualPeptidesTable);
-		scrollPane2.setViewportView(individualPeptidesTable);
-		split.setBottomComponent(scrollPane2);
+		scrollableGroupedPeptidesTable.getTable()
+				.setSelectionListenerIndividualPeptidesTable(scrollableIndividualPeptidesTable);
+		split.setBottomComponent(scrollableIndividualPeptidesTable);
 		addWindowListeners();
 	}
 
-	public MyGroupedPeptidesTable getTable() {
+	public MyGroupedPeptidesTable getGroupedPeptidesTable() {
 		return this.scrollableGroupedPeptidesTable.getTable();
 	}
 
-	public void loadTable(Collection<GroupedQuantifiedPeptide> peptidesToLoad, Integer positionInProtein) {
-		scrollableGroupedPeptidesTable.getTable().loadTable(peptidesToLoad, positionInProtein);
+	public MyPeptidesTable getIndividualPeptidesTable() {
+		return this.scrollableIndividualPeptidesTable.getTable();
 	}
 
 	private void addWindowListeners() {
@@ -91,30 +84,30 @@ public class AttachedPeptideListDialog extends JDialog {
 
 			@Override
 			public void componentShown(ComponentEvent e) {
-				AttachedPeptideListDialog.this.setVisible(true);
+				GroupedPeptideListDialog.this.setVisible(true);
 			}
 
 			@Override
 			public void componentResized(ComponentEvent e) {
-				AttachedPeptideListDialog.this.setVisible(true);
+				GroupedPeptideListDialog.this.setVisible(true);
 
 			}
 
 			@Override
 			public void componentMoved(ComponentEvent e) {
-				AttachedPeptideListDialog.this.setVisible(true);
+				GroupedPeptideListDialog.this.setVisible(true);
 			}
 
 			@Override
 			public void componentHidden(ComponentEvent e) {
-				AttachedPeptideListDialog.this.setVisible(false);
+				GroupedPeptideListDialog.this.setVisible(false);
 			}
 		});
 		this.proteinSequenceDialog.addWindowListener(new WindowListener() {
 
 			@Override
 			public void windowOpened(WindowEvent e) {
-				AttachedPeptideListDialog.this.setVisible(true);
+				GroupedPeptideListDialog.this.setVisible(true);
 			}
 
 			@Override
@@ -124,28 +117,28 @@ public class AttachedPeptideListDialog extends JDialog {
 
 			@Override
 			public void windowClosed(WindowEvent e) {
-				AttachedPeptideListDialog.this.dispose();
+				GroupedPeptideListDialog.this.dispose();
 
 			}
 
 			@Override
 			public void windowIconified(WindowEvent e) {
 				minimized = true;
-				AttachedPeptideListDialog.this.setVisible(false);
+				GroupedPeptideListDialog.this.setVisible(false);
 
 			}
 
 			@Override
 			public void windowDeiconified(WindowEvent e) {
 				minimized = false;
-				AttachedPeptideListDialog.this.setVisible(true);
+				GroupedPeptideListDialog.this.setVisible(true);
 
 			}
 
 			@Override
 			public void windowActivated(WindowEvent e) {
 
-				AttachedPeptideListDialog.this.setVisible(true);
+				GroupedPeptideListDialog.this.setVisible(true);
 			}
 
 			@Override
@@ -208,8 +201,8 @@ public class AttachedPeptideListDialog extends JDialog {
 	public void forceVisible() {
 		minimized = false;
 		setVisible(true);
-		ColumnsRunTableUtil.scrollToBeginning(this.scrollPane1);
-		ColumnsRunTableUtil.scrollToBeginning(this.scrollPane2);
+		ColumnsRunTableUtil.scrollToBeginning(this.scrollableGroupedPeptidesTable.getScroll());
+		ColumnsRunTableUtil.scrollToBeginning(this.scrollableIndividualPeptidesTable.getScroll());
 	}
 
 	@Override

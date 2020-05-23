@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.glycomsquant.gui.tables.runs.ColumnsRunTableUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
-public class MySitesTableCellRenderer extends DefaultTableCellRenderer {
+class MySitesTableCellRenderer extends DefaultTableCellRenderer {
 	/**
 	 * 
 	 */

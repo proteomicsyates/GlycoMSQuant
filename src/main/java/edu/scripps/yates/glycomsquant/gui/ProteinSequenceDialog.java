@@ -268,7 +268,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	protected void processArrowKey(KeyEvent e) {
 		// if there is no selection, just do nothing
 
-		final MyGroupedPeptidesTable table = this.getPeptideListAttachedDialog().getTable();
+		final MyGroupedPeptidesTable table = this.getPeptideListAttachedDialog().getGroupedPeptidesTable();
 		if (table.getSelectedRowCount() > 0) {
 			int newSelectedRow = -1;
 			int newSelectedRow2 = -1;
@@ -496,6 +496,9 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	}
 
 	private void proteinPositionClicked(JLabel label, boolean isGlycoSitePosition, int position) {
+		// clear individual peptides
+		this.getPeptideListAttachedDialog().getIndividualPeptidesTable().clearData();
+
 		// if it is already the selected one, deselect it
 		if (label == null || label.equals(getSelectedAminoacidLabel())) {
 			selectedAminoacidPosition = -1;
@@ -603,7 +606,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	}
 
 	protected void loadPeptidesTable(Collection<GroupedQuantifiedPeptide> groupedPeptides, Integer positionInProtein) {
-		getPeptideListAttachedDialog().loadTable(groupedPeptides, positionInProtein);
+		getPeptideListAttachedDialog().getGroupedPeptidesTable().loadTable(groupedPeptides, positionInProtein);
 	}
 
 	protected void updateSelectedPosition(int position) {

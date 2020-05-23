@@ -24,7 +24,7 @@ class MyRunsTableBooleanCellRenderer extends JCheckBox implements TableCellRende
 
 	private static final Border noFocusBorder = new EmptyBorder(1, 1, 1, 1);
 
-	public MyRunsTableBooleanCellRenderer() {
+	protected MyRunsTableBooleanCellRenderer() {
 		super();
 		setHorizontalAlignment(JLabel.CENTER);
 		setBorderPainted(true);

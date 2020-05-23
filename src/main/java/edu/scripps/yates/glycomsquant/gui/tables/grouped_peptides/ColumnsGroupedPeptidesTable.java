@@ -8,7 +8,7 @@ import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 
 enum ColumnsGroupedPeptidesTable {
-	SEQUENCE("Sequence", 300, "Sequence of the peptide with no modifications of interest", String.class), //
+	SEQUENCE("Sequence", 220, "Sequence of the peptide with no modifications of interest", String.class), //
 	CHARGE("z", 20, "Charge state of the peptide", Integer.class),
 	TOTAL_SPC("SPC", 20, "Spectral counts that contributed to this peptide", Integer.class),
 	SPC_PER_REPLICATE(
@@ -71,25 +71,9 @@ enum ColumnsGroupedPeptidesTable {
 		return ret;
 	}
 
-	private static List<ColumnsGroupedPeptidesTable> getColumnsForTable() {
-		return getColumns();
-	}
-
 	public static List<String> getColumnsString() {
 		final List<String> ret = new ArrayList<String>();
 		final List<ColumnsGroupedPeptidesTable> columns = getColumns();
-
-		for (final ColumnsGroupedPeptidesTable exportedColumns : columns) {
-			ret.add(exportedColumns.toString());
-		}
-
-		return ret;
-	}
-
-	public static List<String> getColumnsStringForTable() {
-		final List<String> ret = new ArrayList<String>();
-
-		final List<ColumnsGroupedPeptidesTable> columns = getColumnsForTable();
 
 		for (final ColumnsGroupedPeptidesTable exportedColumns : columns) {
 			ret.add(exportedColumns.toString());

@@ -1,66 +1,88 @@
 package edu.scripps.yates.glycomsquant.gui.tables.sites;
 
-import java.awt.event.MouseEvent;
+import java.util.List;
 
-import javax.swing.JTable;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableModel;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
-class MySitesTable extends JTable {
+import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.gui.tables.MyAbstractTable;
+import edu.scripps.yates.glycomsquant.gui.tables.MyTableModel;
+
+public class MySitesTable extends MyAbstractTable {
+
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 8076770198048519994L;
+	private static final long serialVersionUID = 7966217677927412036L;
 	private static Logger log = Logger.getLogger(MySitesTable.class);
 
 	public MySitesTable() {
-		super();
+		super(new MyTableModel() {
+
+			@Override
+			protected Class<?> getMyColumnClass(int columnIndex) {
+				return ColumnsSitesTable.getColumns().get(columnIndex).getClass();
+			}
+		});
+		// Set renderer for painting different background colors
+		setDefaultRenderer(Object.class, new MySitesTableCellRenderer());
+		setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 	}
 
 	@Override
-	protected JTableHeader createDefaultTableHeader() {
-		return new JTableHeader(columnModel) {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 5284334431623105059L;
-
-			@Override
-			public String getToolTipText(MouseEvent e) {
-				final java.awt.Point p = e.getPoint();
-				final int index = columnModel.getColumnIndexAtX(p.x);
-				// int realIndex =
-				// columnModel.getColumn(index).getModelIndex();
-				final String columnName = (String) columnModel.getColumn(index).getHeaderValue();
-				final String tip = getToolTipTextForColumn(columnName);
-				// log.info("Tip = " + tip);
-				if (tip != null)
-					return tip;
-				else
-					return super.getToolTipText(e);
-			}
-		};
+	public List<String> getColumnNames() {
+		return ColumnsSitesTable.getColumnsString();
 	}
 
-	private String getToolTipTextForColumn(String columnName) {
-		final ColumnsSitesTable[] values = ColumnsSitesTable.values();
-		for (final ColumnsSitesTable exportedColumns : values) {
-			if (exportedColumns.getName().equals(columnName)) {
-				return exportedColumns.getDescription();
-			}
+	@Override
+	public String getColumnDescription(String columnName) {
+		final ColumnsSitesTable column = getColumnByName(columnName);
+		if (column != null) {
+			return column.getDescription();
 		}
 		return null;
 	}
 
-	public void clearData() {
-		log.info("Clearing data of the table");
-		final TableModel model = getModel();
-		if (model instanceof MySitesTableModel) {
-			((MySitesTableModel) model).setRowCount(0);
-			((MySitesTableModel) model).setColumnCount(0);
+	@Override
+	public int getColumnDefaultWidth(String columnName) {
+		final ColumnsSitesTable column = getColumnByName(columnName);
+		if (column != null) {
+			return column.getDefaultWidth();
 		}
+		return 0;
+	}
 
+	public ColumnsSitesTable getColumnByName(String columnName) {
+		return ColumnsSitesTable.getColumns().stream().filter(c -> c.getName().equals(columnName)).findAny().get();
+	}
+
+	public void loadResultTable(List<GlycoSite> glycoSites, boolean sumIntensitiesAcrossReplicates) {
+		clearData();
+		addColumnsInTable(ColumnsSitesTable.getColumnsString());
+
+		if (glycoSites != null) {
+			for (int i = 0; i < glycoSites.size(); i++) {
+				final GlycoSite glycoSite = glycoSites.get(i);
+				final MyTableModel model = getModel();
+
+				final List<Object> glycoSiteInfoList = ColumnsSitesTableUtil.getInstance().getGlycoSiteInfoList(
+						glycoSite, sumIntensitiesAcrossReplicates, ColumnsSitesTable.getColumns());
+				model.addRow(glycoSiteInfoList.toArray());
+				log.info("Table now with " + model.getRowCount() + " rows");
+			}
+
+			log.info(glycoSites.size() + " glycoSites added to attached window");
+		}
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				repaint();
+				initializeSorter();
+			}
+		});
 	}
 }

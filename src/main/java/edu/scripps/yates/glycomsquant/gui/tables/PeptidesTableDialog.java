@@ -1,17 +1,19 @@
-package edu.scripps.yates.glycomsquant.gui.tables.individual_peptides;
+package edu.scripps.yates.glycomsquant.gui.tables;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 
 import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.log4j.Logger;
 
+import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.ColumnsPeptidesTableUtil;
+import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.MyPeptidesTable;
+import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableTable;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 
 public class PeptidesTableDialog extends JFrame {
@@ -20,7 +22,7 @@ public class PeptidesTableDialog extends JFrame {
 	 */
 	private static final long serialVersionUID = -1119185903108814297L;
 	private static final Logger log = Logger.getLogger(PeptidesTableDialog.class);
-	private final ScrollablePeptidesTable scrollableTable;
+	private final ScrollableTable<MyPeptidesTable> scrollableTable;
 
 	public PeptidesTableDialog() {
 		super();
@@ -39,10 +41,8 @@ public class PeptidesTableDialog extends JFrame {
 
 		// contentPanel.setBackground(SystemColor.info);
 		log.info("adding panels");
-		final JPanel northPanel = new JPanel();
-		northPanel.setLayout(new BorderLayout());
-		getContentPane().add(northPanel, BorderLayout.NORTH);
-		scrollableTable = new ScrollablePeptidesTable(true);
+
+		scrollableTable = new ScrollableTable<MyPeptidesTable>(new MyPeptidesTable(true));
 		getContentPane().add(scrollableTable, BorderLayout.CENTER);
 
 		SwingUtilities.invokeLater(new Runnable() {
@@ -61,7 +61,7 @@ public class PeptidesTableDialog extends JFrame {
 
 	public void forceVisible() {
 		setVisible(true);
-		ColumnsPeptidesTableUtil.scrollToBeginning(this.scrollableTable);
+		ColumnsPeptidesTableUtil.scrollToBeginning(this.scrollableTable.getScroll());
 
 	}
 
