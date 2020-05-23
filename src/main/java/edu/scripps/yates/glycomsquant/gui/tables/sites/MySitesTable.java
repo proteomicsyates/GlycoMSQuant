@@ -24,7 +24,7 @@ public class MySitesTable extends MyAbstractTable {
 
 			@Override
 			protected Class<?> getMyColumnClass(int columnIndex) {
-				return ColumnsSitesTable.getColumns().get(columnIndex).getClass();
+				return Object.class;
 			}
 		});
 		// Set renderer for painting different background colors

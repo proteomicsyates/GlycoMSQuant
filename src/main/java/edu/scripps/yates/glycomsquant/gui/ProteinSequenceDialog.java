@@ -778,7 +778,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 					final String positionInReference = ProteinSequences.getInstance()
 							.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
 					if (positionInReference != null) {
-						text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE + ")</i>";
+						text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE
+								+ ")</i>&nbsp;";
 					}
 				}
 				final JLabel headerLabel = new JLabel("<html>" + text + "</html>");
@@ -885,7 +886,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			final JPanel headerPanel = new JPanel();
 			headerPanel.setBackground(Color.white);
 			if (selectedPeptides.isEmpty()) {
-				final JLabel headerLabel = new JLabel("No peptides covering position " + positionInProtein);
+				final JLabel headerLabel = new JLabel(
+						"<html>No peptides covering position " + positionInProtein + "&nbsp;</html>");
 				headerLabel.setFont(GuiUtils.headerFont());
 				headerPanel.add(headerLabel);
 				final GridBagConstraints c = new GridBagConstraints();

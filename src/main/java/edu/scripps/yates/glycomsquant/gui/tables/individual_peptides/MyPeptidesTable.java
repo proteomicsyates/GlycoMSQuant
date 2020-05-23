@@ -29,7 +29,7 @@ public class MyPeptidesTable extends MyAbstractTable {
 
 			@Override
 			protected Class<?> getMyColumnClass(int columnIndex) {
-				return ColumnsPeptidesTable.getColumns(extended).getClass();
+				return ColumnsPeptidesTable.getColumns(extended).get(columnIndex).getColumnClass();
 			}
 		});
 

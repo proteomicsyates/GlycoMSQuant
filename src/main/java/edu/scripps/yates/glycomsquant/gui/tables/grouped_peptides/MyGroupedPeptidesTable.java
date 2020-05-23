@@ -42,7 +42,7 @@ public class MyGroupedPeptidesTable extends MyAbstractTable {
 
 			@Override
 			protected Class<?> getMyColumnClass(int columnIndex) {
-				return ColumnsGroupedPeptidesTable.getColumns().get(columnIndex).getClass();
+				return Object.class;
 			}
 		});
 		this.proteinSequenceDialog = proteinSequenceDialog;

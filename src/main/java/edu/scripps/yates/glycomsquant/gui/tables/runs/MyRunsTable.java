@@ -26,7 +26,7 @@ public class MyRunsTable extends MyAbstractTable {
 
 			@Override
 			protected Class<?> getMyColumnClass(int columnIndex) {
-				return ColumnsRunTable.getColumns().get(columnIndex).getClass();
+				return ColumnsRunTable.getColumns().get(columnIndex).getColumnClass();
 			}
 		});
 		// Set renderer for painting different background colors

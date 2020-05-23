@@ -26,7 +26,7 @@ enum ColumnsPeptidesTable {
 	ENDING_POSITION("End", 20, "Ending position of peptide in protein", String.class, true), //
 
 	INTENSITY("Intensity", 80, "Intensity measured (usually as area under the curve) of the peptide in the replicate",
-			Double.class), //
+			String.class), //
 //	PERCENT_2("% 2.988", 10, "Percentage of abundance of sites modified with PTM 2.988", Double.class, true,
 //			PTMCode._2),
 //	PERCENT_203("% 203.079", 10, "Percentage of abundance of sites modified with PTM 203.079", Double.class, true,
