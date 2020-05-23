@@ -1676,7 +1676,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	public static AppVersion getVersion() {
 		if (version == null) {
 			try {
-				final String tmp = PropertiesUtil.getProperties(new File(APP_PROPERTIES)).getProperty("assembly.dir");
+
+				final String tmp = PropertiesUtil.getProperties(APP_PROPERTIES).getProperty("assembly.dir");
 				if (tmp.contains("v")) {
 					version = new AppVersion(tmp.split("v")[1]);
 				} else {
