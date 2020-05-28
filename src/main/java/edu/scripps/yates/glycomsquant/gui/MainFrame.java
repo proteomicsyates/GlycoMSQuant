@@ -50,6 +50,7 @@ import javax.swing.JTextField;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileFilter;
@@ -101,6 +102,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private final static SimpleDateFormat format = new SimpleDateFormat("yyy-MM-dd HH:mm:ss:SSS");
 	private static MainFrame instance;
 	private static AppVersion version;
+	private static boolean IS_MAC;
 	private static final String APP_PROPERTIES = "app.properties";
 	private final ComponentEnableStateKeeper componentStateKeeper = new ComponentEnableStateKeeper(true);
 	private JButton separateChartsButton;
@@ -130,6 +132,18 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		return instance;
 	}
 
+	static {
+		final String lcOSName = System.getProperty("os.name").toLowerCase();
+		IS_MAC = lcOSName.startsWith("mac os x");
+		if (IS_MAC) {
+			try {
+				System.setProperty("apple.laf.useScreenMenuBar", "true");
+			} catch (final SecurityException e) {
+
+			}
+		}
+	}
+
 	private MainFrame() {
 		super(500); // size of the attached dialog
 		setMaximumSize(GuiUtils.getScreenDimension());
@@ -151,6 +165,19 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		initComponents(proteinOfInterest);
 		loadResources();
+	}
+
+	@Override
+	public void setTitle(String title) {
+		// set the name of the application menu item
+		if (IS_MAC) {
+			try {
+				System.setProperty("com.apple.mrj.application.apple.menu.about.name", title);
+			} catch (final SecurityException e) {
+
+			}
+		}
+		super.setTitle(title);
 	}
 
 	private void loadResources() {
@@ -194,6 +221,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	private void initComponents(String proteinOfInterest) {
 		final JPanel menusPanel = new JPanel();
+		menusPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(menusPanel, BorderLayout.NORTH);
 		final GridBagLayout gbl_menusPanel = new GridBagLayout();
 		gbl_menusPanel.columnWidths = new int[] { 0, 0, 0 };
@@ -689,6 +717,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		statusPanel.setLayout(new BorderLayout(0, 0));
 		final JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		split.setBorder(new EmptyBorder(0, 5, 5, 5));
 		split.setTopComponent(panelForCharts);
 		split.setBottomComponent(statusPanel);
 		split.setContinuousLayout(true);
