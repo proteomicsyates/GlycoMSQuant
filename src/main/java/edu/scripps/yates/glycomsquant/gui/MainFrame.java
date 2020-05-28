@@ -744,8 +744,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				editReferenceProteinMenuItem.setEnabled(useReferenceProteinSequenceMenuItem.isSelected());
-				// if there is a project loaded, load it again with the new reference protein
-				// sequence
+				AppDefaults.getInstance().setUseReferenceProtein(useReferenceProteinSequenceMenuItem.isSelected());
 			}
 		});
 		editReferenceProteinMenuItem = new JMenuItem("Edit reference protein sequence");
@@ -761,6 +760,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		});
 		advancedParametersMenu.add(editReferenceProteinMenuItem);
+		if (AppDefaults.getInstance().getUseReferenceProtein() != null) {
+			useReferenceProteinSequenceMenuItem.setSelected(AppDefaults.getInstance().getUseReferenceProtein());
+		}
+		editReferenceProteinMenuItem.setEnabled(useReferenceProteinSequenceMenuItem.isSelected());
 
 		setJMenuBar(menuBar);
 	}

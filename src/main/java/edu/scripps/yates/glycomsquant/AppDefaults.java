@@ -12,14 +12,16 @@ public class AppDefaults {
 	private static final String FASTA_PROPERTY = "fasta";
 	private static final String INPUT_FILE_PROPERTY = "input_file";
 	private static final String PROTEIN_PROPERTY = "protein";
-	private static final String PROPERTIES_FILE = "HIVPTMAnalyzer_defaults.properties";
+	private static final String PROPERTIES_FILE = "defaults.properties";
 	private static final String RUN_NAME = "run_name";
+	private static final String USE_REFERENCE_PROTEIN = "use_reference_protein";
 	private String fasta;
 	private String inputFile;
 	private Properties properties;
 	private File propertiesFile;
 	private String protein;
 	private String runName;
+	private String useReferenceProtein;
 	private final static String comments = "# properties file from HIVPTMAnalyzer";
 
 	private AppDefaults() {
@@ -38,6 +40,10 @@ public class AppDefaults {
 				}
 				if (properties.containsKey(RUN_NAME)) {
 					this.runName = properties.getProperty(RUN_NAME);
+				}
+				if (properties.containsKey(USE_REFERENCE_PROTEIN)) {
+					this.useReferenceProtein = Boolean.valueOf(properties.getProperty(USE_REFERENCE_PROTEIN))
+							.toString();
 				}
 			} else {
 				// create file
@@ -93,6 +99,16 @@ public class AppDefaults {
 		}
 	}
 
+	public void setUseReferenceProtein(Boolean useReference) {
+		this.useReferenceProtein = useReference.toString();
+		properties.put(USE_REFERENCE_PROTEIN, useReferenceProtein);
+		try {
+			savePropetiesFile();
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private synchronized void savePropetiesFile() throws IOException {
 		properties.store(new FileWriter(this.propertiesFile), comments);
 	}
@@ -118,6 +134,15 @@ public class AppDefaults {
 
 	public String getRunName() {
 		return runName;
+	}
+
+	public Boolean getUseReferenceProtein() {
+		try {
+			return Boolean.valueOf(this.useReferenceProtein);
+		} catch (final Exception e) {
+
+		}
+		return null;
 	}
 
 	public static File getDefaultProteinOfInterestInternalFastaFile() {
