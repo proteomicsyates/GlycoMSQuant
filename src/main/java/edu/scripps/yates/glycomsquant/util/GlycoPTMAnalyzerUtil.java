@@ -86,6 +86,31 @@ public class GlycoPTMAnalyzerUtil {
 	}
 
 	/**
+	 * Returns the positions in the sequence in which the motif is found. it can be
+	 * a peptide or a protein
+	 * 
+	 * @param sequence
+	 * @param motifRegexp
+	 * @return
+	 */
+	public static TIntList getMotifPositions(String sequence, String motifRegexp) {
+
+		final TIntList ret = new TIntArrayList();
+
+		final Matcher matcher = getPattern(motifRegexp).matcher(sequence);
+		if (matcher.find()) {
+			do {
+				final int position = matcher.start(1) + 1;
+
+				ret.add(position);
+
+			} while (matcher.find(matcher.start(1) + 1));
+		}
+
+		return ret;
+	}
+
+	/**
 	 * Returns the positions in the peptide sequence in which the motif is found
 	 * 
 	 * @param peptide

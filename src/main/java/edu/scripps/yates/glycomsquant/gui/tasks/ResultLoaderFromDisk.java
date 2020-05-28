@@ -23,14 +23,16 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 	public static final String RESULT_LOADER_FROM_DISK_FINISHED = "resultLoaderFinished";
 	public static final String RESULT_LOADER_FROM_DISK_ERROR = "resultLoaderError";
 	private final File individualResultsFolder;
+	private final String referenceProteinSequence;
 	private final static Logger log = Logger.getLogger(ResultLoaderFromDisk.class);
 
 	/**
 	 * 
 	 * @param individualResultsFolder individual results folder
 	 */
-	public ResultLoaderFromDisk(File individualResultsFolder) {
+	public ResultLoaderFromDisk(File individualResultsFolder, String referenceProteinSequence) {
 		this.individualResultsFolder = individualResultsFolder;
+		this.referenceProteinSequence = referenceProteinSequence;
 	}
 
 	@Override
@@ -78,7 +80,8 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 		for (final String line : lines) {
 			if (line.startsWith(GlycoSite.GLYCOSITE)) {
 				if (!"".equals(sb.toString())) {
-					final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser);
+					final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser,
+							this.referenceProteinSequence);
 					ret.add(glycoSite);
 					sb = new StringBuilder();
 				}
@@ -86,7 +89,8 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			sb.append(line + "\n");
 		}
 		if (!"".equals(sb.toString())) {
-			final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser);
+			final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser,
+					this.referenceProteinSequence);
 			ret.add(glycoSite);
 			sb = new StringBuilder();
 		}

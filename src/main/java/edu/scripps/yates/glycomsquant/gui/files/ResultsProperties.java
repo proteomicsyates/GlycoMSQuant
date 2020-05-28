@@ -32,6 +32,7 @@ public class ResultsProperties implements InputParameters {
 	private static final String DISCARD_WRONG_POSITIONED_PTMS = "discard_peptides_with_ptms_in_wrong_motifs";
 	private static final String DISCARD_NON_UNIQUE_PEPTIDES = "discard_non_unique_peptides";
 	private static final String DONT_ALLOW_CONSECUTIVE_MOTIFS = "dont_allow_consecutive_motifs";
+	private static final String REFERENCE_PROTEIN_SEQUENCE = "reference_protein_sequence";
 	private final File individualResultsFolder;
 	private File inputDataFile;
 	private File resultsTableFile;
@@ -48,6 +49,7 @@ public class ResultsProperties implements InputParameters {
 	private Boolean discardWrongPositionedPTMs;
 	private Boolean discardNonUniquePeptides;
 	private Boolean dontAllowConsecutiveMotifs;
+	private String referenceProteinSequence;
 
 	/**
 	 * 
@@ -127,6 +129,9 @@ public class ResultsProperties implements InputParameters {
 				if (properties.containsKey(DONT_ALLOW_CONSECUTIVE_MOTIFS)) {
 					this.dontAllowConsecutiveMotifs = Boolean
 							.valueOf(properties.getProperty(DONT_ALLOW_CONSECUTIVE_MOTIFS));
+				}
+				if (properties.containsKey(REFERENCE_PROTEIN_SEQUENCE)) {
+					this.referenceProteinSequence = properties.getProperty(REFERENCE_PROTEIN_SEQUENCE);
 				}
 				loaded = true;
 			}
@@ -238,6 +243,9 @@ public class ResultsProperties implements InputParameters {
 			if (dontAllowConsecutiveMotifs != null) {
 				properties.put(DONT_ALLOW_CONSECUTIVE_MOTIFS, String.valueOf(dontAllowConsecutiveMotifs));
 			}
+			if (referenceProteinSequence != null) {
+				properties.put(REFERENCE_PROTEIN_SEQUENCE, referenceProteinSequence);
+			}
 			final FileWriter writer = new FileWriter(propertiesFile);
 			properties.store(writer, "Properties of the GlycoMSAnalyzer run performed on "
 					+ dateFormatter.format(FileManager.getDateFromFolderName(individualResultsFolder)));
@@ -342,6 +350,11 @@ public class ResultsProperties implements InputParameters {
 		updateProperties();
 	}
 
+	public void setReferenceProteinSequence(String proteinSequence) {
+		this.referenceProteinSequence = proteinSequence;
+		updateProperties();
+	}
+
 	@Override
 	public Boolean isDiscardNonUniquePeptides() {
 		loadProperties();
@@ -357,5 +370,11 @@ public class ResultsProperties implements InputParameters {
 	public Boolean isDontAllowConsecutiveMotifs() {
 		loadProperties();
 		return this.dontAllowConsecutiveMotifs;
+	}
+
+	@Override
+	public String getReferenceProteinSequence() {
+		loadProperties();
+		return this.referenceProteinSequence;
 	}
 }

@@ -75,6 +75,9 @@ public class ChartUtils {
 
 				final TDoubleList doublelist = site.getIndividualPeptideProportionsByPTMCode(ptmCode,
 						sumIntensitiesAcrossReplicates);
+				if (doublelist == null) {
+					continue;// means this site doesn't have peptides covering it
+				}
 				final List<Double> list = new ArrayList<Double>();
 				for (final double double1 : doublelist.toArray()) {
 					list.add(double1);
@@ -462,8 +465,6 @@ public class ChartUtils {
 		final Map<String, String> tooltipValues = new THashMap<String, String>();
 
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			final String code = GuiUtils.translateCode(ptmCode.getCode());
-			final XYSeries series = new XYSeries(code);
 
 //			final int factor = 1000;
 //			final int maxoffset = Double.valueOf(factor / 2.0).intValue();
@@ -471,6 +472,11 @@ public class ChartUtils {
 
 			final TDoubleList individualPeptidePercentagesByPTMCode = glycoSite
 					.getIndividualPeptideProportionsByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
+			if (individualPeptidePercentagesByPTMCode == null) {
+				continue;// means this site doesn't have peptides covering it
+			}
+			final String code = GuiUtils.translateCode(ptmCode.getCode());
+			final XYSeries series = new XYSeries(code);
 			// we will spread these values over the x range [-1,1]
 			final double step = 2.0 / (individualPeptidePercentagesByPTMCode.size() + 1);
 			double x = -1;

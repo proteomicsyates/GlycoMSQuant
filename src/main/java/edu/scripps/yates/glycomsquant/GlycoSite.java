@@ -55,13 +55,14 @@ public class GlycoSite {
 	private final TIntList ambiguousSites = new TIntArrayList();
 	private String referencePosition;
 
-	public GlycoSite(int position, String protein) {
+	public GlycoSite(int position, String protein, String referenceProteinSequence) {
 		super();
 
 		this.position = position;
 		this.protein = protein;
 		try {
-			this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position);
+			this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position,
+					referenceProteinSequence);
 		} catch (final IllegalArgumentException e) {
 			// in this case, there is map to reference no reference
 			this.referencePosition = String.valueOf(position);
@@ -89,7 +90,8 @@ public class GlycoSite {
 		return sb.toString();
 	}
 
-	public static GlycoSite readGlycoSiteFromString(String string, QuantParser quantParser) {
+	public static GlycoSite readGlycoSiteFromString(String string, QuantParser quantParser,
+			String referenceProteinSequence) {
 		final String[] lines = string.split("\n");
 		GlycoSite ret = null;
 		// first line has to start with GLYCOSITE
@@ -103,7 +105,7 @@ public class GlycoSite {
 				if (ret == null && line.startsWith(GLYCOSITE)) {
 					final int position = Integer.valueOf(split[1]);
 					final String protein = split[2];
-					ret = new GlycoSite(position, protein);
+					ret = new GlycoSite(position, protein, referenceProteinSequence);
 				} else {
 					// first column is PTMCode
 					final PTMCode ptmCode = PTMCode.getByValue(Double.valueOf(split[0]));

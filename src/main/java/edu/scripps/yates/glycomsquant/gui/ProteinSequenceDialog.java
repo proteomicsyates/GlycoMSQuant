@@ -79,13 +79,16 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private final boolean sumIntensitiesAcrossReplicates;
 	public final THashMap<JLabel, Color> defaultColorsByAminoacidLabels = new THashMap<JLabel, Color>();
 	private final String currentProteinAcc;
+	private final String referenceProteinSequence;
 
 	public ProteinSequenceDialog(String proteinOfInterest, String proteinSequence, List<GlycoSite> glycoSites,
-			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates) {
+			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates,
+			String referenceProteinSequence) {
 		super(GuiUtils.getFractionOfScreenWidthSize(0.4));
 		this.currentProteinAcc = proteinOfInterest;
 		setTitle("Protein sequence of '" + proteinOfInterest + "'");
 		this.proteinSequence = proteinSequence;
+		this.referenceProteinSequence = referenceProteinSequence;
 
 		this.glycoSites = glycoSites;
 
@@ -393,7 +396,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 				final int indexInProtein = index + proteinSequenceIndex;
 				final int positionInProtein = indexInProtein + 1;
 				final String positionInReference = ProteinSequences.getInstance()
-						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein, referenceProteinSequence);
 				final JLabel label = new JLabel("" + proteinSequence.charAt(indexInProtein));
 				label.setOpaque(true);
 				label.setFont(GuiUtils.aminoacidLabelFont);
@@ -612,7 +615,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	protected void updateSelectedPosition(int position) {
 		if (position > 0) {
 			final String positionInReference = ProteinSequences.getInstance()
-					.mapPositionToReferenceProtein(currentProteinAcc, position);
+					.mapPositionToReferenceProtein(currentProteinAcc, position, referenceProteinSequence);
 			this.selectedPositionLabel.setText(position + "");
 			if (positionInReference != null) {
 				this.selectedPositionLabel.setText(this.selectedPositionLabel.getText() + " - (Position in reference "
@@ -775,8 +778,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 				String text = "No peptides covering position " + positionInProtein;
 
 				if (positionInProtein != -1) {
-					final String positionInReference = ProteinSequences.getInstance()
-							.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
+					final String positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(
+							currentProteinAcc, positionInProtein, referenceProteinSequence);
 					if (positionInReference != null) {
 						text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE
 								+ ")</i>&nbsp;";
@@ -814,7 +817,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (positionInProtein != -1) {
 				final String positionInReference = ProteinSequences.getInstance()
-						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein, referenceProteinSequence);
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
 							+ "<br> covering position " + positionInProtein;
@@ -919,7 +922,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (positionInProtein != -1) {
 				final String positionInReference = ProteinSequences.getInstance()
-						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein);
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein, referenceProteinSequence);
 				if (peptides.size() > 1) {
 					text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
 							+ "<br> covering position " + positionInProtein;

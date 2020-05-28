@@ -40,6 +40,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -74,6 +75,7 @@ import edu.scripps.yates.glycomsquant.comparison.RunComparisonTest;
 import edu.scripps.yates.glycomsquant.gui.attached_frame.AbstractJFrameWithAttachedHelpAndAttachedRunsDialog;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
+import edu.scripps.yates.glycomsquant.gui.reference.ReferenceProteinSequenceEditor;
 import edu.scripps.yates.glycomsquant.gui.tables.PeptidesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tables.SitesTableDialog;
 import edu.scripps.yates.glycomsquant.gui.tables.comparison.ComparisonTableDialog;
@@ -115,6 +117,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JCheckBox discardWrongPositionedPTMsCheckBox;
 	private JCheckBoxMenuItem discardNonUniquePeptidesMenuItem;
 	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
+	private JCheckBoxMenuItem useReferenceProteinSequenceMenuItem;
+	private JMenuItem editReferenceProteinMenuItem;
+	private ReferenceProteinSequenceEditor referenceProteinSequenceEditor;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
@@ -730,8 +735,46 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 						+ "<br>Additionally, if a peptide is found modified in both positions, will be discarded."
 						+ "<br>This is usually done when PTMs in consecutive positions are not physically possible.</html>");
 		advancedParametersMenu.add(dontAllowConsecutiveMotifsMenuItem);
+		useReferenceProteinSequenceMenuItem = new JCheckBoxMenuItem("Use reference protein", false);
+		useReferenceProteinSequenceMenuItem.setToolTipText(
+				"<html>If enabled, protein sites with PTMs to quantify will be aligned and map to a reference protein such as HXB2.</html>");
+		advancedParametersMenu.add(useReferenceProteinSequenceMenuItem);
+		useReferenceProteinSequenceMenuItem.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				editReferenceProteinMenuItem.setEnabled(useReferenceProteinSequenceMenuItem.isSelected());
+				// if there is a project loaded, load it again with the new reference protein
+				// sequence
+			}
+		});
+		editReferenceProteinMenuItem = new JMenuItem("Edit reference protein sequence");
+		editReferenceProteinMenuItem.setEnabled(false);
+		editReferenceProteinMenuItem
+				.setToolTipText("Click to open an editor in which you could edit your reference protein sequence");
+		editReferenceProteinMenuItem.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				openReferenceProteinSequenceEditor();
+
+			}
+		});
+		advancedParametersMenu.add(editReferenceProteinMenuItem);
 
 		setJMenuBar(menuBar);
+	}
+
+	private void openReferenceProteinSequenceEditor() {
+		final ReferenceProteinSequenceEditor referenceProteinSequenceEditor = getReferenceProteinSequenceEditor();
+		referenceProteinSequenceEditor.setVisible(true);
+	}
+
+	private ReferenceProteinSequenceEditor getReferenceProteinSequenceEditor() {
+		if (referenceProteinSequenceEditor == null) {
+			referenceProteinSequenceEditor = new ReferenceProteinSequenceEditor(this);
+		}
+		return referenceProteinSequenceEditor;
 	}
 
 	protected void compareExperiments() {
@@ -744,7 +787,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		componentStateKeeper.keepEnableStates(this);
 		componentStateKeeper.disable(this);
-		final GlycoPTMRunComparator comparator = new GlycoPTMRunComparator(selectedRuns);
+		final GlycoPTMRunComparator comparator = new GlycoPTMRunComparator(selectedRuns, getReferenceProteinSequence());
 		comparator.addPropertyChangeListener(this);
 		comparator.execute();
 	}
@@ -1050,7 +1093,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			return;
 		}
 		proteinSequenceDialog = new ProteinSequenceDialog(proteinOfInterest, proteinSequence, glycoSites, peptides,
-				isSumIntensitiesAcrossReplicatesFromLoadedResults());
+				isSumIntensitiesAcrossReplicatesFromLoadedResults(), getReferenceProteinSequence());
 		proteinSequenceDialog.setVisible(true);
 	}
 
@@ -1245,6 +1288,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setDiscardWrongPositionedPTMs(isDiscardWrongPositionedPTMs());
 		resultsProperties.setDiscardNonUniquePeptides(isDiscardNonUniquePeptides());
 		resultsProperties.setDontAllowConsecutiveMotifs(isDontAllowConsecutiveMotifs());
+		resultsProperties.setReferenceProteinSequence(getReferenceProteinSequence());
 	}
 
 	@Override
@@ -1258,7 +1302,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				log.info("Analyzing peptides...");
 				final GlycoPTMPeptideAnalyzer peptideAnalyzer = new GlycoPTMPeptideAnalyzer(currentPeptides,
 						getProteinOfInterestACC(), getFastaFile(), getAmountType(), getMotifRegexp(),
-						isDontAllowConsecutiveMotifs());
+						isDontAllowConsecutiveMotifs(), getReferenceProteinSequence());
 				peptideAnalyzer.addPropertyChangeListener(this);
 				peptideAnalyzer.execute();
 			} else {
@@ -1452,6 +1496,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		if (resultsProperties.isDontAllowConsecutiveMotifs() != null) {
 			this.dontAllowConsecutiveMotifsMenuItem.setSelected(resultsProperties.isDontAllowConsecutiveMotifs());
 		}
+		if (resultsProperties.getReferenceProteinSequence() != null
+				&& !"".equals(resultsProperties.getReferenceProteinSequence())) {
+			this.useReferenceProteinSequenceMenuItem.setSelected(true);
+			this.getReferenceProteinSequenceEditor()
+					.setReferenceProteinSequence(resultsProperties.getReferenceProteinSequence());
+		} else {
+			this.useReferenceProteinSequenceMenuItem.setSelected(false);
+		}
 		this.amountType = resultsProperties.getAmountType();
 		ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
 
@@ -1622,7 +1674,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		this.componentStateKeeper.keepEnableStates(this);
 		this.componentStateKeeper.disable(this);
 		clearGraphs();
-		final ResultLoaderFromDisk resultLoader = new ResultLoaderFromDisk(individualResultsFolder);
+		final ResultLoaderFromDisk resultLoader = new ResultLoaderFromDisk(individualResultsFolder,
+				getReferenceProteinSequence());
 		resultLoader.addPropertyChangeListener(this);
 		resultLoader.execute();
 	}
@@ -1689,5 +1742,13 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		}
 		return version;
 
+	}
+
+	@Override
+	public String getReferenceProteinSequence() {
+		if (useReferenceProteinSequenceMenuItem.isSelected()) {
+			return getReferenceProteinSequenceEditor().getReferenceProteinSequence();
+		}
+		return null;
 	}
 }

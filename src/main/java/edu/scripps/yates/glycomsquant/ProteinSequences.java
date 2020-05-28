@@ -11,7 +11,7 @@ import com.compomics.dbtoolkit.io.implementations.FASTADBLoader;
 import com.compomics.util.protein.Protein;
 
 import edu.scripps.yates.annotations.uniprot.UniprotFastaRetriever;
-import edu.scripps.yates.glycomsquant.util.MappingToReferenceHXB2;
+import edu.scripps.yates.glycomsquant.gui.reference.MappingToReferenceHXB2;
 import edu.scripps.yates.utilities.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.proteomicsmodel.Accession;
@@ -181,12 +181,13 @@ public class ProteinSequences {
 		return this.motifRegexp;
 	}
 
-	public String mapPositionToReferenceProtein(String proteinAcc, int position) {
-		if (!mappingsByProtein.containsKey(proteinAcc)) {
+	public String mapPositionToReferenceProtein(String proteinAcc, int position, String referenceProteinSequence) {
+		if (!mappingsByProtein.containsKey(proteinAcc + referenceProteinSequence)) {
 
-			mappingsByProtein.put(proteinAcc, new MappingToReferenceHXB2(proteinAcc));
+			mappingsByProtein.put(proteinAcc + referenceProteinSequence,
+					new MappingToReferenceHXB2(proteinAcc, referenceProteinSequence));
 		}
-		final MappingToReferenceHXB2 alignment = mappingsByProtein.get(proteinAcc);
+		final MappingToReferenceHXB2 alignment = mappingsByProtein.get(proteinAcc + referenceProteinSequence);
 		final String positionInReference = alignment.get(position);
 		return positionInReference;
 	}

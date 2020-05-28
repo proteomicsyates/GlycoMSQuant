@@ -3,6 +3,7 @@ import org.junit.Test;
 import edu.scripps.yates.glycomsquant.AppDefaults;
 import edu.scripps.yates.glycomsquant.GlycoPTMAnalyzer;
 import edu.scripps.yates.glycomsquant.ProteinSequences;
+import edu.scripps.yates.glycomsquant.gui.reference.MappingToReferenceHXB2;
 import junit.framework.Assert;
 
 public class MappingToReferenceHXB2Test {
@@ -20,7 +21,8 @@ public class MappingToReferenceHXB2Test {
 				GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP);
 		for (int i = 0; i < positions.length; i++) {
 			final int position = positions[i];
-			final String map = ProteinSequences.getInstance().mapPositionToReferenceProtein(proteinAcc, position);
+			final String map = ProteinSequences.getInstance().mapPositionToReferenceProtein(proteinAcc, position,
+					MappingToReferenceHXB2.HXB2);
 			Assert.assertEquals(maps[i], map);
 		}
 

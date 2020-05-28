@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
 
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
+import edu.scripps.yates.glycomsquant.gui.reference.MappingToReferenceHXB2;
 import edu.scripps.yates.utilities.appversion.AppVersion;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.properties.PropertiesUtil;
@@ -53,6 +54,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final boolean discardWrongPositionedPTMs;
 	private final Boolean discardNonUniquePeptides;
 	private final Boolean dontAllowConsecutiveMotifs;
+	private final String referenceProteinSequence;
 
 	private static final DecimalFormat f = new DecimalFormat("#.#E0");
 
@@ -70,6 +72,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.discardWrongPositionedPTMs = inputParams.isDiscardWrongPositionedPTMs();
 		this.discardNonUniquePeptides = inputParams.isDiscardNonUniquePeptides();
 		this.dontAllowConsecutiveMotifs = inputParams.isDontAllowConsecutiveMotifs();
+		this.referenceProteinSequence = inputParams.getReferenceProteinSequence();
 		printWelcome();
 	}
 
@@ -89,6 +92,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 		this.discardNonUniquePeptides = discardNonUniquePeptides;
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
+		this.referenceProteinSequence = MappingToReferenceHXB2.HXB2;
 		printWelcome();
 
 		CurrentInputParameters.getInstance().setInputParameters(this);
@@ -212,6 +216,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("con")) {
 				dontAllowConsecutiveMotifs = Boolean.valueOf(cmd.getOptionValue("con"));
 			}
+
 			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, prefix,
 					suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, sumIntensitiesByReplicates,
 					motifRegexp, discardWrongPositionedPTMs, discardNonUniquePeptides, dontAllowConsecutiveMotifs);
@@ -259,7 +264,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 
 		log.info("Now analyzing the " + peptides.size() + " peptides...");
 		final GlycoPTMPeptideAnalyzer glycoPTMPeptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
-				proteinOfInterestACC, amountType, this.motifRegexp, this.dontAllowConsecutiveMotifs);
+				proteinOfInterestACC, amountType, this.motifRegexp, this.dontAllowConsecutiveMotifs,
+				this.referenceProteinSequence);
 		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getGlycoSites();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
@@ -397,5 +403,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	@Override
 	public Boolean isDontAllowConsecutiveMotifs() {
 		return this.dontAllowConsecutiveMotifs;
+	}
+
+	@Override
+	public String getReferenceProteinSequence() {
+		return this.referenceProteinSequence;
 	}
 }

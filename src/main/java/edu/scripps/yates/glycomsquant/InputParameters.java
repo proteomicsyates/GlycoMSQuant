@@ -28,4 +28,6 @@ public interface InputParameters {
 	public Boolean isDiscardWrongPositionedPTMs();
 
 	public Boolean isDontAllowConsecutiveMotifs();
+
+	public String getReferenceProteinSequence();
 }
