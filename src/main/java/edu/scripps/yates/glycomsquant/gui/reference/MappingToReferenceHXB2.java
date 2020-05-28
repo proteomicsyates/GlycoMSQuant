@@ -1,6 +1,7 @@
 package edu.scripps.yates.glycomsquant.gui.reference;
 
 import edu.scripps.yates.glycomsquant.ProteinSequences;
+import edu.scripps.yates.glycomsquant.util.ReferenceProteinIsEmptyException;
 import edu.scripps.yates.utilities.alignment.nwalign.NWAlign;
 import edu.scripps.yates.utilities.alignment.nwalign.NWResult;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -10,14 +11,15 @@ public class MappingToReferenceHXB2 extends TIntObjectHashMap<String> {
 
 	private final String proteinAcc;
 
-	public MappingToReferenceHXB2(String proteinAcc, String referenceProteinSequence) {
+	public MappingToReferenceHXB2(String proteinAcc, String referenceProteinSequence)
+			throws ReferenceProteinIsEmptyException {
 		this.proteinAcc = proteinAcc;
 		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
 		if (proteinSequence == null) {
 			throw new IllegalArgumentException("Protein sequence not found for protein " + proteinAcc);
 		}
 		if (referenceProteinSequence == null) {
-			throw new IllegalArgumentException("Reference protein sequence is null");
+			throw new ReferenceProteinIsEmptyException("Reference protein sequence is null");
 		}
 		final NWResult alignment = NWAlign.needlemanWunsch(proteinSequence, referenceProteinSequence);
 		final String protein = alignment.getAlignedSequence1();

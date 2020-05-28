@@ -395,8 +395,13 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			for (int index = 0; index < proteinSequenceLine.length(); index++) {
 				final int indexInProtein = index + proteinSequenceIndex;
 				final int positionInProtein = indexInProtein + 1;
-				final String positionInReference = ProteinSequences.getInstance()
-						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein, referenceProteinSequence);
+				String positionInReference = null;
+				try {
+					positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(
+							currentProteinAcc, positionInProtein, referenceProteinSequence);
+				} catch (final IllegalArgumentException e) {
+
+				}
 				final JLabel label = new JLabel("" + proteinSequence.charAt(indexInProtein));
 				label.setOpaque(true);
 				label.setFont(GuiUtils.aminoacidLabelFont);
@@ -614,12 +619,18 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 	protected void updateSelectedPosition(int position) {
 		if (position > 0) {
-			final String positionInReference = ProteinSequences.getInstance()
-					.mapPositionToReferenceProtein(currentProteinAcc, position, referenceProteinSequence);
+			String positionInReference = null;
+			try {
+				positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(currentProteinAcc,
+						position, referenceProteinSequence);
+			} catch (final IllegalArgumentException e) {
+
+			}
 			this.selectedPositionLabel.setText(position + "");
 			if (positionInReference != null) {
-				this.selectedPositionLabel.setText(this.selectedPositionLabel.getText() + " - (Position in reference "
-						+ ProteinSequences.REFERENCE + ": " + positionInReference + ")");
+				final String text = this.selectedPositionLabel.getText() + " - (Position in reference "
+						+ ProteinSequences.REFERENCE + ": " + positionInReference + ")";
+				this.selectedPositionLabel.setText(text);
 			}
 		} else {
 			this.selectedPositionLabel.setText("");
