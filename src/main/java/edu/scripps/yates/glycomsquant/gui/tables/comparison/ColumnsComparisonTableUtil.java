@@ -80,7 +80,7 @@ public class ColumnsComparisonTableUtil {
 				ret.add(comparison.getYMean());
 				break;
 			case PTM:
-				ret.add(comparison.getPtm());
+				ret.add(comparison.getPtm().getCode());
 
 				break;
 			case SIGNIFICANCY:

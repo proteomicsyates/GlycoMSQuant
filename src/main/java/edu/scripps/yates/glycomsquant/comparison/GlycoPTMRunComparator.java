@@ -144,9 +144,16 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 //			if (ptmCode == PTMCode._2 && glycoSite1.getPosition() == 363) {
 //				System.out.println("asfd");
 //			}
-
+			double[] array1 = null;
+			if (percentages1 != null) {
+				array1 = percentages1.toArray();
+			}
+			double[] array2 = null;
+			if (percentages2 != null) {
+				array2 = percentages2.toArray();
+			}
 			final MyMannWhitneyTestResult result = new MyMannWhitneyTestResult(ptmCode, glycoSite1.getPosition(),
-					percentages1.toArray(), percentages2.toArray());
+					array1, array2);
 			ret.put(ptmCode, result);
 
 //			if (isValidForTTest(percentages1) && isValidForTTest(percentages2)) {

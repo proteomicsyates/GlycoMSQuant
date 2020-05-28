@@ -25,7 +25,6 @@ import gnu.trove.map.hash.TObjectDoubleHashMap;
  */
 public class MyMannWhitneyTestResult {
 
-	private final double u;
 	private final double[] x;
 	private final double[] y;
 	private final double pvalue;
@@ -52,27 +51,46 @@ public class MyMannWhitneyTestResult {
 		final MannWhitneyUTest test = new MannWhitneyUTest(NaNStrategy.REMOVED, TiesStrategy.AVERAGE);
 		this.x = x;
 		this.y = y;
-		u = test.mannWhitneyU(x, y);
-		pvalue = test.mannWhitneyUTest(x, y);
+		if ((x != null && y == null) || (x == null && x != null)) {
+			pvalue = 0.0;
+		} else {
+			if (x == null && y == null) {
+				pvalue = 1.0;
+			} else {
+				pvalue = test.mannWhitneyUTest(x, y);
+			}
+		}
 		pvaluesByID.put(id, pvalue);
 		instancesByID.put(id, this);
 		id++;
 	}
 
 	public double getXMean() {
-		return Maths.mean(x);
+		if (x != null) {
+			return Maths.mean(x);
+		}
+		return 0.0;
 	}
 
 	public double getXSem() {
-		return Maths.sem(x);
+		if (x != null) {
+			return Maths.sem(x);
+		}
+		return 0.0;
 	}
 
 	public double getYMean() {
-		return Maths.mean(y);
+		if (y != null) {
+			return Maths.mean(y);
+		}
+		return 0.0;
 	}
 
 	public double getYSem() {
-		return Maths.sem(y);
+		if (y != null) {
+			return Maths.sem(y);
+		}
+		return 0.0;
 	}
 
 	public double getPValue() {
