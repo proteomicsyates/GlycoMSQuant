@@ -60,10 +60,10 @@ public class GlycoSite {
 
 		this.position = position;
 		this.protein = protein;
-		try {
-			this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position,
-					referenceProteinSequence);
-		} catch (final IllegalArgumentException e) {
+
+		this.referencePosition = ProteinSequences.getInstance().mapPositionToReferenceProtein(protein, position,
+				referenceProteinSequence);
+		if (referencePosition == null) {
 			// in this case, there is map to reference no reference
 			this.referencePosition = String.valueOf(position);
 		}

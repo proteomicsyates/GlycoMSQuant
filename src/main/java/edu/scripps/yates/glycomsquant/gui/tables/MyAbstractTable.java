@@ -59,10 +59,11 @@ public abstract class MyAbstractTable extends JTable {
 				final String columnName = (String) columnModel.getColumn(index).getHeaderValue();
 				final String tip = getToolTipTextForColumn(columnName);
 				// log.info("Tip = " + tip);
-				if (tip != null)
-					return tip;
-				else
+				if (tip != null) {
+					return "<html>" + tip + "</html>";
+				} else {
 					return super.getToolTipText(e);
+				}
 			}
 		};
 	}

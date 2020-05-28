@@ -233,6 +233,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final GridBagLayout gbl_analysisParametersPanel = new GridBagLayout();
 		gbl_analysisParametersPanel.columnWeights = new double[] { 1.0 };
 		final JPanel analysisParametersPanel = new JPanel(gbl_analysisParametersPanel);
+		analysisParametersPanel.setMinimumSize(new Dimension(280, 210));
 		final GridBagConstraints gbc_analysisParametersPanel = new GridBagConstraints();
 		gbc_analysisParametersPanel.anchor = GridBagConstraints.NORTH;
 		gbc_analysisParametersPanel.gridheight = 2;
@@ -362,7 +363,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				"If enabled and > 0.0, an intensity threshold will be applied over the intensities in the input data file. Any peptide with an intensity below this value, will be discarded.");
 		intensityThresholdText.setColumns(10);
 
-		final JPanel inputPanel = new JPanel();
+		final JPanel inputPanel = new JPanel(new GridBagLayout());
 		inputPanel.setBorder(new TitledBorder(null, "Input", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		final GridBagConstraints gbc_inputPanel = new GridBagConstraints();
 		gbc_inputPanel.gridwidth = 2;
@@ -371,30 +372,25 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		gbc_inputPanel.gridx = 1;
 		gbc_inputPanel.gridy = 0;
 		menusPanel.add(inputPanel, gbc_inputPanel);
-		final GridBagLayout gbl_inputPanel = new GridBagLayout();
-		gbl_inputPanel.columnWidths = new int[] { 0 };
-		gbl_inputPanel.rowHeights = new int[] { 0 };
-		gbl_inputPanel.columnWeights = new double[] { 0.0 };
-		gbl_inputPanel.rowWeights = new double[] { 0.0, 0.0, 0.0 };
-		inputPanel.setLayout(gbl_inputPanel);
 
-		final JPanel dataFilePanel = new JPanel();
+		final JPanel inputDataFilePanel = new JPanel(new BorderLayout(5, 0));
+		inputDataFilePanel.setMinimumSize(new Dimension(590, 20));
 		final GridBagConstraints gbc_dataFilePanel = new GridBagConstraints();
 		gbc_dataFilePanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_dataFilePanel.anchor = GridBagConstraints.WEST;
 		gbc_dataFilePanel.gridx = 0;
 		gbc_dataFilePanel.gridy = 0;
-		inputPanel.add(dataFilePanel, gbc_dataFilePanel);
-		dataFilePanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
+		gbc_dataFilePanel.insets = new Insets(5, 5, 0, 5);
+		inputPanel.add(inputDataFilePanel, gbc_dataFilePanel);
 
 		final JLabel lblInputFile = new JLabel("Input file:");
 		lblInputFile.setToolTipText("Input file as a text TAB-separated file with census quant compare format");
-		dataFilePanel.add(lblInputFile);
+		inputDataFilePanel.add(lblInputFile, BorderLayout.WEST);
 
 		dataFileText = new JTextField();
 		dataFileText.setToolTipText(
 				"Full path to the input file as a text TAB-separated file with census quant compare format");
-		dataFilePanel.add(dataFileText);
+		inputDataFilePanel.add(dataFileText, BorderLayout.CENTER);
 		dataFileText.setColumns(80);
 		final JButton selectInputFileButton = new JButton("Select");
 		selectInputFileButton.addActionListener(new ActionListener() {
@@ -404,28 +400,29 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		});
 		selectInputFileButton.setToolTipText("Click to select file on your file system");
-		dataFilePanel.add(selectInputFileButton);
+		inputDataFilePanel.add(selectInputFileButton, BorderLayout.EAST);
 
-		final JPanel fastaFilePanel = new JPanel();
+		final JPanel fastaFilePanel = new JPanel(new BorderLayout(5, 0));
+		fastaFilePanel.setMinimumSize(new Dimension(590, 20));
+
 		final GridBagConstraints gbc_fastaFilePanel = new GridBagConstraints();
 		gbc_fastaFilePanel.fill = GridBagConstraints.HORIZONTAL;
 		gbc_fastaFilePanel.anchor = GridBagConstraints.WEST;
 		gbc_fastaFilePanel.gridx = 0;
 		gbc_fastaFilePanel.gridy = 1;
+		gbc_fastaFilePanel.insets = new Insets(5, 5, 0, 5);
 		inputPanel.add(fastaFilePanel, gbc_fastaFilePanel);
-		fastaFilePanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
 		lblFastaFile = new JLabel("Fasta file:");
 		lblFastaFile.setEnabled(false);
 		lblFastaFile.setToolTipText("FASTA file containing the protein sequence of the protein of interest.");
-		fastaFilePanel.add(lblFastaFile);
+		fastaFilePanel.add(lblFastaFile, BorderLayout.WEST);
 
 		fastaFileText = new JTextField();
 		fastaFileText.setEnabled(false);
 		fastaFileText.setToolTipText(
 				"Full path to the FASTA file containing the protein sequence of the protein of interest.");
-		fastaFilePanel.add(fastaFileText);
-		fastaFileText.setColumns(80);
+		fastaFilePanel.add(fastaFileText, BorderLayout.CENTER);
 
 		selectFastaFileButton = new JButton("Select");
 		selectFastaFileButton.setEnabled(false);
@@ -437,7 +434,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		});
 		selectFastaFileButton.setToolTipText("Click to select file on your file system");
-		fastaFilePanel.add(selectFastaFileButton);
+		fastaFilePanel.add(selectFastaFileButton, BorderLayout.EAST);
 
 		final JPanel accessionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints gbc_accessionPanel = new GridBagConstraints();
@@ -445,6 +442,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		gbc_accessionPanel.anchor = GridBagConstraints.WEST;
 		gbc_accessionPanel.gridx = 0;
 		gbc_accessionPanel.gridy = 2;
+		gbc_accessionPanel.insets = new Insets(5, 5, 0, 5);
 		inputPanel.add(accessionPanel, gbc_accessionPanel);
 
 		final JLabel lblProteinOfInterest = new JLabel("Protein of interest:");
@@ -494,22 +492,16 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		}
 
-		final JPanel outputPanel = new JPanel();
+		final JPanel outputPanel = new JPanel(new GridBagLayout());
 		final GridBagConstraints gbc_outputPanel = new GridBagConstraints();
 		gbc_outputPanel.insets = new Insets(0, 0, 0, 5);
 		gbc_outputPanel.gridx = 1;
 		gbc_outputPanel.gridy = 1;
 		menusPanel.add(outputPanel, gbc_outputPanel);
 		outputPanel.setBorder(new TitledBorder(null, "Output", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		final GridBagLayout gbl_outputPanel = new GridBagLayout();
-		gbl_outputPanel.columnWidths = new int[] { 0 };
-		gbl_outputPanel.rowHeights = new int[] { 0, 0, 0, 0 };
-		gbl_outputPanel.columnWeights = new double[] { 1.0 };
-		gbl_outputPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 1.0 };
-		outputPanel.setLayout(gbl_outputPanel);
-		final JPanel namePanel = new JPanel();
-		final FlowLayout flowLayout_4 = (FlowLayout) namePanel.getLayout();
-		flowLayout_4.setAlignment(FlowLayout.LEFT);
+
+		final JPanel namePanel = new JPanel(new BorderLayout());
+		namePanel.setBorder(new EmptyBorder(0, 5, 0, 5));
 		final GridBagConstraints gbc_namePanel = new GridBagConstraints();
 		gbc_namePanel.fill = GridBagConstraints.BOTH;
 		gbc_namePanel.gridx = 0;
@@ -518,11 +510,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JLabel lblNameForOutput = new JLabel("Name for output files:");
 		lblNameForOutput.setToolTipText("Prefix that will be added to all the output files");
-		namePanel.add(lblNameForOutput);
+		namePanel.add(lblNameForOutput, BorderLayout.WEST);
 
 		nameTextField = new JTextField();
 		nameTextField.setToolTipText("Prefix that will be added to all the output files");
-		namePanel.add(nameTextField);
+		namePanel.add(nameTextField, BorderLayout.CENTER);
 		nameTextField.setColumns(30);
 		nameTextField.addKeyListener(new KeyListener() {
 
@@ -617,27 +609,25 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 		});
 
-		final JPanel startButtonPanel = new JPanel();
+		final JPanel controlPanel = new JPanel();
 		final GridBagConstraints gbc_startButtonPanel = new GridBagConstraints();
 		gbc_startButtonPanel.anchor = GridBagConstraints.NORTHWEST;
 		gbc_startButtonPanel.gridx = 2;
 		gbc_startButtonPanel.gridy = 1;
-		menusPanel.add(startButtonPanel, gbc_startButtonPanel);
-		startButtonPanel
-				.setBorder(new TitledBorder(null, "Control", TitledBorder.CENTER, TitledBorder.TOP, null, null));
+		menusPanel.add(controlPanel, gbc_startButtonPanel);
+		controlPanel.setBorder(new TitledBorder(null, "Control", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		final GridBagLayout gbl_startButtonPanel = new GridBagLayout();
-		gbl_startButtonPanel.columnWidths = new int[] { 0 };
-		gbl_startButtonPanel.rowHeights = new int[] { 0, 0 };
-		gbl_startButtonPanel.columnWeights = new double[] { 0.0 };
-		gbl_startButtonPanel.rowWeights = new double[] { 0.0, 0.0 };
-		startButtonPanel.setLayout(gbl_startButtonPanel);
+
+		gbl_startButtonPanel.columnWeights = new double[] { 1.0, 1.0 };
+		gbl_startButtonPanel.rowWeights = new double[] { 1.0, 1.0 };
+		controlPanel.setLayout(gbl_startButtonPanel);
 
 		final JPanel panel_1 = new JPanel();
 		final GridBagConstraints gbc_panel_1 = new GridBagConstraints();
 		gbc_panel_1.anchor = GridBagConstraints.NORTHWEST;
 		gbc_panel_1.gridx = 0;
 		gbc_panel_1.gridy = 0;
-		startButtonPanel.add(panel_1, gbc_panel_1);
+		controlPanel.add(panel_1, gbc_panel_1);
 
 		final JButton startButton_1 = new JButton("START");
 		panel_1.add(startButton_1);
@@ -668,7 +658,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		gbc_panel_2.anchor = GridBagConstraints.WEST;
 		gbc_panel_2.gridx = 0;
 		gbc_panel_2.gridy = 1;
-		startButtonPanel.add(panel_2, gbc_panel_2);
+		controlPanel.add(panel_2, gbc_panel_2);
 
 		final JButton btnShowRuns = new JButton("Show Runs");
 		panel_2.add(btnShowRuns);
@@ -1004,6 +994,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	private void checkValidityInputDataForNormalAnalysis() {
+		if ("".equals(getName())) {
+			throw new IllegalArgumentException("Provide a name for output files");
+		}
 		checkValidityInputDataFile();
 		if (!getProteinOfInterestACC().equals(GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST)) {
 			if ("".equals(getProteinOfInterestACC())) {

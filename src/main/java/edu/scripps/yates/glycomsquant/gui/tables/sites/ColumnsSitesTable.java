@@ -9,7 +9,9 @@ import edu.scripps.yates.glycomsquant.util.ColorsUtil;
 
 public enum ColumnsSitesTable {
 	SITE("Pos", 3, "Position of the glyco-site in the protein sequence", Integer.class), //
-	REFERENCE_SITE("Ref_Pos", 3, "Position of the glyco-site mapped to HXB2 reference", String.class), //
+	REFERENCE_SITE("Ref_Pos", 3,
+			"Position of the glyco-site mapped to reference protein if available.<br>Same as Pos column if not reference protein was used.",
+			String.class), //
 	TOTAL_SPC("Total SPC", 5, "Total spectral counts", Integer.class),
 	TOTAL_PEPTIDES("Total Peptides", 5, "Total number of peptides", Integer.class),
 	//

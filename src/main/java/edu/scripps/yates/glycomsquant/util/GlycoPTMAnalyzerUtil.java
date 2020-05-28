@@ -56,6 +56,9 @@ public class GlycoPTMAnalyzerUtil {
 	 * @return list of extended sequences
 	 */
 	private static List<String> getExtendedSequences(String sequence, String proteinOfInterestSequence) {
+		if (proteinOfInterestSequence == null) {
+			throw new IllegalArgumentException("Protein of interest sequence is not provided or not found");
+		}
 		final List<String> ret = new ArrayList<String>();
 		String extendedSequence = sequence;
 		// only if the last or the previous to the last aminoacids are N
@@ -74,7 +77,8 @@ public class GlycoPTMAnalyzerUtil {
 			ret.add(extendedSequence);
 		}
 		if (ret.isEmpty()) {
-			throw new IllegalArgumentException("This cannot happen");
+			throw new IllegalArgumentException(
+					"Peptide '" + sequence + "' not found in protein sequence '" + proteinOfInterestSequence + "'");
 		}
 		return ret;
 

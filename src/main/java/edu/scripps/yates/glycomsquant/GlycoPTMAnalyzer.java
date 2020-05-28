@@ -2,7 +2,6 @@ package edu.scripps.yates.glycomsquant;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -56,8 +55,6 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final Boolean dontAllowConsecutiveMotifs;
 	private final String referenceProteinSequence;
 
-	private static final DecimalFormat f = new DecimalFormat("#.#E0");
-
 	public GlycoPTMAnalyzer(InputParameters inputParams) {
 		CurrentInputParameters.getInstance().setInputParameters(inputParams);
 		this.inputFile = inputParams.getInputFile();
@@ -79,7 +76,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	public GlycoPTMAnalyzer(File inputFile, String proteinOfInterestACC, File fastaFile, String prefix, String suffix,
 			double intensityThreshold, AmountType amountType, boolean normalizeExperimentsByProtein,
 			boolean sumIntensitiesAcrossReplicates, String motifRegexp, boolean discardWrongPositionedPTMs,
-			boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs) {
+			boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs, boolean useReferenceProtein) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
@@ -92,7 +89,11 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 		this.discardNonUniquePeptides = discardNonUniquePeptides;
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
-		this.referenceProteinSequence = MappingToReferenceHXB2.HXB2;
+		if (useReferenceProtein) {
+			this.referenceProteinSequence = MappingToReferenceHXB2.HXB2;
+		} else {
+			this.referenceProteinSequence = null;
+		}
 		printWelcome();
 
 		CurrentInputParameters.getInstance().setInputParameters(this);
@@ -157,6 +158,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		option11.setRequired(false);
 		options.addOption(option11);
 
+		final Option option12 = new Option("ref", "use_ref_protein", true, "[OPTIONAL] Use of reference protein HXB2.");
+		option12.setRequired(false);
+		options.addOption(option12);
+
 	}
 
 	public static void main(String[] args) {
@@ -216,10 +221,14 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("con")) {
 				dontAllowConsecutiveMotifs = Boolean.valueOf(cmd.getOptionValue("con"));
 			}
-
+			boolean useReferenceProtein = false;
+			if (cmd.hasOption("ref")) {
+				useReferenceProtein = Boolean.valueOf(cmd.getOptionValue("ref"));
+			}
 			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile, prefix,
 					suffix, intensityThreshold, amountType, normalizeExperimentsByProtein, sumIntensitiesByReplicates,
-					motifRegexp, discardWrongPositionedPTMs, discardNonUniquePeptides, dontAllowConsecutiveMotifs);
+					motifRegexp, discardWrongPositionedPTMs, discardNonUniquePeptides, dontAllowConsecutiveMotifs,
+					useReferenceProtein);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {

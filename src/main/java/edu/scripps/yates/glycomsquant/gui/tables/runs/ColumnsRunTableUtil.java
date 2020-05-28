@@ -90,6 +90,9 @@ public class ColumnsRunTableUtil {
 			case NOT_ALLOW_CONSECUTIVE_SITES:
 				ret.add(resultsProperties.isDontAllowConsecutiveMotifs());
 				break;
+			case USE_REFERENCE_PROTEIN:
+				ret.add(resultsProperties.getReferenceProteinSequence() != null);
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

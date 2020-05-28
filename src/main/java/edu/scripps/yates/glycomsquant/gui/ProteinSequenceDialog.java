@@ -395,13 +395,9 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			for (int index = 0; index < proteinSequenceLine.length(); index++) {
 				final int indexInProtein = index + proteinSequenceIndex;
 				final int positionInProtein = indexInProtein + 1;
-				String positionInReference = null;
-				try {
-					positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(
-							currentProteinAcc, positionInProtein, referenceProteinSequence);
-				} catch (final IllegalArgumentException e) {
+				final String positionInReference = ProteinSequences.getInstance()
+						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein, referenceProteinSequence);
 
-				}
 				final JLabel label = new JLabel("" + proteinSequence.charAt(indexInProtein));
 				label.setOpaque(true);
 				label.setFont(GuiUtils.aminoacidLabelFont);
@@ -619,13 +615,9 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 	protected void updateSelectedPosition(int position) {
 		if (position > 0) {
-			String positionInReference = null;
-			try {
-				positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(currentProteinAcc,
-						position, referenceProteinSequence);
-			} catch (final IllegalArgumentException e) {
+			final String positionInReference = ProteinSequences.getInstance()
+					.mapPositionToReferenceProtein(currentProteinAcc, position, referenceProteinSequence);
 
-			}
 			this.selectedPositionLabel.setText(position + "");
 			if (positionInReference != null) {
 				final String text = this.selectedPositionLabel.getText() + " - (Position in reference "

@@ -362,7 +362,10 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 			final List<Object> glycoSiteInfoList = ColumnsSitesTableUtil.getInstance().getGlycoSiteInfoList(glycoSite,
 					inputParameters.isSumIntensitiesAcrossReplicates(), columns);
 			for (final Object glycoSiteInfo : glycoSiteInfoList) {
-				fw.write(glycoSiteInfo.toString() + "\t");
+				if (glycoSiteInfo != null) {
+					fw.write(glycoSiteInfo.toString());
+				}
+				fw.write("\t");
 			}
 			fw.write("\n");
 		}
