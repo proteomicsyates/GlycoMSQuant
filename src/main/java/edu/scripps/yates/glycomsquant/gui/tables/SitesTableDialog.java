@@ -31,12 +31,12 @@ public class SitesTableDialog extends JFrame {
 	private final JScrollPane scrollPane;
 	private ScrollableTable<MySitesTable> scrollableTable;
 
-	public SitesTableDialog() {
+	public SitesTableDialog(String nameForTitle) {
 		super();
 		setPreferredSize(new Dimension(GuiUtils.getFractionOfScreenWidthSize(4.0 / 5),
 				GuiUtils.getFractionOfScreenHeightSize(3.0 / 4)));
 		getContentPane().setBackground(SystemColor.info);
-		setTitle("GlycoMSQuant sites results table");
+		setTitle("GlycoMSQuant sites results table - " + nameForTitle);
 //		setFocusableWindowState(false);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		try {

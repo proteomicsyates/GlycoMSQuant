@@ -123,6 +123,22 @@ public class FileManager {
 		new ResultsProperties(resultsFolder).setInputDataFile(inputDataFile);
 	}
 
+	/**
+	 * Copy luciphor data file into the results folder and updates properties on it
+	 * 
+	 * @param luciphorDataFile
+	 * @param resultsFolder
+	 * @throws IOException
+	 */
+	public static void copyLuciphorFileToResultsFolder(File luciphorFile, File resultsFolder) throws IOException {
+
+		final File to = new File(resultsFolder.getAbsolutePath() + File.separator
+				+ FilenameUtils.getName(luciphorFile.getAbsolutePath()));
+		Files.copy(luciphorFile, to);
+		log.info("Luciphor file copied to : " + to.getAbsolutePath());
+		new ResultsProperties(resultsFolder).setLuciphorFile(luciphorFile);
+	}
+
 	public static String getGraphFileNameForScatterPlot(File individualResultsFolder, InputParameters inputParameters,
 			GlycoSite site) {
 		return individualResultsFolder.getAbsolutePath() + File.separator + "Site_" + site.getPosition()

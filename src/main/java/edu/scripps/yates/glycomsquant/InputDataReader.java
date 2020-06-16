@@ -7,18 +7,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
 import edu.scripps.yates.census.read.QuantCompareParser;
+import edu.scripps.yates.census.read.model.QuantifiedPSM;
+import edu.scripps.yates.census.read.model.QuantifiedPeptide;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
+import edu.scripps.yates.utilities.luciphor.LuciphorReader;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
+import edu.scripps.yates.utilities.proteomicsmodel.PSM;
+import edu.scripps.yates.utilities.proteomicsmodel.Score;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.AmountEx;
+import edu.scripps.yates.utilities.proteomicsmodel.utils.KeyUtils;
 import edu.scripps.yates.utilities.sequence.PTMInPeptide;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
@@ -27,6 +34,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
+import gnu.trove.set.hash.THashSet;
 
 /**
  * This script reads a Quant-Compare peptide-level file.<br>
@@ -51,6 +59,8 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	public static final String NUM_VALID_PEPTIDES = "Num_valid_peptides";
 	public static final String INPUT_DATA_READER_ERROR = "input data error";
 	public static final String INPUT_DATA_READER_START = "input data reader";
+	public static final String INPUT_DATA_READER_PEPTIDES_CORRECTED_BY_LUCIPHOR = "input data reader luciphor";
+	private static final double MIN_LUCIPHOR_FDR = 0.05;
 	private final double intensityThreshold;
 	private final AmountType amountType;
 	private final boolean normalizeExperimentsByProtein;
@@ -59,16 +69,18 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private final String motifRegexp;
 	private final String proteinOfInterestSequence;
 	private final boolean discardWrongPositionedPTMs;
+	private final File luciphorFile;
+	private Map<String, QuantifiedPeptideInterface> peptideMap;
 
 	/**
 	 * Constructor in which the proteinOfInterestACC is the default
 	 * 'BG505_SOSIP_gp140'
 	 * 
-	 * @param file
+	 * @param inputDataFile
 	 */
-	public InputDataReader(File file, double intensityThreshold, AmountType amountType,
+	public InputDataReader(File inputDataFile, File luciphorFile, double intensityThreshold, AmountType amountType,
 			boolean normalizeExperimentsByProtein, String motifRegexp, boolean discardWrongPositionedPTMs) {
-		this(file, GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST, intensityThreshold, amountType,
+		this(inputDataFile, luciphorFile, GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST, intensityThreshold, amountType,
 				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs);
 	}
 
@@ -88,11 +100,12 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @param motifRegexp
 	 * @param discardWrongPositionedPTMs
 	 */
-	public InputDataReader(File inputDataFile, String proteinOfInterestACC, double intensityThreshold,
-			AmountType amountType, boolean normalizeReplicates, String motifRegexp,
+	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
+			double intensityThreshold, AmountType amountType, boolean normalizeReplicates, String motifRegexp,
 			boolean discardWrongPositionedPTMs) {
 		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
+		this.luciphorFile = luciphorFile;
 		if (proteinOfInterestACC != null && !"".equals(proteinOfInterestACC)) {
 			this.proteinOfInterestACC = proteinOfInterestACC;
 		} else {
@@ -106,13 +119,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 	}
 
-	/**
-	 * Creates the output file that is PCQ compatible as input TSV file
-	 * 
-	 * @return
-	 * @throws IOException
-	 */
-	public List<QuantifiedPeptideInterface> runReader() throws IOException {
+	private QuantCompareParser getQuantCompareParser() {
 		QuantCompareParser reader = null;
 		if (parsersByFile.containsKey(inputFile)) {
 			reader = parsersByFile.get(inputFile);
@@ -121,12 +128,42 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 			MainFrame.getInstance();
 			// charge state sensible and ptm sensible
 			reader.setChargeSensible(MainFrame.isChargeStateSensible());
-			MainFrame.getInstance();
+			reader.setDecoyPattern(MainFrame.getDecoyPattern());
 			reader.setDistinguishModifiedSequences(MainFrame.isDistinguishModifiedSequences());
-			MainFrame.getInstance();
 			reader.setIgnoreTaxonomies(MainFrame.isIgnoreTaxonomies());
 		}
+		return reader;
+	}
+
+	/**
+	 * Creates the output file that is PCQ compatible as input TSV file
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	public List<QuantifiedPeptideInterface> runReader() throws IOException {
+		final QuantCompareParser reader = getQuantCompareParser();
 		peptides = filterData(reader);
+
+		if (luciphorFile != null && luciphorFile.exists()) {
+			final LuciphorReader luciphorReader = new LuciphorReader(luciphorFile);
+			// merge both luciphor and quant compare
+			final Map<String, PSM> luciphorPSMs = luciphorReader.getPSMs();
+			// we keep a map of PSMs from luciphor using scan as key
+			final Map<String, PSM> luciphorPSMsByScan = new THashMap<String, PSM>();
+			luciphorPSMs.values().stream().forEach(psm -> luciphorPSMsByScan.put(psm.getScanNumber(), psm));
+			// first we keep a map of PSMS from quant compare using scan as key
+			final Map<String, QuantifiedPSM> psmsByScan = new THashMap<String, QuantifiedPSM>();
+			for (final QuantifiedPeptideInterface peptide : peptides) {
+				peptide.getPSMs().forEach(psm -> psmsByScan.put(psm.getScanNumber(), (QuantifiedPSM) psm));
+			}
+
+			mergeLuciphorPSMs(peptides, psmsByScan, luciphorPSMsByScan, MIN_LUCIPHOR_FDR);
+			// in peptides is updated with the new peptides and non needed peptides were
+			// remove
+
+		}
+
 		parsersByFile.put(inputFile, reader);
 
 		return peptides;
@@ -146,9 +183,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		Iterator<QuantifiedPeptideInterface> iterator = ret.iterator();
 		while (iterator.hasNext()) {
 			final QuantifiedPeptideInterface peptide = iterator.next();
-			if (peptide.getFullSequence().equals("HAVPN(203.079373)GTIVK")) {
-				log.info("asd");
-			}
+
 			// only take peptides belonging to the protein of interest
 			if (proteinOfInterestACC != null) {
 				final Optional<String> proteinOfInterest = peptide.getQuantifiedProteins().stream()
@@ -350,6 +385,104 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 	public File getInputDataFile() {
 		return this.inputFile;
+	}
+
+	public Map<String, QuantifiedPeptideInterface> getPeptideMap() throws IOException {
+		if (peptideMap == null || peptideMap.isEmpty()) {
+			peptideMap = new THashMap<String, QuantifiedPeptideInterface>();
+
+			// create the map from the list of peptides
+			if (peptides == null || peptides.isEmpty()) {
+				runReader();
+			}
+			peptides.stream().forEach(pep -> peptideMap.put(pep.getKey(), pep));
+
+		}
+		return peptideMap;
+	}
+
+	private void mergeLuciphorPSMs(List<QuantifiedPeptideInterface> peptideList, Map<String, QuantifiedPSM> psmsByScan,
+			Map<String, PSM> luciphorPSMsByScan, double minLuciphorFDR) {
+		// also we need the peptideMap
+		final Map<String, QuantifiedPeptideInterface> peptideMap = new THashMap<String, QuantifiedPeptideInterface>();
+		peptideList.stream().forEach(pep -> peptideMap.put(pep.getKey(), pep));
+		int newPeptides = 0;
+		final Set<String> newPeptideKeys = new THashSet<String>();
+		for (final String scanNumber : luciphorPSMsByScan.keySet()) {
+			if (psmsByScan.containsKey(scanNumber)) {
+				final QuantifiedPSM psm = psmsByScan.get(scanNumber);
+				final PSM luciphorPSM = luciphorPSMsByScan.get(scanNumber);
+				if (!passLuciphorFDRThreshold(luciphorPSM, minLuciphorFDR)) {
+					continue;
+				}
+				if (luciphorPSM.getFullSequence().equals(psm.getFullSequence())) {
+					continue;
+				}
+
+				// there has been a change
+				final String luciphorPeptideKey = KeyUtils.getInstance().getSequenceChargeKey(luciphorPSM,
+						MainFrame.isDistinguishModifiedSequences(), MainFrame.isChargeStateSensible());
+				final QuantifiedPeptideInterface peptide = psm.getQuantifiedPeptide();
+				// change full sequence to psm
+				psm.setFullSequence(luciphorPSM.getFullSequence());
+				// create peptide with new full sequence.
+				// psm and newPeptide will be pointing each other after this
+				QuantifiedPeptide newPeptide = null;
+				if (peptideMap.containsKey(luciphorPeptideKey)) {
+					newPeptide = (QuantifiedPeptide) peptideMap.get(luciphorPeptideKey);
+					// we add psm to it
+					newPeptide.addPSM(psm, true);
+				} else {
+					newPeptide = new QuantifiedPeptide(psm, MainFrame.isIgnoreTaxonomies(),
+							MainFrame.isDistinguishModifiedSequences(), MainFrame.isChargeStateSensible());
+					final QuantifiedPeptide pep = newPeptide;
+					// assign Amounts and Conditions to the new peptide from the old one
+					peptide.getAmounts().stream().forEach(amount -> pep.addAmount(amount));
+					peptide.getConditions().stream().forEach(condition -> pep.addCondition(condition));
+				}
+				newPeptideKeys.add(newPeptide.getKey());
+
+				// remove previous peptide from peptideMap if doesn't have other psms that are
+				// not modified by Luciphor
+				boolean remove = true;
+				for (final PSM psm2 : peptide.getPSMs()) {
+					String scanNumber2 = psm2.getScanNumber();
+					if (psm2.getScanNumber().contains("_")) {
+						scanNumber2 = psm2.getScanNumber().split("_")[0];
+					}
+					if (!luciphorPSMsByScan.containsKey(scanNumber2)) {
+						remove = false;
+					}
+				}
+				if (remove) {
+					peptideList.remove(peptide);
+				}
+				// add new peptide to peptide list
+				peptideList.add(newPeptide);
+				peptideMap.put(newPeptide.getKey(), newPeptide);
+				newPeptides++;
+
+			}
+		}
+		firePropertyChange("progress", null,
+				newPeptides + " peptides were corrected by Luciphor with confidence FDR < " + minLuciphorFDR);
+	}
+
+	private boolean passLuciphorFDRThreshold(PSM luciphorPSM, double minLuciphorFDR) {
+		for (final Score score : luciphorPSM.getScores()) {
+			if (score.getScoreName().equalsIgnoreCase(LuciphorReader.GLOBAL_SCORE)
+					|| score.getScoreName().equalsIgnoreCase(LuciphorReader.LOCAL_FDR)) {
+				try {
+					final double value = Double.valueOf(score.getValue());
+					if (value < minLuciphorFDR) {
+						return true;
+					}
+				} catch (final NumberFormatException e) {
+
+				}
+			}
+		}
+		return false;
 	}
 
 }

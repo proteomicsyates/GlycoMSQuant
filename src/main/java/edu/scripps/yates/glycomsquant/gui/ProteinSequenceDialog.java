@@ -81,12 +81,12 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private final String currentProteinAcc;
 	private final String referenceProteinSequence;
 
-	public ProteinSequenceDialog(String proteinOfInterest, String proteinSequence, List<GlycoSite> glycoSites,
-			List<QuantifiedPeptideInterface> peptides, boolean sumIntensitiesAcrossReplicates,
-			String referenceProteinSequence) {
+	public ProteinSequenceDialog(String nameforTitle, String proteinOfInterest, String proteinSequence,
+			List<GlycoSite> glycoSites, List<QuantifiedPeptideInterface> peptides,
+			boolean sumIntensitiesAcrossReplicates, String referenceProteinSequence) {
 		super(GuiUtils.getFractionOfScreenWidthSize(0.4));
 		this.currentProteinAcc = proteinOfInterest;
-		setTitle("Protein sequence of '" + proteinOfInterest + "'");
+		setTitle("Protein sequence of '" + proteinOfInterest + "' - " + nameforTitle);
 		this.proteinSequence = proteinSequence;
 		this.referenceProteinSequence = referenceProteinSequence;
 
@@ -232,6 +232,13 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		loadSequence(getProteinSequence(), getPeptideOccupancyArray());
 		// load peptides
 		loadPeptidesTable(getGroupedPeptides(null), null);
+		String title = getPeptideListAttachedDialog().getTitle();
+		if (title.contains(" - ")) {
+			title = title.split(" - ")[0];
+		}
+		title += " - " + nameforTitle;
+		getPeptideListAttachedDialog().setTitle(title);
+
 		// add keyboard listener to function with arrows
 		addKeyListener(getArrowKeyListener());
 		getPeptideListAttachedDialog().addKeyListener(getArrowKeyListener());
@@ -610,6 +617,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	}
 
 	protected void loadPeptidesTable(Collection<GroupedQuantifiedPeptide> groupedPeptides, Integer positionInProtein) {
+
 		getPeptideListAttachedDialog().getGroupedPeptidesTable().loadTable(groupedPeptides, positionInProtein);
 	}
 

@@ -10,10 +10,9 @@ import javax.swing.SwingWorker;
 
 import org.apache.log4j.Logger;
 
-import edu.scripps.yates.census.read.QuantCompareParser;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.GlycoSite;
-import edu.scripps.yates.glycomsquant.gui.MainFrame;
+import edu.scripps.yates.glycomsquant.InputDataReader;
 import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
@@ -52,16 +51,16 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 				throw new IllegalArgumentException("Input data file in result folder '"
 						+ individualResultsFolder.getAbsolutePath() + "' is not found");
 			}
-			final QuantCompareParser parser = new QuantCompareParser(inputDataFile);
-			MainFrame.getInstance();
-			parser.setChargeSensible(MainFrame.isChargeStateSensible());
-			MainFrame.getInstance();
-			parser.setDecoyPattern(MainFrame.getDecoyPattern());
-			MainFrame.getInstance();
-			parser.setDistinguishModifiedSequences(MainFrame.isDistinguishModifiedSequences());
-			MainFrame.getInstance();
-			parser.setIgnoreTaxonomies(MainFrame.isIgnoreTaxonomies());
-			final List<GlycoSite> glycoSites = readDataFile(dataFile, parser);
+			File luciphorFile = resultsProperties.getLuciphorFile();
+			if (luciphorFile == null || !luciphorFile.exists()) {
+				luciphorFile = null;
+			}
+			final InputDataReader reader = new InputDataReader(inputDataFile, luciphorFile,
+					resultsProperties.getIntensityThreshold(), resultsProperties.getAmountType(),
+					resultsProperties.isNormalizeReplicates(), resultsProperties.getMotifRegexp(),
+					resultsProperties.isDiscardWrongPositionedPTMs());
+
+			final List<GlycoSite> glycoSites = readDataFile(dataFile, reader);
 			final List<QuantifiedPeptideInterface> peptides = GlycoPTMAnalyzerUtil.getPeptidesFromSites(glycoSites);
 			final ResultsLoadedFromDisk results = new ResultsLoadedFromDisk(resultsProperties, glycoSites, peptides);
 			firePropertyChange(RESULT_LOADER_FROM_DISK_FINISHED, null, results);
@@ -72,7 +71,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 		return null;
 	}
 
-	private List<GlycoSite> readDataFile(File dataFile, QuantCompareParser parser) throws IOException {
+	private List<GlycoSite> readDataFile(File dataFile, InputDataReader reader) throws IOException {
 		log.info("Reading data file: " + dataFile.getAbsolutePath());
 		final List<GlycoSite> ret = new ArrayList<GlycoSite>();
 		final List<String> lines = Files.readAllLines(dataFile.toPath());
@@ -80,7 +79,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 		for (final String line : lines) {
 			if (line.startsWith(GlycoSite.GLYCOSITE)) {
 				if (!"".equals(sb.toString())) {
-					final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser,
+					final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), reader,
 							this.referenceProteinSequence);
 					ret.add(glycoSite);
 					sb = new StringBuilder();
@@ -89,7 +88,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			sb.append(line + "\n");
 		}
 		if (!"".equals(sb.toString())) {
-			final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), parser,
+			final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), reader,
 					this.referenceProteinSequence);
 			ret.add(glycoSite);
 			sb = new StringBuilder();

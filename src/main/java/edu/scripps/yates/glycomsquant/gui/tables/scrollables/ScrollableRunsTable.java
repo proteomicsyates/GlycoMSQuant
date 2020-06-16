@@ -70,8 +70,8 @@ public class ScrollableRunsTable extends JPanel {
 
 		// in the north, add the delete button
 		final JPanel deleterunPanel = new JPanel();
-		deleteRunButton = new JButton("Delete run");
-		deleteRunButton.setToolTipText("Click to delete the selected runs");
+		deleteRunButton = new JButton("Delete selected run(s)");
+		deleteRunButton.setToolTipText("Click to delete the selected run(s)");
 		deleteRunButton.setEnabled(false);
 		deleteRunButton.addActionListener(new ActionListener() {
 

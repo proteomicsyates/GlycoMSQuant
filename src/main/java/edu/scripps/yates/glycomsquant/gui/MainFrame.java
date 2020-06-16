@@ -122,6 +122,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JCheckBoxMenuItem useReferenceProteinSequenceMenuItem;
 	private JMenuItem editReferenceProteinMenuItem;
 	private ReferenceProteinSequenceEditor referenceProteinSequenceEditor;
+	private JFileChooser fileChooserLuciphor;
+	private JTextField luciphorLabelText;
+	private File luciphorFile;
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
@@ -220,27 +223,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	}
 
 	private void initComponents(String proteinOfInterest) {
-		final JPanel menusPanel = new JPanel();
+		final JPanel menusPanel = new JPanel(new BorderLayout(5, 0));
 		menusPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(menusPanel, BorderLayout.NORTH);
-		final GridBagLayout gbl_menusPanel = new GridBagLayout();
-		gbl_menusPanel.columnWidths = new int[] { 0, 0, 0 };
-		gbl_menusPanel.rowHeights = new int[] { 0, 0 };
-		gbl_menusPanel.columnWeights = new double[] { 1.0, 0.0, 0.0 };
-		gbl_menusPanel.rowWeights = new double[] { 0.0, 0.0 };
-		menusPanel.setLayout(gbl_menusPanel);
 
 		final GridBagLayout gbl_analysisParametersPanel = new GridBagLayout();
 		gbl_analysisParametersPanel.columnWeights = new double[] { 1.0 };
 		final JPanel analysisParametersPanel = new JPanel(gbl_analysisParametersPanel);
 		analysisParametersPanel.setMinimumSize(new Dimension(280, 210));
-		final GridBagConstraints gbc_analysisParametersPanel = new GridBagConstraints();
-		gbc_analysisParametersPanel.anchor = GridBagConstraints.NORTH;
-		gbc_analysisParametersPanel.gridheight = 2;
-		gbc_analysisParametersPanel.insets = new Insets(0, 0, 0, 5);
-		gbc_analysisParametersPanel.gridx = 0;
-		gbc_analysisParametersPanel.gridy = 0;
-		menusPanel.add(analysisParametersPanel, gbc_analysisParametersPanel);
+		menusPanel.add(analysisParametersPanel, BorderLayout.WEST);
 		analysisParametersPanel.setBorder(
 				new TitledBorder(null, "Analysis parameters", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
@@ -363,15 +354,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				"If enabled and > 0.0, an intensity threshold will be applied over the intensities in the input data file. Any peptide with an intensity below this value, will be discarded.");
 		intensityThresholdText.setColumns(10);
 
-		final JPanel inputPanel = new JPanel(new GridBagLayout());
+		final JPanel leftMenuPanel = new JPanel(new BorderLayout(5, 0));
+		menusPanel.add(leftMenuPanel, BorderLayout.CENTER);
+		final GridBagLayout inputPanelGridBagLayout = new GridBagLayout();
+		inputPanelGridBagLayout.columnWeights = new double[] { 0.65, 0.35 };
+		final JPanel inputPanel = new JPanel(inputPanelGridBagLayout);
+
 		inputPanel.setBorder(new TitledBorder(null, "Input", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		final GridBagConstraints gbc_inputPanel = new GridBagConstraints();
-		gbc_inputPanel.gridwidth = 2;
-		gbc_inputPanel.anchor = GridBagConstraints.NORTHWEST;
-		gbc_inputPanel.insets = new Insets(0, 0, 5, 0);
-		gbc_inputPanel.gridx = 1;
-		gbc_inputPanel.gridy = 0;
-		menusPanel.add(inputPanel, gbc_inputPanel);
+
+		leftMenuPanel.add(inputPanel, BorderLayout.NORTH);
 
 		final JPanel inputDataFilePanel = new JPanel(new BorderLayout(5, 0));
 		inputDataFilePanel.setMinimumSize(new Dimension(590, 20));
@@ -380,6 +371,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		gbc_dataFilePanel.anchor = GridBagConstraints.WEST;
 		gbc_dataFilePanel.gridx = 0;
 		gbc_dataFilePanel.gridy = 0;
+		gbc_dataFilePanel.gridwidth = 2;
 		gbc_dataFilePanel.insets = new Insets(5, 5, 0, 5);
 		inputPanel.add(inputDataFilePanel, gbc_dataFilePanel);
 
@@ -410,6 +402,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		gbc_fastaFilePanel.anchor = GridBagConstraints.WEST;
 		gbc_fastaFilePanel.gridx = 0;
 		gbc_fastaFilePanel.gridy = 1;
+		gbc_fastaFilePanel.gridwidth = 2;
 		gbc_fastaFilePanel.insets = new Insets(5, 5, 0, 5);
 		inputPanel.add(fastaFilePanel, gbc_fastaFilePanel);
 
@@ -436,19 +429,21 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		selectFastaFileButton.setToolTipText("Click to select file on your file system");
 		fastaFilePanel.add(selectFastaFileButton, BorderLayout.EAST);
 
-		final JPanel accessionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final JPanel accessionPanel = new JPanel(new BorderLayout(5, 0));
+		accessionPanel.setMinimumSize(new Dimension(150, 20));
+
 		final GridBagConstraints gbc_accessionPanel = new GridBagConstraints();
 		gbc_accessionPanel.fill = GridBagConstraints.HORIZONTAL;
-		gbc_accessionPanel.anchor = GridBagConstraints.WEST;
-		gbc_accessionPanel.gridx = 0;
+		gbc_accessionPanel.anchor = GridBagConstraints.EAST;
+		gbc_accessionPanel.gridx = 1;
 		gbc_accessionPanel.gridy = 2;
-		gbc_accessionPanel.insets = new Insets(5, 5, 0, 5);
+		gbc_accessionPanel.insets = new Insets(5, 5, 0, 0);
 		inputPanel.add(accessionPanel, gbc_accessionPanel);
 
 		final JLabel lblProteinOfInterest = new JLabel("Protein of interest:");
 		lblProteinOfInterest.setToolTipText(
 				"Accession of the protein of interest. This should be the accession that is present in input file and FASTA file.");
-		accessionPanel.add(lblProteinOfInterest);
+		accessionPanel.add(lblProteinOfInterest, BorderLayout.WEST);
 		proteinOfInterestText = new JTextField(proteinOfInterest);
 		proteinOfInterestText.addKeyListener(new KeyListener() {
 
@@ -470,8 +465,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		});
 		proteinOfInterestText.setToolTipText(
 				"Accession of the protein of interest. This should be the accession that is present in input file and FASTA file.");
-		accessionPanel.add(proteinOfInterestText);
+		accessionPanel.add(proteinOfInterestText, BorderLayout.CENTER);
 		proteinOfInterestText.setColumns(20);
+		proteinOfInterestText.setMinimumSize(new Dimension(100, 20));
 		if (AppDefaults.getInstance().getInputFile() != null) {
 			final File previousInputFile = new File(AppDefaults.getInstance().getInputFile());
 			if (previousInputFile.exists()) {
@@ -480,6 +476,42 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				dataFileText.setText(previousInputFile.getParentFile().getAbsolutePath());
 			}
 		}
+		// add luciphor
+		final JPanel luciphorPanel = new JPanel(new BorderLayout(5, 0));
+		luciphorPanel.setMinimumSize(new Dimension(150, 20));
+		final GridBagConstraints gbc_luciphorPanel = new GridBagConstraints();
+		gbc_luciphorPanel.fill = GridBagConstraints.HORIZONTAL;
+		gbc_luciphorPanel.anchor = GridBagConstraints.WEST;
+		gbc_luciphorPanel.gridx = 0;
+		gbc_luciphorPanel.gridy = 2;
+		gbc_luciphorPanel.insets = new Insets(5, 5, 0, 5);
+		inputPanel.add(luciphorPanel, gbc_luciphorPanel);
+		final JLabel luciphoLabel = new JLabel("Luciphor file:");
+		luciphorPanel.add(luciphoLabel, BorderLayout.WEST);
+
+		luciphorLabelText = new JTextField("");
+		luciphorLabelText.setColumns(35);
+		luciphorLabelText.setToolTipText("No Luciphor file selected");
+		luciphorLabelText.setMinimumSize(new Dimension(50, 20));
+
+		if (AppDefaults.getInstance().getLuciphorFile() != null) {
+			luciphorLabelText.setText(AppDefaults.getInstance().getLuciphorFile());
+			luciphorLabelText.setToolTipText("File located at: " + AppDefaults.getInstance().getLuciphorFile());
+			luciphorFile = new File(AppDefaults.getInstance().getLuciphorFile());
+		}
+		luciphorPanel.add(luciphorLabelText, BorderLayout.CENTER);
+		final JButton luciphorButton = new JButton("Select");
+		luciphorButton.setToolTipText("Click here to add PTM localization score results from Luciphor algorithm");
+		luciphorButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				selectLuciphorResults();
+
+			}
+		});
+		luciphorPanel.add(luciphorButton, BorderLayout.EAST);
+		//
 
 		if (AppDefaults.getInstance().getProteinOfInterest() != null && !GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST
 				.equals(AppDefaults.getInstance().getProteinOfInterest())) {
@@ -491,13 +523,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				ProteinSequences.getInstance(getFastaFile(), getMotifRegexp());
 			}
 		}
-
+		final JPanel outputAndControlPanel = new JPanel(new BorderLayout(5, 0));
+		leftMenuPanel.add(outputAndControlPanel, BorderLayout.SOUTH);
 		final JPanel outputPanel = new JPanel(new GridBagLayout());
-		final GridBagConstraints gbc_outputPanel = new GridBagConstraints();
-		gbc_outputPanel.insets = new Insets(0, 0, 0, 5);
-		gbc_outputPanel.gridx = 1;
-		gbc_outputPanel.gridy = 1;
-		menusPanel.add(outputPanel, gbc_outputPanel);
+
+		outputAndControlPanel.add(outputPanel, BorderLayout.WEST);
 		outputPanel.setBorder(new TitledBorder(null, "Output", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 
 		final JPanel namePanel = new JPanel(new BorderLayout());
@@ -610,11 +640,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		});
 
 		final JPanel controlPanel = new JPanel();
-		final GridBagConstraints gbc_startButtonPanel = new GridBagConstraints();
-		gbc_startButtonPanel.anchor = GridBagConstraints.NORTHWEST;
-		gbc_startButtonPanel.gridx = 2;
-		gbc_startButtonPanel.gridy = 1;
-		menusPanel.add(controlPanel, gbc_startButtonPanel);
+		outputAndControlPanel.add(controlPanel, BorderLayout.EAST);
 		controlPanel.setBorder(new TitledBorder(null, "Control", TitledBorder.CENTER, TitledBorder.TOP, null, null));
 		final GridBagLayout gbl_startButtonPanel = new GridBagLayout();
 
@@ -738,6 +764,65 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		setLocation((screenSize.width - dialogSize.width) / 2, (screenSize.height - dialogSize.height) / 2);
 	}
 
+	protected void selectLuciphorResults() {
+		if (fileChooserLuciphor == null) {
+			fileChooserLuciphor = new JFileChooser();
+			final String previousLuciphorFile = AppDefaults.getInstance().getLuciphorFile();
+			if (previousLuciphorFile != null) {
+				fileChooserLuciphor.setCurrentDirectory(new File(previousLuciphorFile).getParentFile());
+			} else {
+				final String previousInputFile = AppDefaults.getInstance().getInputFile();
+				if (previousInputFile != null) {
+					fileChooserLuciphor.setCurrentDirectory(new File(previousInputFile).getParentFile());
+				}
+			}
+
+			fileChooserLuciphor.setFileFilter(new FileFilter() {
+
+				@Override
+				public String getDescription() {
+					return "Excel Files (*.xlsx), Text Files(*.txt, *.tsv)";
+				}
+
+				@Override
+				public boolean accept(File f) {
+					if (f.isDirectory()) {
+						return true;
+					}
+					if (FilenameUtils.getExtension(f.getAbsolutePath()).equals("tsv")) {
+						return true;
+					}
+					if (FilenameUtils.getExtension(f.getAbsolutePath()).equals("txt")) {
+						return true;
+					}
+					if (FilenameUtils.getExtension(f.getAbsolutePath()).equals("xlsx")) {
+						return true;
+					}
+					return false;
+				}
+			});
+		}
+		final int option = fileChooserLuciphor.showDialog(this, "Select Luciphor file");
+		if (option == JFileChooser.APPROVE_OPTION) {
+			final File selectedFile = fileChooserLuciphor.getSelectedFile();
+			if (selectedFile.exists()) {
+				AppDefaults.getInstance().setLuciphorFile(selectedFile.getAbsolutePath());
+				this.luciphorLabelText.setText(selectedFile.getAbsolutePath());
+				this.luciphorLabelText.setToolTipText("File located at: " + selectedFile.getAbsolutePath());
+				this.luciphorFile = selectedFile;
+			} else {
+				showError("Error selecting file that doesn't exist: " + selectedFile.getAbsolutePath());
+				this.luciphorLabelText.setText("");
+				this.luciphorLabelText.setToolTipText("");
+				this.luciphorFile = null;
+			}
+		} else {
+			this.luciphorLabelText.setText("");
+			this.luciphorLabelText.setToolTipText("No Luciphor file selected");
+			this.luciphorFile = null;
+		}
+	}
+
 	private void createMenuBar() {
 		final JMenuBar menuBar = new JMenuBar();
 
@@ -832,7 +917,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			showError("Start a new analysis or load a GlycoMSQuant run to have sites to show.");
 			return;
 		}
-		final SitesTableDialog tableDialog = new SitesTableDialog();
+		final SitesTableDialog tableDialog = new SitesTableDialog(currentResultsProperties.getName());
 		tableDialog.loadResultTable(currentGlycoSites, isSumIntensitiesAcrossReplicates());
 		tableDialog.setVisible(true);
 	}
@@ -846,7 +931,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			showError("Start a new analysis or load a GlycoMSQuant run to have peptides to show.");
 			return;
 		}
-		final PeptidesTableDialog tableDialog = new PeptidesTableDialog();
+		final PeptidesTableDialog tableDialog = new PeptidesTableDialog(currentResultsProperties.getName());
 		tableDialog.getTable().loadResultTable(currentPeptides, currentGlycoSites, getProteinSequence());
 		tableDialog.setVisible(true);
 	}
@@ -883,9 +968,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		String title = "";
 		if (component instanceof ChartPanel) {
 			final ChartPanel chartPanel = (ChartPanel) component;
-			title = " - " + chartPanel.getChart().getTitle().getText();
+			title = chartPanel.getChart().getTitle().getText();
 		}
-		final JFrame frame = new JFrame(getName() + title);
+		final JFrame frame = new JFrame(title + " - " + getName());
 		popupCharts.add(frame);
 
 		frame.setPreferredSize(new Dimension(width, height));
@@ -1117,8 +1202,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			showError("Error getting protein sequence from protein '" + proteinOfInterest + "'");
 			return;
 		}
-		proteinSequenceDialog = new ProteinSequenceDialog(proteinOfInterest, proteinSequence, glycoSites, peptides,
-				isSumIntensitiesAcrossReplicatesFromLoadedResults(), getReferenceProteinSequence());
+		proteinSequenceDialog = new ProteinSequenceDialog(currentResultsProperties.getName(), proteinOfInterest,
+				proteinSequence, glycoSites, peptides, isSumIntensitiesAcrossReplicatesFromLoadedResults(),
+				getReferenceProteinSequence());
 		proteinSequenceDialog.setVisible(true);
 	}
 
@@ -1202,6 +1288,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JButton compareRunsButton;
 	private String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
 	private AmountType amountType = AmountType.INTENSITY;
+	private ResultsProperties currentResultsProperties;
 
 	public static void main(String[] args) {
 		// set to not disapear all tooltips
@@ -1272,6 +1359,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	 */
 	private void readInputData() {
 		final File inputFile = getInputFile();
+		final File luciphorFile2 = getLuciphorFile();
 		final String proteinOfInterestACC = getProteinOfInterestACC();
 		final AmountType amountType = getAmountType();
 		final boolean normalizeExperimentsByProtein = isNormalizeReplicates();
@@ -1279,8 +1367,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final String motifRegexp = getMotifRegexp();
 		final boolean discardWrongPositionedPTMs = isDiscardWrongPositionedPTMs();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		inputDataReader = new InputDataReader(inputFile, proteinOfInterestACC, intensityThreshold, amountType,
-				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs);
+		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, intensityThreshold,
+				amountType, normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}
@@ -1290,8 +1378,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	 */
 	private void updateProperties(File resultsFolder) {
 		// copy input file to results folder
-		if (getInputFile() != null) {// if it is null, it is because this object was created only with the
-										// glycosites, to create the charts
+		if (getInputFile() != null && getInputFile().exists()) {// if it is null, it is because this object was created
+																// only with the
+			// glycosites, to create the charts
 			try {
 				FileManager.copyInputDataFileToResultsFolder(getInputFile(), resultsFolder);
 			} catch (final IOException e) {
@@ -1299,7 +1388,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			}
 
 		}
+		// copy luciphor file to results folder
+		if (getLuciphorFile() != null && getLuciphorFile().exists()) {
+			try {
+				FileManager.copyLuciphorFileToResultsFolder(getLuciphorFile(), resultsFolder);
+			} catch (final IOException e) {
+				e.printStackTrace();
+			}
 
+		}
 		final ResultsProperties resultsProperties = new ResultsProperties(resultsFolder);
 		resultsProperties.setName(getName());
 		resultsProperties.setProteinSequence(getProteinSequence());
@@ -1310,6 +1407,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setProteinOfInterest(getProteinOfInterestACC());
 		resultsProperties.setMotifRegexp(getMotifRegexp());
 		resultsProperties.setFastaFile(getFastaFile());
+		resultsProperties.setLuciphorFile(getLuciphorFile());
 		resultsProperties.setDiscardWrongPositionedPTMs(isDiscardWrongPositionedPTMs());
 		resultsProperties.setDiscardNonUniquePeptides(isDiscardNonUniquePeptides());
 		resultsProperties.setDontAllowConsecutiveMotifs(isDontAllowConsecutiveMotifs());
@@ -1356,8 +1454,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				final File newIndividualResultFolder = FileManager.getNewIndividualResultFolder();
 				// now that we have the new results folder, we can update the properties
 				updateProperties(newIndividualResultFolder);
-				final ResultsProperties resultsProperties = new ResultsProperties(newIndividualResultFolder);
-				resultsProperties.setProteinSequence(getProteinSequence());
+				this.currentResultsProperties = new ResultsProperties(newIndividualResultFolder);
+				currentResultsProperties.setProteinSequence(getProteinSequence());
+				setDataSetNameOnTitle(currentResultsProperties.getName());
 
 				final GlycoPTMResultGenerator resultGenerator = new GlycoPTMResultGenerator(newIndividualResultFolder,
 						currentGlycoSites, this);
@@ -1410,6 +1509,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.componentStateKeeper.setToPreviousState(this);
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_FINISHED)) {
 			final ResultsLoadedFromDisk results = (ResultsLoadedFromDisk) evt.getNewValue();
+			setDataSetNameOnTitle(results.getResultProperties().getName());
+			currentResultsProperties = results.getResultProperties();
 			isSumIntensitiesAcrossReplicatesFromLoadedResults = results.getResultProperties()
 					.isSumIntensitiesAcrossReplicates();
 			this.currentGlycoSites = results.getSites();
@@ -1447,6 +1548,15 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 					+ " but it is not physically possible. Peptide list reduced from " + peptidesBefore + " to "
 					+ peptidesAfter);
 		}
+	}
+
+	private void setDataSetNameOnTitle(String name) {
+		String title = getTitle();
+		if (title.contains(" - ")) {
+			title = title.split(" - ")[0];
+		}
+		title += " - " + name;
+		setTitle(title);
 	}
 
 	private void showComparisonTables(RunComparisonResult comparison) {
@@ -1510,6 +1620,14 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			this.fastaFileText.setText(resultsProperties.getFastaFile().getAbsolutePath());
 		} else {
 			this.fastaFileText.setText("");
+		}
+		if (resultsProperties.getLuciphorFile() != null) {
+			this.luciphorLabelText.setText(resultsProperties.getLuciphorFile().getAbsolutePath());
+			this.luciphorLabelText
+					.setToolTipText("File located at: " + resultsProperties.getLuciphorFile().getAbsolutePath());
+		} else {
+			this.luciphorLabelText.setText("");
+			this.luciphorLabelText.setToolTipText("No Luciphor file selected");
 		}
 		this.motifRegexp = resultsProperties.getMotifRegexp();
 		if (resultsProperties.isDiscardWrongPositionedPTMs() != null) {
@@ -1775,5 +1893,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			return getReferenceProteinSequenceEditor().getReferenceProteinSequence();
 		}
 		return null;
+	}
+
+	@Override
+	public File getLuciphorFile() {
+		return this.luciphorFile;
 	}
 }

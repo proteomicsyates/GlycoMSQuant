@@ -24,12 +24,12 @@ public class PeptidesTableDialog extends JFrame {
 	private static final Logger log = Logger.getLogger(PeptidesTableDialog.class);
 	private final ScrollableTable<MyPeptidesTable> scrollableTable;
 
-	public PeptidesTableDialog() {
+	public PeptidesTableDialog(String nameForTitle) {
 		super();
 		final Dimension preferredSize = new Dimension(GuiUtils.getFractionOfScreenWidthSize(3.0 / 5),
 				GuiUtils.getFractionOfScreenHeightSize(3.0 / 4));
 		setPreferredSize(preferredSize);
-		setTitle("GlycoMSQuant peptides table");
+		setTitle("GlycoMSQuant peptides table - " + nameForTitle);
 		setFocusableWindowState(true);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		try {

@@ -11,6 +11,8 @@ public class AppDefaults {
 	private static AppDefaults instance;
 	private static final String FASTA_PROPERTY = "fasta";
 	private static final String INPUT_FILE_PROPERTY = "input_file";
+	private static final String LUCIPHOR_FILE_PROPERTY = "luciphor_file";
+
 	private static final String PROTEIN_PROPERTY = "protein";
 	private static final String PROPERTIES_FILE = "defaults.properties";
 	private static final String RUN_NAME = "run_name";
@@ -22,6 +24,7 @@ public class AppDefaults {
 	private String protein;
 	private String runName;
 	private String useReferenceProtein;
+	private String luciphorFile;
 	private final static String comments = "# properties file from HIVPTMAnalyzer";
 
 	private AppDefaults() {
@@ -44,6 +47,9 @@ public class AppDefaults {
 				if (properties.containsKey(USE_REFERENCE_PROTEIN)) {
 					this.useReferenceProtein = Boolean.valueOf(properties.getProperty(USE_REFERENCE_PROTEIN))
 							.toString();
+				}
+				if (properties.containsKey(LUCIPHOR_FILE_PROPERTY)) {
+					this.luciphorFile = properties.getProperty(LUCIPHOR_FILE_PROPERTY);
 				}
 			} else {
 				// create file
@@ -128,6 +134,10 @@ public class AppDefaults {
 		return inputFile;
 	}
 
+	public String getLuciphorFile() {
+		return luciphorFile;
+	}
+
 	public String getProteinOfInterest() {
 		return protein;
 	}
@@ -149,5 +159,15 @@ public class AppDefaults {
 		final String name = GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST + ".fasta";
 		final File targetFile = new File(System.getProperty("user.dir") + File.separator + name);
 		return targetFile;
+	}
+
+	public void setLuciphorFile(String absolutePath) {
+		this.luciphorFile = absolutePath;
+		properties.put(LUCIPHOR_FILE_PROPERTY, luciphorFile);
+		try {
+			savePropetiesFile();
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

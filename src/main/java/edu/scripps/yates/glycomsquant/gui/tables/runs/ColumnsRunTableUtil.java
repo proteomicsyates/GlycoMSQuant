@@ -65,6 +65,14 @@ public class ColumnsRunTableUtil {
 				ret.add(cleanString(
 						String.valueOf(FilenameUtils.getName(resultsProperties.getInputFile().getAbsolutePath()))));
 				break;
+			case LUCIPHOR_FILE:
+				if (resultsProperties.getLuciphorFile() != null) {
+					ret.add(cleanString(String
+							.valueOf(FilenameUtils.getName(resultsProperties.getLuciphorFile().getAbsolutePath()))));
+				} else {
+					ret.add(cleanString(""));
+				}
+				break;
 			case NORMALIZE_REPLICATES:
 				ret.add(resultsProperties.isNormalizeReplicates());
 				break;

@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import edu.scripps.yates.census.read.model.interfaces.QuantParser;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
@@ -90,7 +89,7 @@ public class GlycoSite {
 		return sb.toString();
 	}
 
-	public static GlycoSite readGlycoSiteFromString(String string, QuantParser quantParser,
+	public static GlycoSite readGlycoSiteFromString(String string, InputDataReader reader,
 			String referenceProteinSequence) {
 		final String[] lines = string.split("\n");
 		GlycoSite ret = null;
@@ -99,7 +98,7 @@ public class GlycoSite {
 			throw new IllegalArgumentException(string + " is not readable as a Glycosite");
 		}
 		try {
-			final Map<String, QuantifiedPeptideInterface> peptideMap = quantParser.getPeptideMap();
+			final Map<String, QuantifiedPeptideInterface> peptideMap = reader.getPeptideMap();
 			for (final String line : lines) {
 				final String[] split = line.split("\t");
 				if (ret == null && line.startsWith(GLYCOSITE)) {

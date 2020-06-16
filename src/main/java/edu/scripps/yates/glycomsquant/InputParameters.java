@@ -11,6 +11,8 @@ public interface InputParameters {
 
 	public File getFastaFile();
 
+	public File getLuciphorFile();
+
 	public String getName();
 
 	public Double getIntensityThreshold();

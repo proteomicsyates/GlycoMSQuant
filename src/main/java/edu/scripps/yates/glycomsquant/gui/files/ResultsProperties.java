@@ -20,6 +20,7 @@ public class ResultsProperties implements InputParameters {
 	private static final String DEFAULT_PROPERTIES_FILE_NAME = "results.properties";
 	private static final String INPUT_DATA_FILE = "input_data_file";
 	private static final String FASTA_FILE = "fasta_file";
+	private static final String LUCIPHOR_FILE = "luciphor_file";
 	private static final String RESULTS_TABLE_FILE = "results_table_file";
 	private static final String NAME = "run_name";
 	private static final String INTENSITY_THRESHOLD = "intensity_threshold";
@@ -50,6 +51,7 @@ public class ResultsProperties implements InputParameters {
 	private Boolean discardNonUniquePeptides;
 	private Boolean dontAllowConsecutiveMotifs;
 	private String referenceProteinSequence;
+	private File luciphorFile;
 
 	/**
 	 * 
@@ -113,6 +115,11 @@ public class ResultsProperties implements InputParameters {
 					// fasta file is not copied so it has to have a full path
 					this.fastaFile = new File(properties.getProperty(FASTA_FILE));
 				}
+				if (properties.containsKey(LUCIPHOR_FILE)) {
+					// LUCIPHOR_FILE file is copied
+					this.luciphorFile = new File(individualResultsFolder.getAbsolutePath() + File.separator
+							+ properties.getProperty(LUCIPHOR_FILE));
+				}
 				if (properties.containsKey(MOTIF_REGEXP)) {
 					// fasta file is not copied so it has to have a full path
 					this.motifRegexp = properties.getProperty(MOTIF_REGEXP);
@@ -147,6 +154,11 @@ public class ResultsProperties implements InputParameters {
 		updateProperties();
 	}
 
+	public void setLuciphorFile(File luciphorFile) {
+		this.luciphorFile = luciphorFile;
+		updateProperties();
+	}
+
 	public void setResultsTableFile(File resultsTableFile) {
 		this.resultsTableFile = resultsTableFile;
 		updateProperties();
@@ -171,6 +183,12 @@ public class ResultsProperties implements InputParameters {
 	public File getInputFile() {
 		loadProperties();
 		return this.inputDataFile;
+	}
+
+	@Override
+	public File getLuciphorFile() {
+		loadProperties();
+		return this.luciphorFile;
 	}
 
 	public File getResultsTableFile() {
@@ -230,6 +248,9 @@ public class ResultsProperties implements InputParameters {
 			}
 			if (fastaFile != null) {
 				properties.put(FASTA_FILE, this.fastaFile.getAbsolutePath());
+			}
+			if (luciphorFile != null) {
+				properties.put(LUCIPHOR_FILE, FilenameUtils.getName(this.luciphorFile.getAbsolutePath()));
 			}
 			if (motifRegexp != null) {
 				properties.put(MOTIF_REGEXP, this.motifRegexp);

@@ -72,13 +72,13 @@ public class AttachedRunsDialog extends JDialog {
 
 			@Override
 			public void componentShown(ComponentEvent e) {
-//				log.debug(e.getID());
+				log.debug(e.getID());
 				AttachedRunsDialog.this.setVisible(true);
 			}
 
 			@Override
 			public void componentResized(ComponentEvent e) {
-//				log.debug(e.getID());
+				log.debug(e.getID());
 				AttachedRunsDialog.this.setVisible(true);
 
 			}
@@ -90,7 +90,7 @@ public class AttachedRunsDialog extends JDialog {
 
 			@Override
 			public void componentHidden(ComponentEvent e) {
-//				log.debug(e.getID());
+				log.debug(e.getID());
 				AttachedRunsDialog.this.setVisible(false);
 			}
 		});
@@ -98,27 +98,27 @@ public class AttachedRunsDialog extends JDialog {
 
 			@Override
 			public void windowOpened(WindowEvent e) {
-//				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
+				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
 				// open by default
 				AttachedRunsDialog.this.setVisible(true);
 			}
 
 			@Override
 			public void windowClosing(WindowEvent e) {
-//				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
+				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
 
 			}
 
 			@Override
 			public void windowClosed(WindowEvent e) {
-//				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
+				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
 				AttachedRunsDialog.this.dispose();
 
 			}
 
 			@Override
 			public void windowIconified(WindowEvent e) {
-//				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
+				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
 				minimized = true;
 				AttachedRunsDialog.this.setVisible(false);
 
@@ -126,7 +126,7 @@ public class AttachedRunsDialog extends JDialog {
 
 			@Override
 			public void windowDeiconified(WindowEvent e) {
-//				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
+				log.debug(e.getID() + " from " + e.getOldState() + " to " + e.getNewState());
 				minimized = false;
 				AttachedRunsDialog.this.setVisible(true);
 
@@ -136,14 +136,14 @@ public class AttachedRunsDialog extends JDialog {
 			public void windowActivated(WindowEvent e) {
 				log.debug(
 						e.getID() + " from " + e.getOldState() + " to " + e.getNewState() + " minimized=" + minimized);
-				AttachedRunsDialog.this.setVisible(true);
+//				AttachedRunsDialog.this.setVisible(true);
 			}
 
 			@Override
 			public void windowDeactivated(WindowEvent e) {
 				log.debug(
 						e.getID() + " from " + e.getOldState() + " to " + e.getNewState() + " minimized=" + minimized);
-				// AttachedHelpDialog.this.setVisible(false);
+//				AttachedRunsDialog.this.setVisible(false);
 			}
 
 		});

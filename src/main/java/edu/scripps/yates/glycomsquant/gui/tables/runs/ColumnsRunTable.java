@@ -7,7 +7,8 @@ public enum ColumnsRunTable {
 	NUMBER("#", 3, "", Integer.class), //
 	RUN_PATH("Path", 50, "Path of the results", String.class), //
 	NAME("Name", 50, "Name set when results were created", String.class),
-	INPUT_DATA_FILE("Input file", 50, "Input data file", String.class), //
+	INPUT_DATA_FILE("Input", 50, "Input data file", String.class), //
+	LUCIPHOR_FILE("Luciphor", 50, "Luciphor results file", String.class), //
 	THRESHOLD("thr", 30, "Intensity threshold", Double.class),
 	NORMALIZE_REPLICATES("norm", 5,
 			"Normalize the intensity of the replicates by dividing by the total sum of intensities", Boolean.class),
