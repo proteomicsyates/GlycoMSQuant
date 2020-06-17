@@ -181,6 +181,9 @@ public class ColumnsGroupedPeptidesTableUtil {
 					ret.add("-");
 				}
 				break;
+			case NUMBER_INDIVIDUAL_PEPTIDES:
+				ret.add(groupedPeptide.size());
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 
