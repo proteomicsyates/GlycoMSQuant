@@ -1,3 +1,4 @@
+package edu.scripps.yates.glycomsquant;
 import org.junit.Test;
 
 import edu.scripps.yates.glycomsquant.AppDefaults;
