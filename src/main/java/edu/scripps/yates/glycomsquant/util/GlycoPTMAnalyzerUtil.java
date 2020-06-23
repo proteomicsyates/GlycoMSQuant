@@ -313,42 +313,6 @@ public class GlycoPTMAnalyzerUtil {
 		return ret;
 	}
 
-	private static TObjectDoubleMap<PTMCode> getPercentagesByPTMCodeSummingAcrossReplicates(
-			GroupedQuantifiedPeptide peptides) {
-		// these peptides have the same sequence+charge, but different PTMs
-
-		final List<String> replicates = getReplicateNamesFromPeptide(peptides);
-
-		final Map<PTMCode, TDoubleList> peptideIntensitiesByPTMCodeAcrossReplicates = new THashMap<PTMCode, TDoubleList>();
-		for (final String replicate : replicates) {
-
-			// for each peptide, in each replicate, we grab the intensity per PTM
-
-			final Map<PTMCode, TDoubleList> peptideIntensitiesByPTMCodeInReplicate = getIntensitiesPerPTMCodeInReplicate(
-					peptides, replicate);
-			for (final PTMCode ptmCode : peptideIntensitiesByPTMCodeInReplicate.keySet()) {
-				if (!peptideIntensitiesByPTMCodeAcrossReplicates.containsKey(ptmCode)) {
-					peptideIntensitiesByPTMCodeAcrossReplicates.put(ptmCode, new TDoubleArrayList());
-				}
-				peptideIntensitiesByPTMCodeAcrossReplicates.get(ptmCode)
-						.add(Maths.mean(peptideIntensitiesByPTMCodeInReplicate.get(ptmCode)));
-			}
-
-		}
-		// for each peptide, across replicates, we sum all intensities
-		final TObjectDoubleMap<PTMCode> sumIntensitiesAcrossReplicatesByPTMCode = new TObjectDoubleHashMap<PTMCode>();
-		for (final PTMCode ptmCode2 : peptideIntensitiesByPTMCodeAcrossReplicates.keySet()) {
-			final double sumIntensitiesAcrossReplicates = Maths
-					.sum(peptideIntensitiesByPTMCodeAcrossReplicates.get(ptmCode2));
-			sumIntensitiesAcrossReplicatesByPTMCode.put(ptmCode2, sumIntensitiesAcrossReplicates);
-		}
-		// then we calculate the proportions
-		final TObjectDoubleMap<PTMCode> peptidePercentagesByPTMCode = calculateProportions(
-				sumIntensitiesAcrossReplicatesByPTMCode);
-
-		return peptidePercentagesByPTMCode;
-	}
-
 	public static int getNumIndividualProportions(Collection<GroupedQuantifiedPeptide> peptides,
 			boolean sumIntensitiesAcrossReplicates) {
 		int ret = -Integer.MAX_VALUE;
@@ -446,26 +410,6 @@ public class GlycoPTMAnalyzerUtil {
 			return 0.0;
 		}
 		return Maths.sum(intensities);
-	}
-
-	/**
-	 * Gets the intensity from a peptide. The peptide is present in several
-	 * replicates and therefore will have multiple ratios with the intensities of
-	 * each replicate. In that case, the intensities will be averaged.
-	 * 
-	 * @param peptide
-	 * @return
-	 */
-	private static double getAvgIntensityFromPeptideAcrossReplicates(QuantifiedPeptideInterface peptide) {
-		final TDoubleList values = new TDoubleArrayList();
-		for (final Amount amount : peptide.getAmounts()) {
-			if (amount.getAmountType() == CurrentInputParameters.getInstance().getInputParameters().getAmountType()) {
-				if (Double.compare(amount.getValue(), 0.0) != 0) {
-					values.add(amount.getValue());
-				}
-			}
-		}
-		return Maths.mean(values);
 	}
 
 	/**

@@ -493,7 +493,23 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		luciphorLabelText.setColumns(35);
 		luciphorLabelText.setToolTipText("No Luciphor file selected");
 		luciphorLabelText.setMinimumSize(new Dimension(50, 20));
+		luciphorLabelText.addKeyListener(new KeyListener() {
 
+			@Override
+			public void keyTyped(KeyEvent e) {
+
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				AppDefaults.getInstance().setLuciphorFile(luciphorLabelText.getText());
+			}
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+
+			}
+		});
 		if (AppDefaults.getInstance().getLuciphorFile() != null) {
 			luciphorLabelText.setText(AppDefaults.getInstance().getLuciphorFile());
 			luciphorLabelText.setToolTipText("File located at: " + AppDefaults.getInstance().getLuciphorFile());
@@ -811,6 +827,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				this.luciphorLabelText.setToolTipText("File located at: " + selectedFile.getAbsolutePath());
 				this.luciphorFile = selectedFile;
 			} else {
+				AppDefaults.getInstance().setLuciphorFile(null);
 				showError("Error selecting file that doesn't exist: " + selectedFile.getAbsolutePath());
 				this.luciphorLabelText.setText("");
 				this.luciphorLabelText.setToolTipText("");

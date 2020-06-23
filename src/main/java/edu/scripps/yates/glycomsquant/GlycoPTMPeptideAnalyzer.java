@@ -94,9 +94,6 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 			final List<PTMInProtein> positionsInProtein = getPTMPositionsInProtein(peptide);
 
 			for (final PTMInProtein ptmPositionInProtein : positionsInProtein) {
-				if (ptmPositionInProtein.getPosition() == 273) {
-					log.info("asdf");
-				}
 				if (!ptmPositionInProtein.getProteinACC().equals(proteinOfInterestACC)) {
 					continue;
 				}

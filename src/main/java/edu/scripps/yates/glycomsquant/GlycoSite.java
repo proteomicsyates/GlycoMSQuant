@@ -228,7 +228,7 @@ public class GlycoSite {
 	public double getProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
 		if (!individualProportionsByPTMCode.containsKey(ptmCode)) {
 			individualProportionsByPTMCode.clear();
-			if (this.getPosition() == 357) {
+			if (this.getPosition() == 334) {
 				log.info("asdf");
 			}
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {

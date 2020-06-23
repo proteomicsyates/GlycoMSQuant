@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
+import edu.scripps.yates.glycomsquant.CurrentInputParameters;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
@@ -152,7 +153,10 @@ public class ColumnsPeptidesTableUtil {
 					}
 
 					final Amount amount = peptide.getAmounts().stream()
-							.filter(am -> am.getCondition().getName().equalsIgnoreCase(replicate)).findAny().get();
+							.filter(am -> am.getCondition().getName().equalsIgnoreCase(replicate)
+									&& am.getAmountType() == CurrentInputParameters.getInstance().getInputParameters()
+											.getAmountType())
+							.findAny().get();
 
 					final double value = amount.getValue();
 
