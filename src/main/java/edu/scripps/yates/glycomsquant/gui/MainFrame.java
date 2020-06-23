@@ -503,6 +503,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			@Override
 			public void keyReleased(KeyEvent e) {
 				AppDefaults.getInstance().setLuciphorFile(luciphorLabelText.getText());
+				luciphorFile = new File(AppDefaults.getInstance().getLuciphorFile());
 			}
 
 			@Override
