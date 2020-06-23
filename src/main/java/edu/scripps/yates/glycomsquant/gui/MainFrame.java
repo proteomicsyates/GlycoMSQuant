@@ -1915,6 +1915,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	@Override
 	public File getLuciphorFile() {
-		return this.luciphorFile;
+		if (this.luciphorFile.exists()) {
+			return this.luciphorFile;
+		}
+		return null;
 	}
 }
