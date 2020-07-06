@@ -16,6 +16,7 @@ import edu.scripps.yates.glycomsquant.util.ReferenceProteinIsEmptyException;
 import edu.scripps.yates.utilities.annotations.uniprot.xml.Entry;
 import edu.scripps.yates.utilities.fasta.FastaParser;
 import edu.scripps.yates.utilities.proteomicsmodel.Accession;
+import edu.scripps.yates.utilities.proteomicsmodel.enums.AccessionType;
 import gnu.trove.map.hash.THashMap;
 
 /**
@@ -116,7 +117,17 @@ public class ProteinSequences {
 						while (protein != null) {
 							final Accession acc = FastaParser.getACC(protein.getHeader().getRawHeader());
 							if (acc != null) {
-								proteinSequencesByAcc.put(acc.getAccession(), protein.getSequence().getSequence());
+								if (acc.getAccessionType() == AccessionType.UNKNOWN) {
+									final String acc2 = FastaParser.getSPorTRAccession(acc.getAccession());
+									if (acc2 != null) {
+										proteinSequencesByAcc.put(acc2, protein.getSequence().getSequence());
+									} else {
+										proteinSequencesByAcc.put(acc.getAccession(),
+												protein.getSequence().getSequence());
+									}
+								} else {
+									proteinSequencesByAcc.put(acc.getAccession(), protein.getSequence().getSequence());
+								}
 							}
 							protein = loader.nextProtein();
 						}
