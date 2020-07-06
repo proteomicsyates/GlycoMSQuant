@@ -569,8 +569,10 @@ public class GlycoPTMAnalyzerUtil {
 			}
 		}
 		if (values.size() > 1) {
-			throw new IllegalArgumentException(
-					"There should be only 1 intensity, because is from one peptide in one replicate");
+//			throw new IllegalArgumentException(
+//					"There should be only 1 intensity, because is from one peptide in one replicate");
+//			
+			log.error("There should be only 1 intensity, because is from one peptide in one replicate");
 		}
 		if (values.isEmpty()) {
 			return Double.NaN;
