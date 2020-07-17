@@ -1,7 +1,6 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +9,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import edu.scripps.yates.census.read.QuantCompareParser;
+import edu.scripps.yates.census.read.QuantParserException;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.utilities.luciphor.LuciphorReader;
 import edu.scripps.yates.utilities.proteomicsmodel.PSM;
@@ -27,7 +27,7 @@ public class LuciphorReadingTest {
 			"C:\\Users\\salvador\\Desktop\\HIV project\\luciphor\\census_labelfree_out_24092_pep_EndoH2x_HK_PNG100.txt");
 
 	@Test
-	public void readingLuciphor() throws IOException {
+	public void readingLuciphor() throws QuantParserException {
 		final LuciphorReader luciphorReader = new LuciphorReader(luciphorFile);
 		final Map<String, PSM> luciphorPSMs = luciphorReader.getPSMs();
 		for (final PSM psm : luciphorPSMs.values()) {

@@ -13,6 +13,7 @@ import org.apache.commons.cli.Options;
 import org.apache.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
 
+import edu.scripps.yates.census.read.QuantParserException;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.gui.reference.MappingToReferenceHXB2;
 import edu.scripps.yates.utilities.appversion.AppVersion;
@@ -272,7 +273,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 				amountType, normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs);
 		try {
 			peptides = q.runReader();
-		} catch (final IOException e) {
+		} catch (final QuantParserException e) {
 			e.printStackTrace();
 			log.error(e.getMessage());
 			System.exit(-1);

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 
 import edu.scripps.yates.census.read.QuantCompareParser;
+import edu.scripps.yates.census.read.QuantParserException;
 import edu.scripps.yates.census.read.model.QuantifiedPSM;
 import edu.scripps.yates.census.read.model.QuantifiedPeptide;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
@@ -141,7 +142,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @return
 	 * @throws IOException
 	 */
-	public List<QuantifiedPeptideInterface> runReader() throws IOException {
+	public List<QuantifiedPeptideInterface> runReader() throws QuantParserException {
 		final QuantCompareParser reader = getQuantCompareParser();
 		peptides = filterData(reader);
 
@@ -169,7 +170,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		return peptides;
 	}
 
-	private List<QuantifiedPeptideInterface> filterData(QuantCompareParser reader) throws IOException {
+	private List<QuantifiedPeptideInterface> filterData(QuantCompareParser reader) throws QuantParserException {
 
 		int peptidesDiscardedByWrongProtein = 0;
 		int peptidesDiscardedByNotHavingMotifs = 0;
@@ -391,7 +392,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		return this.inputFile;
 	}
 
-	public Map<String, QuantifiedPeptideInterface> getPeptideMap() throws IOException {
+	public Map<String, QuantifiedPeptideInterface> getPeptideMap() throws QuantParserException {
 		if (peptideMap == null || peptideMap.isEmpty()) {
 			peptideMap = new THashMap<String, QuantifiedPeptideInterface>();
 
