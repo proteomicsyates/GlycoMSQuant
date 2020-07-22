@@ -1,7 +1,6 @@
 package edu.scripps.yates.glycomsquant.gui.tables.comparison;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.SystemColor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +27,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.comparison.MyMannWhitneyTestResult;
 import edu.scripps.yates.glycomsquant.comparison.RunComparisonTest;
-import edu.scripps.yates.glycomsquant.util.GuiUtils;
+import edu.scripps.yates.utilities.swing.SwingUtils;
 import gnu.trove.map.hash.THashMap;
 
 public class ComparisonTableDialog extends JFrame {
@@ -44,10 +43,8 @@ public class ComparisonTableDialog extends JFrame {
 	private Map<String, MyMannWhitneyTestResult> comparisonsByKey;
 
 	public ComparisonTableDialog() {
-		final Dimension preferredSize = new Dimension(GuiUtils.getFractionOfScreenWidthSize(0.5),
-				GuiUtils.getFractionOfScreenHeightSize(3.0 / 4));
-		setPreferredSize(preferredSize);
-//		super(parentFrame, ModalityType.MODELESS);
+		SwingUtils.setComponentPreferredSizeRelativeToScreen(this, 0.5, 3.0 / 4);
+		// super(parentFrame, ModalityType.MODELESS);
 		getContentPane().setBackground(SystemColor.info);
 
 		setFocusableWindowState(true);

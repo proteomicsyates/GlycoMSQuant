@@ -84,12 +84,12 @@ import edu.scripps.yates.glycomsquant.gui.tasks.IterationGraphGenerator;
 import edu.scripps.yates.glycomsquant.gui.tasks.ResultLoaderFromDisk;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterationGraphPanel;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterativeThresholdAnalysis;
-import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
 import edu.scripps.yates.utilities.appversion.AppVersion;
 import edu.scripps.yates.utilities.properties.PropertiesUtil;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.swing.ComponentEnableStateKeeper;
+import edu.scripps.yates.utilities.swing.SwingUtils;
 import uk.ac.ebi.pride.utilities.pridemod.ModReader;
 
 public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDialog
@@ -149,7 +149,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	private MainFrame() {
 		super(500); // size of the attached dialog
-		setMaximumSize(GuiUtils.getScreenDimension());
+		setMaximumSize(SwingUtils.getScreenDimension());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle("GlycoMSQuant");
 		try {
@@ -965,10 +965,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final Iterator<JComponent> iterator = chartsInMainPanel.iterator();
 		while (iterator.hasNext()) {
 			final JComponent component = iterator.next();
-			final int width = GuiUtils.getFractionOfScreenWidthSize(0.5);
-			int height = GuiUtils.getFractionOfScreenHeightSize(3.0 / 4);
+			final int width = SwingUtils.getFractionOfScreenWidthSize(0.5);
+			int height = SwingUtils.getFractionOfScreenHeightSize(3.0 / 4);
 			if (component instanceof AbstractMultipleChartsBySitePanel) {
-				height = GuiUtils.getFractionOfScreenHeightSize(6.0 / 7);
+				height = SwingUtils.getFractionOfScreenHeightSize(6.0 / 7);
 			}
 			// remove from chartsInMainPanel
 			iterator.remove();

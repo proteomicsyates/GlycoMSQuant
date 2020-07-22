@@ -1,7 +1,7 @@
 package edu.scripps.yates.glycomsquant.gui.attached_frame;
 
 import edu.scripps.yates.glycomsquant.gui.tables.AttachedRunsDialog;
-import edu.scripps.yates.glycomsquant.util.GuiUtils;
+import edu.scripps.yates.utilities.swing.SwingUtils;
 
 public abstract class AbstractJFrameWithAttachedHelpAndAttachedRunsDialog extends AbstractJFrameWithAttachedHelpDialog
 		implements HasRunsDialogAttached {
@@ -32,13 +32,12 @@ public abstract class AbstractJFrameWithAttachedHelpAndAttachedRunsDialog extend
 		chartTypesHelpDialog.forceVisible();
 		// move to the left if necessary
 		final double totalWidth = this.getLocationOnScreen().getX() + this.getWidth() + chartTypesHelpDialog.getWidth();
-		final double screenWidth = GuiUtils.getScreenDimension().getWidth();
+		final double screenWidth = SwingUtils.getScreenDimension().getWidth();
 		if (totalWidth > screenWidth) {
 			final double offset = totalWidth - screenWidth;
 			final int newX = Double.valueOf(Math.max(0.0, this.getLocationOnScreen().getX() - offset)).intValue();
 			final int y = Double.valueOf(this.getLocationOnScreen().getY()).intValue();
-			this.setLocation(newX,
-					y);
+			this.setLocation(newX, y);
 		}
 	}
 

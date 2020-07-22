@@ -43,6 +43,7 @@ import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.strings.StringUtils;
+import edu.scripps.yates.utilities.swing.SwingUtils;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
@@ -84,7 +85,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	public ProteinSequenceDialog(String nameforTitle, String proteinOfInterest, String proteinSequence,
 			List<GlycoSite> glycoSites, List<QuantifiedPeptideInterface> peptides,
 			boolean sumIntensitiesAcrossReplicates, String referenceProteinSequence) {
-		super(GuiUtils.getFractionOfScreenWidthSize(0.4));
+		super(SwingUtils.getFractionOfScreenWidthSize(0.4));
 		this.currentProteinAcc = proteinOfInterest;
 		setTitle("Protein sequence of '" + proteinOfInterest + "' - " + nameforTitle);
 		this.proteinSequence = proteinSequence;
@@ -111,7 +112,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		border = (LineBorder) tempLabel.getBorder();
 		final int thickness = border.getThickness();
 		final int width = Double.valueOf((labelWidth + (thickness * 2)) * proteinSequenceLineLength + 50).intValue();
-		setPreferredSize(new Dimension(width, GuiUtils.getFractionOfScreenHeightSize(0.9)));
+		setPreferredSize(new Dimension(width, SwingUtils.getFractionOfScreenHeightSize(0.9)));
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(new BorderLayout(10, 10));
 
@@ -245,7 +246,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		pack();
 
 		final java.awt.Dimension dialogSize = getSize();
-		final Dimension screenSize = GuiUtils.getScreenDimension();
+		final Dimension screenSize = SwingUtils.getScreenDimension();
 		int x = (screenSize.width - dialogSize.width) / 2;
 		// now set it to the left as much as the peptide list width
 		x = Double.valueOf(Math.max(0, getPeptideListAttachedDialog().getPreferredSize().getWidth() * 1.0 / 2))

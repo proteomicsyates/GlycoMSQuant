@@ -14,7 +14,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.ColumnsPeptidesTableUtil;
 import edu.scripps.yates.glycomsquant.gui.tables.individual_peptides.MyPeptidesTable;
 import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableTable;
-import edu.scripps.yates.glycomsquant.util.GuiUtils;
+import edu.scripps.yates.utilities.swing.SwingUtils;
 
 public class PeptidesTableDialog extends JFrame {
 	/**
@@ -26,8 +26,8 @@ public class PeptidesTableDialog extends JFrame {
 
 	public PeptidesTableDialog(String nameForTitle) {
 		super();
-		final Dimension preferredSize = new Dimension(GuiUtils.getFractionOfScreenWidthSize(3.0 / 5),
-				GuiUtils.getFractionOfScreenHeightSize(3.0 / 4));
+		final Dimension preferredSize = new Dimension(SwingUtils.getFractionOfScreenWidthSize(3.0 / 5),
+				SwingUtils.getFractionOfScreenHeightSize(3.0 / 4));
 		setPreferredSize(preferredSize);
 		setTitle("GlycoMSQuant peptides table - " + nameForTitle);
 		setFocusableWindowState(true);

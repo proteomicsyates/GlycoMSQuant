@@ -1,7 +1,6 @@
 package edu.scripps.yates.glycomsquant.gui.tables;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.SystemColor;
 import java.util.List;
 
@@ -19,7 +18,7 @@ import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.gui.tables.scrollables.ScrollableTable;
 import edu.scripps.yates.glycomsquant.gui.tables.sites.ColumnsSitesTableUtil;
 import edu.scripps.yates.glycomsquant.gui.tables.sites.MySitesTable;
-import edu.scripps.yates.glycomsquant.util.GuiUtils;
+import edu.scripps.yates.utilities.swing.SwingUtils;
 
 public class SitesTableDialog extends JFrame {
 	/**
@@ -33,8 +32,7 @@ public class SitesTableDialog extends JFrame {
 
 	public SitesTableDialog(String nameForTitle) {
 		super();
-		setPreferredSize(new Dimension(GuiUtils.getFractionOfScreenWidthSize(4.0 / 5),
-				GuiUtils.getFractionOfScreenHeightSize(3.0 / 4)));
+		SwingUtils.setComponentPreferredSizeRelativeToScreen(this, 4.0 / 5, 3.0 / 4);
 		getContentPane().setBackground(SystemColor.info);
 		setTitle("GlycoMSQuant sites results table - " + nameForTitle);
 //		setFocusableWindowState(false);
