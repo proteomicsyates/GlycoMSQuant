@@ -475,7 +475,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 	private boolean passLuciphorFDRThreshold(PSM luciphorPSM, double minLuciphorFDR) {
 		for (final Score score : luciphorPSM.getScores()) {
-			if (score.getScoreName().equalsIgnoreCase(LuciphorReader.GLOBAL_SCORE)
+			if (score.getScoreName().equalsIgnoreCase(LuciphorReader.GLOBAL_FDR)
 					|| score.getScoreName().equalsIgnoreCase(LuciphorReader.LOCAL_FDR)) {
 				try {
 					final double value = Double.valueOf(score.getValue());
