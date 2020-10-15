@@ -1,6 +1,7 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -120,7 +121,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 	}
 
-	private QuantCompareParser getQuantCompareParser() {
+	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {
 		QuantCompareParser reader = null;
 		if (parsersByFile.containsKey(inputFile)) {
 			reader = parsersByFile.get(inputFile);
@@ -143,7 +144,12 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @throws IOException
 	 */
 	public List<QuantifiedPeptideInterface> runReader() throws QuantParserException {
-		final QuantCompareParser reader = getQuantCompareParser();
+		QuantCompareParser reader;
+		try {
+			reader = getQuantCompareParser();
+		} catch (final FileNotFoundException e) {
+			throw new QuantParserException(e);
+		}
 		peptides = filterData(reader);
 
 		if (luciphorFile != null && luciphorFile.exists()) {
