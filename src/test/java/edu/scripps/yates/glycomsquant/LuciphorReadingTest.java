@@ -1,6 +1,7 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class LuciphorReadingTest {
 			"C:\\Users\\salvador\\Desktop\\HIV project\\luciphor\\census_labelfree_out_24092_pep_EndoH2x_HK_PNG100.txt");
 
 	@Test
-	public void readingLuciphor() throws QuantParserException {
+	public void readingLuciphor() throws QuantParserException, FileNotFoundException {
 		final LuciphorReader luciphorReader = new LuciphorReader(luciphorFile);
 		final Map<String, PSM> luciphorPSMs = luciphorReader.getPSMs();
 		for (final PSM psm : luciphorPSMs.values()) {

@@ -1,6 +1,7 @@
 package edu.scripps.yates.glycomsquant;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,13 +29,18 @@ import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.AmountEx;
 import edu.scripps.yates.utilities.proteomicsmodel.utils.KeyUtils;
 import edu.scripps.yates.utilities.sequence.PTMInPeptide;
+import edu.scripps.yates.utilities.strings.StringUtils;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectDoubleMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.THashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.THashSet;
 
 /**
@@ -120,7 +126,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 	}
 
-	private QuantCompareParser getQuantCompareParser() {
+	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {
 		QuantCompareParser reader = null;
 		if (parsersByFile.containsKey(inputFile)) {
 			reader = parsersByFile.get(inputFile);
@@ -143,7 +149,12 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @throws IOException
 	 */
 	public List<QuantifiedPeptideInterface> runReader() throws QuantParserException {
-		final QuantCompareParser reader = getQuantCompareParser();
+		QuantCompareParser reader;
+		try {
+			reader = getQuantCompareParser();
+		} catch (final FileNotFoundException e) {
+			throw new QuantParserException(e);
+		}
 		peptides = filterData(reader);
 
 		if (luciphorFile != null && luciphorFile.exists()) {
@@ -181,15 +192,24 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		firePropertyChange("progress", "", "Filtering list of peptides...");
 		final int initialNumberOfPeptides = ret.size();
 		final THashMap<String, TDoubleList> intensitiesByExperiment = new THashMap<String, TDoubleList>();
+		final TObjectIntMap<String> proteinOccurrenceMap = new TObjectIntHashMap<String>();
 		Iterator<QuantifiedPeptideInterface> iterator = ret.iterator();
 		while (iterator.hasNext()) {
 			final QuantifiedPeptideInterface peptide = iterator.next();
-
 			// only take peptides belonging to the protein of interest
 			if (proteinOfInterestACC != null) {
 				final Optional<String> proteinOfInterest = peptide.getQuantifiedProteins().stream()
 						.map(p -> p.getAccession()).filter(acc -> acc.equalsIgnoreCase(proteinOfInterestACC)).findAny();
 				if (!proteinOfInterest.isPresent()) {
+					final Set<String> accs = peptide.getQuantifiedProteins().stream().map(p -> p.getAccession())
+							.collect(Collectors.toSet());
+					for (final String acc : accs) {
+						if (!proteinOccurrenceMap.containsKey(acc)) {
+							proteinOccurrenceMap.put(acc, 1);
+						} else {
+							proteinOccurrenceMap.put(acc, proteinOccurrenceMap.get(acc) + 1);
+						}
+					}
 					peptidesDiscardedByWrongProtein++;
 					iterator.remove();
 					continue;
@@ -318,6 +338,14 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		firePropertyChange("progress", null,
 				ret.size() + " peptides valid for analysis out of " + initialNumberOfPeptides);
 		if (ret.size() == 0) {
+			if (peptidesDiscardedByWrongProtein == initialNumberOfPeptides) {
+				String message = "All peptides where discarded because they don't belong to the protein of study ("
+						+ proteinOfInterestACC + ")!";
+				message += "\nThe proteins more common in the input file are: "
+						+ getMoreCommonProteins(proteinOccurrenceMap);
+				message += " \nMaybe you missespeled the protein of interest? Check it out! Otherwise, there is a problem in the input file";
+				throw new IllegalArgumentException(message);
+			}
 			throw new IllegalArgumentException("None valid peptides on input file");
 		}
 		return ret;
@@ -373,6 +401,27 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 //		}
 //
 //	}
+
+	private String getMoreCommonProteins(TObjectIntMap<String> proteinOccurrenceMap) {
+		final TIntObjectMap<Set<String>> reverseMap = new TIntObjectHashMap<Set<String>>();
+		for (final Object acc : proteinOccurrenceMap.keys()) {
+			final int occurrence = proteinOccurrenceMap.get(acc);
+			if (!reverseMap.containsKey(occurrence)) {
+				reverseMap.put(occurrence, new THashSet<String>());
+			}
+			reverseMap.get(occurrence).add((String) acc);
+		}
+		final TIntList occurrenceList = new TIntArrayList(reverseMap.keys());
+		occurrenceList.sort();
+		final StringBuilder sb = new StringBuilder();
+		for (int rank = 0; rank < Math.min(occurrenceList.size(), 3); rank++) {
+			final int occurrence = occurrenceList.get(occurrenceList.size() - rank - 1);
+			final Set<String> set = reverseMap.get(occurrence);
+			sb.append(StringUtils.getSortedSeparatedValueStringFromChars(set, ",") + " [" + occurrence + " times], ");
+
+		}
+		return sb.toString();
+	}
 
 	@Override
 	protected List<QuantifiedPeptideInterface> doInBackground() throws Exception {
