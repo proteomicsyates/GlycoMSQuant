@@ -85,6 +85,9 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 			firePropertyChange(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_STARTED, null, evt.getNewValue());
 		} else if (evt.getPropertyName().equals(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_ERROR)) {
 			firePropertyChange(ResultLoaderFromDisk.RESULT_LOADER_FROM_DISK_ERROR, null, evt.getNewValue());
+			firePropertyChange(COMPARATOR_ERROR, null, evt.getNewValue());
+
+			this.cancel(true);
 		}
 	}
 
