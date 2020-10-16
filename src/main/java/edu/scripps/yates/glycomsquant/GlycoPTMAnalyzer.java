@@ -52,6 +52,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final boolean sumIntensitiesAcrossReplicates;
 	private final String motifRegexp;
 	private final boolean discardWrongPositionedPTMs;
+	private final boolean fixWrongPositionedPTMs;
 	private final Boolean discardNonUniquePeptides;
 	private final Boolean dontAllowConsecutiveMotifs;
 	private final String referenceProteinSequence;
@@ -70,6 +71,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.sumIntensitiesAcrossReplicates = inputParams.isSumIntensitiesAcrossReplicates();
 		this.motifRegexp = inputParams.getMotifRegexp();
 		this.discardWrongPositionedPTMs = inputParams.isDiscardWrongPositionedPTMs();
+		this.fixWrongPositionedPTMs = inputParams.isFixWrongPositionedPTMs();
 		this.discardNonUniquePeptides = inputParams.isDiscardNonUniquePeptides();
 		this.dontAllowConsecutiveMotifs = inputParams.isDontAllowConsecutiveMotifs();
 		this.referenceProteinSequence = inputParams.getReferenceProteinSequence();
@@ -79,8 +81,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	public GlycoPTMAnalyzer(File inputFile, String proteinOfInterestACC, File fastaFile, File luciphorFile,
 			String prefix, String suffix, double intensityThreshold, AmountType amountType,
 			boolean normalizeExperimentsByProtein, boolean sumIntensitiesAcrossReplicates, String motifRegexp,
-			boolean discardWrongPositionedPTMs, boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs,
-			boolean useReferenceProtein) {
+			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardNonUniquePeptides,
+			boolean dontAllowConsecutiveMotifs, boolean useReferenceProtein) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
@@ -92,6 +94,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.motifRegexp = motifRegexp;
 		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
+		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs;
 		this.discardNonUniquePeptides = discardNonUniquePeptides;
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
 		if (useReferenceProtein) {
@@ -152,6 +155,11 @@ public class GlycoPTMAnalyzer implements InputParameters {
 				"[OPTIONAL] If present, peptides having PTMs of interest that are not in motifs are discarded regardless of having other positions with valid PTMs in motifs.");
 		option9.setRequired(false);
 		options.addOption(option9);
+
+		final Option option92 = new Option("fix", "fix_wrong_motifs", false,
+				"[OPTIONAL] If present, PTMs of interest positioned in non-valid motifs will be tried to be re-positioned to the correct position, if there is no ambiguities.");
+		option92.setRequired(false);
+		options.addOption(option92);
 
 		final Option option10 = new Option("dnu", "discard_non_unique_peptides", false,
 				"[OPTIONAL] If present, peptides shared by multiple proteins will be discarded.");
@@ -222,6 +230,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("dis")) {
 				discardWrongPositionedPTMs = Boolean.valueOf(cmd.getOptionValue("dis"));
 			}
+			boolean fixWrongPositionedPTMs = false;
+			if (cmd.hasOption("fix")) {
+				fixWrongPositionedPTMs = Boolean.valueOf(cmd.getOptionValue("fix"));
+			}
 			boolean discardNonUniquePeptides = false;
 			if (cmd.hasOption("dnu")) {
 				discardNonUniquePeptides = Boolean.valueOf(cmd.getOptionValue("dnu"));
@@ -241,8 +253,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			}
 			final GlycoPTMAnalyzer analyzer = new GlycoPTMAnalyzer(inputFile, proteinOfInterestACC, fastaFile,
 					luciphorFile, prefix, suffix, intensityThreshold, amountType, normalizeExperimentsByProtein,
-					sumIntensitiesByReplicates, motifRegexp, discardWrongPositionedPTMs, discardNonUniquePeptides,
-					dontAllowConsecutiveMotifs, useReferenceProtein);
+					sumIntensitiesByReplicates, motifRegexp, discardWrongPositionedPTMs, fixWrongPositionedPTMs,
+					discardNonUniquePeptides, dontAllowConsecutiveMotifs, useReferenceProtein);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {
@@ -270,7 +282,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		List<QuantifiedPeptideInterface> peptides = null;
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		final InputDataReader q = new InputDataReader(inputFile, luciphorFile, proteinOfInterestACC, intensityThreshold,
-				amountType, normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs);
+				amountType, normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs,
+				this.fixWrongPositionedPTMs);
 		try {
 			peptides = q.runReader();
 		} catch (final QuantParserException e) {
@@ -436,5 +449,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	@Override
 	public File getLuciphorFile() {
 		return this.luciphorFile;
+	}
+
+	@Override
+	public Boolean isFixWrongPositionedPTMs() {
+		return this.fixWrongPositionedPTMs;
 	}
 }

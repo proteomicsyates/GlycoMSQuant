@@ -34,6 +34,7 @@ public class ResultsProperties implements InputParameters {
 	private static final String DISCARD_NON_UNIQUE_PEPTIDES = "discard_non_unique_peptides";
 	private static final String DONT_ALLOW_CONSECUTIVE_MOTIFS = "dont_allow_consecutive_motifs";
 	private static final String REFERENCE_PROTEIN_SEQUENCE = "reference_protein_sequence";
+	private static final String FIX_WRONG_POSITIONED_PTMS = "fix_wrong_positioned_PTMs";
 	private final File individualResultsFolder;
 	private File inputDataFile;
 	private File resultsTableFile;
@@ -48,6 +49,7 @@ public class ResultsProperties implements InputParameters {
 	private Boolean sumIntensitiesAcrossReplicates;
 	private String motifRegexp;
 	private Boolean discardWrongPositionedPTMs;
+	private Boolean fixWrongPositionedPTMs;
 	private Boolean discardNonUniquePeptides;
 	private Boolean dontAllowConsecutiveMotifs;
 	private String referenceProteinSequence;
@@ -128,7 +130,9 @@ public class ResultsProperties implements InputParameters {
 					this.discardWrongPositionedPTMs = Boolean
 							.valueOf(properties.getProperty(DISCARD_WRONG_POSITIONED_PTMS));
 				}
-
+				if (properties.containsKey(FIX_WRONG_POSITIONED_PTMS)) {
+					this.fixWrongPositionedPTMs = Boolean.valueOf(properties.getProperty(FIX_WRONG_POSITIONED_PTMS));
+				}
 				if (properties.containsKey(DISCARD_NON_UNIQUE_PEPTIDES)) {
 					this.discardNonUniquePeptides = Boolean
 							.valueOf(properties.getProperty(DISCARD_NON_UNIQUE_PEPTIDES));
@@ -258,6 +262,9 @@ public class ResultsProperties implements InputParameters {
 			if (discardWrongPositionedPTMs != null) {
 				properties.put(DISCARD_WRONG_POSITIONED_PTMS, String.valueOf(discardWrongPositionedPTMs));
 			}
+			if (fixWrongPositionedPTMs != null) {
+				properties.put(FIX_WRONG_POSITIONED_PTMS, String.valueOf(fixWrongPositionedPTMs));
+			}
 			if (discardNonUniquePeptides != null) {
 				properties.put(DISCARD_NON_UNIQUE_PEPTIDES, String.valueOf(discardNonUniquePeptides));
 			}
@@ -366,6 +373,11 @@ public class ResultsProperties implements InputParameters {
 		updateProperties();
 	}
 
+	public void setFixWrongPositionedPTMs(Boolean fixWrongPositionedPTMs2) {
+		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs2;
+		updateProperties();
+	}
+
 	public void setDiscardNonUniquePeptides(Boolean discardNonUniquePeptides) {
 		this.discardNonUniquePeptides = discardNonUniquePeptides;
 		updateProperties();
@@ -397,5 +409,11 @@ public class ResultsProperties implements InputParameters {
 	public String getReferenceProteinSequence() {
 		loadProperties();
 		return this.referenceProteinSequence;
+	}
+
+	@Override
+	public Boolean isFixWrongPositionedPTMs() {
+		loadProperties();
+		return this.fixWrongPositionedPTMs;
 	}
 }

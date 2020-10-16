@@ -32,4 +32,6 @@ public interface InputParameters {
 	public Boolean isDontAllowConsecutiveMotifs();
 
 	public String getReferenceProteinSequence();
+
+	public Boolean isFixWrongPositionedPTMs();
 }

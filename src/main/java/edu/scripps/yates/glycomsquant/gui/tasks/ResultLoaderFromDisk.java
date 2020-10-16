@@ -56,9 +56,10 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 				luciphorFile = null;
 			}
 			final InputDataReader reader = new InputDataReader(inputDataFile, luciphorFile,
-					resultsProperties.getIntensityThreshold(), resultsProperties.getAmountType(),
-					resultsProperties.isNormalizeReplicates(), resultsProperties.getMotifRegexp(),
-					resultsProperties.isDiscardWrongPositionedPTMs());
+					resultsProperties.getProteinOfInterestACC(), resultsProperties.getIntensityThreshold(),
+					resultsProperties.getAmountType(), resultsProperties.isNormalizeReplicates(),
+					resultsProperties.getMotifRegexp(), resultsProperties.isDiscardWrongPositionedPTMs(),
+					resultsProperties.isFixWrongPositionedPTMs());
 
 			final List<GlycoSite> glycoSites = readDataFile(dataFile, reader);
 			final List<QuantifiedPeptideInterface> peptides = GlycoPTMAnalyzerUtil.getPeptidesFromSites(glycoSites);

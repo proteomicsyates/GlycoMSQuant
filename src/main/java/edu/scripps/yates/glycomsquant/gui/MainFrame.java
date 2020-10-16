@@ -117,6 +117,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JButton btnShowPeptidesTable;
 	private boolean isSumIntensitiesAcrossReplicatesFromLoadedResults;
 	private JCheckBox discardWrongPositionedPTMsCheckBox;
+	private JCheckBox fixWrongPositionedPTMsCheckBox;
 	private JCheckBoxMenuItem discardNonUniquePeptidesMenuItem;
 	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
 	private JCheckBoxMenuItem useReferenceProteinSequenceMenuItem;
@@ -240,7 +241,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		c3.insets = new Insets(0, 0, 5, 0);
 		c3.fill = GridBagConstraints.BOTH;
 		c3.gridx = 0;
-		c3.gridy = 2;
+		c3.gridy = 3;
 		analysisParametersPanel.add(normalizeIntensityPanel, c3);
 
 		normalizeIntensityCheckBox = new JCheckBox("Normalize replicates");
@@ -253,7 +254,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		c2.insets = new Insets(0, 0, 5, 0);
 		c2.fill = GridBagConstraints.BOTH;
 		c2.gridx = 0;
-		c2.gridy = 3;
+		c2.gridy = 4;
 		analysisParametersPanel.add(iterativeAnalysisPanel, c2);
 
 		iterativeThresholdAnalysisCheckBox = new JCheckBox("Iterative Threshold Analysis");
@@ -309,13 +310,28 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		discardWrongPositionedPTMsCheckBox.setSelected(true);
 		discardWrongPositionedPTMsPanel.add(discardWrongPositionedPTMsCheckBox);
 
+		final JPanel fixWrongPositionedPTMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c52 = new GridBagConstraints();
+		c52.insets = new Insets(0, 0, 5, 0);
+		c52.fill = GridBagConstraints.BOTH;
+		c52.gridx = 0;
+		c52.gridy = 2;
+		analysisParametersPanel.add(fixWrongPositionedPTMsPanel, c52);
+
+		fixWrongPositionedPTMsCheckBox = new JCheckBox("Fix PTMs in non-valid motifs");
+		fixWrongPositionedPTMsCheckBox.setToolTipText(
+				"<html>If selected, peptides having PTMs of interest that are not in valid motifs can be fixed if they contain a valid motif in the sequence<br> that has no PTM, considering that peptide as having a mislocalized PTM.<br>"
+						+ "If the PTM cannot be fixed, the peptide will be discarded or not depending on <i>'Discard peptides with PTMs in non-valid motifs'</i> option.</html>");
+		fixWrongPositionedPTMsCheckBox.setSelected(true);
+		fixWrongPositionedPTMsPanel.add(fixWrongPositionedPTMsCheckBox);
+
 		final JPanel intensityThresholdPanel = new JPanel();
 		final GridBagConstraints c = new GridBagConstraints();
 		c.insets = new Insets(0, 0, 5, 0);
 		c.fill = GridBagConstraints.BOTH;
 		c.anchor = GridBagConstraints.NORTH;
 		c.gridx = 0;
-		c.gridy = 4;
+		c.gridy = 5;
 		analysisParametersPanel.add(intensityThresholdPanel, c);
 		final GridBagLayout gbl_intensityThresholdPanel = new GridBagLayout();
 		gbl_intensityThresholdPanel.columnWidths = new int[] { 125, 86, 0 };
@@ -1384,9 +1400,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final double intensityThreshold = getIntensityThreshold();
 		final String motifRegexp = getMotifRegexp();
 		final boolean discardWrongPositionedPTMs = isDiscardWrongPositionedPTMs();
+		final boolean fixWrongPositionedPTMs = isFixWrongPositionedPTMs();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, intensityThreshold,
-				amountType, normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs);
+				amountType, normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs,
+				fixWrongPositionedPTMs);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}
@@ -1427,6 +1445,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setFastaFile(getFastaFile());
 		resultsProperties.setLuciphorFile(getLuciphorFile());
 		resultsProperties.setDiscardWrongPositionedPTMs(isDiscardWrongPositionedPTMs());
+		resultsProperties.setFixWrongPositionedPTMs(isFixWrongPositionedPTMs());
 		resultsProperties.setDiscardNonUniquePeptides(isDiscardNonUniquePeptides());
 		resultsProperties.setDontAllowConsecutiveMotifs(isDontAllowConsecutiveMotifs());
 		resultsProperties.setReferenceProteinSequence(getReferenceProteinSequence());
@@ -1875,6 +1894,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	@Override
 	public Boolean isDiscardWrongPositionedPTMs() {
 		return this.discardWrongPositionedPTMsCheckBox.isSelected();
+	}
+
+	@Override
+	public Boolean isFixWrongPositionedPTMs() {
+		return this.fixWrongPositionedPTMsCheckBox.isSelected();
 	}
 
 	@Override

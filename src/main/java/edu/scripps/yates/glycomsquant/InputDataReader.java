@@ -17,16 +17,24 @@ import edu.scripps.yates.census.read.QuantCompareParser;
 import edu.scripps.yates.census.read.QuantParserException;
 import edu.scripps.yates.census.read.model.QuantifiedPSM;
 import edu.scripps.yates.census.read.model.QuantifiedPeptide;
+import edu.scripps.yates.census.read.model.interfaces.QuantRatio;
+import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
+import edu.scripps.yates.census.read.model.interfaces.QuantifiedProteinInterface;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.utilities.luciphor.LuciphorReader;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
 import edu.scripps.yates.utilities.proteomicsmodel.PSM;
+import edu.scripps.yates.utilities.proteomicsmodel.PTM;
+import edu.scripps.yates.utilities.proteomicsmodel.PTMPosition;
+import edu.scripps.yates.utilities.proteomicsmodel.PTMSite;
+import edu.scripps.yates.utilities.proteomicsmodel.Peptide;
 import edu.scripps.yates.utilities.proteomicsmodel.Score;
 import edu.scripps.yates.utilities.proteomicsmodel.enums.AmountType;
 import edu.scripps.yates.utilities.proteomicsmodel.factories.AmountEx;
+import edu.scripps.yates.utilities.proteomicsmodel.factories.PTMEx;
 import edu.scripps.yates.utilities.proteomicsmodel.utils.KeyUtils;
 import edu.scripps.yates.utilities.sequence.PTMInPeptide;
 import edu.scripps.yates.utilities.strings.StringUtils;
@@ -78,18 +86,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private final boolean discardWrongPositionedPTMs;
 	private final File luciphorFile;
 	private Map<String, QuantifiedPeptideInterface> peptideMap;
-
-	/**
-	 * Constructor in which the proteinOfInterestACC is the default
-	 * 'BG505_SOSIP_gp140'
-	 * 
-	 * @param inputDataFile
-	 */
-	public InputDataReader(File inputDataFile, File luciphorFile, double intensityThreshold, AmountType amountType,
-			boolean normalizeExperimentsByProtein, String motifRegexp, boolean discardWrongPositionedPTMs) {
-		this(inputDataFile, luciphorFile, GlycoPTMAnalyzer.DEFAULT_PROTEIN_OF_INTEREST, intensityThreshold, amountType,
-				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs);
-	}
+	private final boolean fixWrongPositionedPTMs;
 
 	/**
 	 * Constructor in which the proteinOfInterestACC and the fakePTM can be
@@ -106,10 +103,11 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 *                                   protein of interest<br>
 	 * @param motifRegexp
 	 * @param discardWrongPositionedPTMs
+	 * @param fixWrongPositionedPTMs
 	 */
 	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
 			double intensityThreshold, AmountType amountType, boolean normalizeReplicates, String motifRegexp,
-			boolean discardWrongPositionedPTMs) {
+			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs) {
 		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
 		this.luciphorFile = luciphorFile;
@@ -124,6 +122,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.normalizeExperimentsByProtein = normalizeReplicates;
 		this.proteinOfInterestSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
+		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs;
 	}
 
 	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {
@@ -186,6 +185,8 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		int peptidesDiscardedByWrongProtein = 0;
 		int peptidesDiscardedByNotHavingMotifs = 0;
 		int peptidesDiscardedByPTMInWrongMotif = 0;
+		final List<QuantifiedPeptideInterface> peptidesFixed = new ArrayList<QuantifiedPeptideInterface>();
+
 		final List<QuantifiedPeptideInterface> ret = new ArrayList<QuantifiedPeptideInterface>();
 		ret.addAll(reader.getPeptideMap().values());
 		firePropertyChange("progress", null, "Input file readed. Working with " + ret.size() + " peptides.");
@@ -224,9 +225,10 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				continue;
 			} else {
 			}
-			if (discardWrongPositionedPTMs) {
+			if (discardWrongPositionedPTMs || fixWrongPositionedPTMs) {
 
 				boolean valid = true;
+				boolean fixed = false;
 				final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil
 						.getPTMsInPeptideByPosition(peptide);
 				final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
@@ -235,16 +237,38 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 					final PTMCode ptmCode = PTMCode.getByValue(ptm.getDeltaMass());
 					// if it is a PTM of interest
 					if (ptmCode != null && !ptmCode.isEmptyPTM()) {
-						// if there is no motif in this position:
+						// if there is no motif in this position this PTM is mislocalized!
 						if (!motifs.contains(position)) {
-							valid = false;
-							break;
+
+							if (fixWrongPositionedPTMs) {
+								// we can try to fix it
+								final QuantifiedPeptideInterface newPeptide = fixPTMPosition(peptide);
+								if (newPeptide != null) {
+									peptidesFixed.add(newPeptide);
+									valid = false;
+									fixed = true;
+									System.out.println(
+											"Peptide " + peptide.getFullSequence() + " was fixed to " + newPeptide);
+									break;
+								} else {
+									if (discardWrongPositionedPTMs) {
+										valid = false;
+										break;
+									}
+								}
+
+							} else if (discardWrongPositionedPTMs) {
+								valid = false;
+								break;
+							}
 						}
 					}
 				}
 				if (!valid) {
 					iterator.remove();
-					peptidesDiscardedByPTMInWrongMotif++;
+					if (!fixed) {
+						peptidesDiscardedByPTMInWrongMotif++;
+					}
 					continue;
 				}
 			}
@@ -260,7 +284,9 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				}
 			}
 		}
-
+		if (!peptidesFixed.isEmpty()) {
+			ret.addAll(peptidesFixed);
+		}
 		// if we need to normalize, modify all the intensities of the peptides
 		// accordingly
 		if (normalizeExperimentsByProtein) {
@@ -320,9 +346,11 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		firePropertyChange(NUM_VALID_PEPTIDES, null, ret.size());
 		firePropertyChange("progress", null, peptidesDiscardedByWrongProtein
 				+ " peptides discarded because they do not belong to protein " + this.proteinOfInterestACC);
-		if (discardWrongPositionedPTMs) {
+		if (discardWrongPositionedPTMs || fixWrongPositionedPTMs) {
 			firePropertyChange("progress", null, peptidesDiscardedByPTMInWrongMotif
 					+ " peptides discarded because they had a PTM of interest but in a wrong motif");
+			firePropertyChange("progress", null,
+					peptidesFixed.size() + " peptides had their PTMs re-localized to a correct motif");
 		}
 		firePropertyChange("progress", null, peptidesDiscardedByNotHavingMotifs
 				+ " peptides discarded because they do not contain motifs of interest");
@@ -401,6 +429,152 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 //		}
 //
 //	}
+
+	private QuantifiedPeptideInterface fixPTMPosition(QuantifiedPeptideInterface peptide) {
+
+		final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
+		final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil.getPTMsInPeptideByPosition(peptide);
+		for (final int pos : ptmPositions.keys()) {
+			final PTMInPeptide ptmInPeptide = ptmPositions.get(pos);
+			final PTMCode ptmCode = PTMCode.getByValue(ptmInPeptide.getDeltaMass());
+			// if it is not a PTM of interest, we remove it here
+			if (ptmCode == null || ptmCode.isEmptyPTM()) {
+				ptmPositions.remove(pos);
+			}
+		}
+		if (ptmPositions.size() != motifs.size()) {
+			// we cannot fix it if there is a different number of sites than motifs
+			return null;
+		}
+		// which positions we need to fix?
+		final TIntList wrongPositions = new TIntArrayList();
+		final TIntList rightPosition = new TIntArrayList();
+
+		for (final int position : ptmPositions.keys()) {
+			if (!motifs.contains(position)) {
+				wrongPositions.add(position);
+			} else {
+				rightPosition.add(position);
+				motifs.remove(position);
+			}
+		}
+		wrongPositions.sort();
+		motifs.sort();
+		// we find the motifs that has no PTM (potential fixes)
+		final TIntList motifsWithNoPTM = new TIntArrayList();
+		for (final int motif : motifs.toArray()) {
+			if (!ptmPositions.containsKey(motif)) {
+				motifsWithNoPTM.add(motif);
+			}
+		}
+		if (wrongPositions.isEmpty()) {
+			return null; // nothing to fix
+		}
+		// if we are here, we are going to set the ptms to positions in the motifs
+		// from wrongPositions to motifsWithNoPTM
+		// for that, we change all their PSMs
+		final List<PTM> newPTMs = new ArrayList<PTM>();
+		for (int i = 0; i < wrongPositions.size(); i++) {
+			final int wrongposition = wrongPositions.get(i);
+			final int motifposition = motifs.get(i);
+			final Double massShift = getMassShiftOnPosition(wrongposition, peptide);
+
+			String aa = null;
+			PTMPosition ptmPosition = null;
+			if (motifposition > 0 && motifposition < peptide.getSequence().length()) {
+				aa = String.valueOf(peptide.getSequence().charAt(motifposition - 1));
+			} else if (motifposition == 0) {
+				ptmPosition = PTMPosition.NTERM;
+			} else if (motifposition == peptide.getSequence().length()) {
+				ptmPosition = PTMPosition.CTERM;
+			}
+			final PTMEx newPTM = new PTMEx(massShift, aa, motifposition, ptmPosition);
+			newPTMs.add(newPTM);
+		}
+		// also add the PTMs that were well positioned
+		for (final PTM ptm : peptide.getPTMs()) {
+			for (final PTMSite ptmSite : ptm.getPTMSites()) {
+				if (rightPosition.contains(ptmSite.getPosition())) {
+					String aa = null;
+					PTMPosition ptmPosition = null;
+					if (ptmSite.getPosition() > 0 && ptmSite.getPosition() < peptide.getSequence().length()) {
+						aa = String.valueOf(peptide.getSequence().charAt(ptmSite.getPosition() - 1));
+					} else if (ptmSite.getPosition() == 0) {
+						ptmPosition = PTMPosition.NTERM;
+					} else if (ptmSite.getPosition() == peptide.getSequence().length()) {
+						ptmPosition = PTMPosition.CTERM;
+					}
+					final PTMEx newPTM = new PTMEx(ptm.getMassShift(), aa, ptmSite.getPosition(), ptmPosition);
+					newPTMs.add(newPTM);
+				}
+			}
+		}
+		String fullSequence = null;
+		final List<QuantifiedPSM> newPSMs = new ArrayList<QuantifiedPSM>();
+		for (final QuantifiedPSMInterface psm : peptide.getQuantifiedPSMs()) {
+
+			final QuantifiedPSM newPSM = new QuantifiedPSM(psm.getSequence(), null, psm.getScanNumber(),
+					psm.getChargeState(), psm.getRawFileNames().iterator().next(), psm.isSingleton(),
+					MainFrame.isDistinguishModifiedSequences(), MainFrame.isChargeStateSensible());
+			for (final PTM newPtm : newPTMs) {
+				newPSM.addPTM(newPtm);
+			}
+			fullSequence = newPSM.getFullSequence();
+			if (fullSequence.contains(")(")) {
+				log.info("asdf");
+			}
+
+			for (final Score score : psm.getScores()) {
+				newPSM.addScore(score);
+			}
+			for (final Amount amount : psm.getAmounts()) {
+				newPSM.addAmount(amount);
+			}
+			for (final QuantRatio ratio : psm.getQuantRatios()) {
+				newPSM.addRatio(ratio);
+			}
+			for (final QuantifiedProteinInterface protein : psm.getQuantifiedProteins()) {
+				newPSM.addProtein(protein, true);
+				protein.getQuantifiedPeptides().remove(peptide);
+				protein.getQuantifiedPSMs().remove(psm);
+			}
+			newPSM.setMSRun(psm.getMSRun());
+			newPSM.setRtInMinutes(psm.getRtInMinutes());
+			newPSM.setXCorr(psm.getXCorr());
+			newPSMs.add(newPSM);
+
+		}
+
+		final QuantifiedPeptide newPeptide = new QuantifiedPeptide(newPSMs.get(0), true,
+				MainFrame.isDistinguishModifiedSequences(), MainFrame.isChargeStateSensible());
+		for (final PSM psm : newPSMs) {
+			newPeptide.addPSM(psm, true);
+		}
+		for (final PTM ptm : newPTMs) {
+			newPeptide.addPTM(ptm);
+		}
+		for (final Amount amount : peptide.getAmounts()) {
+			newPeptide.addAmount(amount);
+		}
+		for (final QuantRatio ratio : peptide.getQuantRatios()) {
+			newPeptide.addRatio(ratio);
+		}
+
+		return newPeptide;
+	}
+
+	private Double getMassShiftOnPosition(int position, Peptide peptide) {
+		final List<PTM> ptms = peptide.getPTMs();
+		for (final PTM ptm : ptms) {
+			final List<PTMSite> ptmSites = ptm.getPTMSites();
+			for (final PTMSite site : ptmSites) {
+				if (site.getPosition() == position) {
+					return ptm.getMassShift();
+				}
+			}
+		}
+		return null;
+	}
 
 	private String getMoreCommonProteins(TObjectIntMap<String> proteinOccurrenceMap) {
 		final TIntObjectMap<Set<String>> reverseMap = new TIntObjectHashMap<Set<String>>();
