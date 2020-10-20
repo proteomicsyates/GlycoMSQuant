@@ -35,6 +35,7 @@ public class ResultsProperties implements InputParameters {
 	private static final String DONT_ALLOW_CONSECUTIVE_MOTIFS = "dont_allow_consecutive_motifs";
 	private static final String REFERENCE_PROTEIN_SEQUENCE = "reference_protein_sequence";
 	private static final String FIX_WRONG_POSITIONED_PTMS = "fix_wrong_positioned_PTMs";
+	private static final String DISCARD_PEPTIDES_WITH_NO_MOTIFS = "discard_peptides_with_no_motifs";
 	private final File individualResultsFolder;
 	private File inputDataFile;
 	private File resultsTableFile;
@@ -50,6 +51,7 @@ public class ResultsProperties implements InputParameters {
 	private String motifRegexp;
 	private Boolean discardWrongPositionedPTMs;
 	private Boolean fixWrongPositionedPTMs;
+	private Boolean discardPeptidesWithNoMotifs;
 	private Boolean discardNonUniquePeptides;
 	private Boolean dontAllowConsecutiveMotifs;
 	private String referenceProteinSequence;
@@ -132,6 +134,10 @@ public class ResultsProperties implements InputParameters {
 				}
 				if (properties.containsKey(FIX_WRONG_POSITIONED_PTMS)) {
 					this.fixWrongPositionedPTMs = Boolean.valueOf(properties.getProperty(FIX_WRONG_POSITIONED_PTMS));
+				}
+				if (properties.containsKey(DISCARD_PEPTIDES_WITH_NO_MOTIFS)) {
+					this.discardPeptidesWithNoMotifs = Boolean
+							.valueOf(properties.getProperty(DISCARD_PEPTIDES_WITH_NO_MOTIFS));
 				}
 				if (properties.containsKey(DISCARD_NON_UNIQUE_PEPTIDES)) {
 					this.discardNonUniquePeptides = Boolean
@@ -265,6 +271,10 @@ public class ResultsProperties implements InputParameters {
 			if (fixWrongPositionedPTMs != null) {
 				properties.put(FIX_WRONG_POSITIONED_PTMS, String.valueOf(fixWrongPositionedPTMs));
 			}
+			if (discardPeptidesWithNoMotifs != null) {
+				properties.put(DISCARD_PEPTIDES_WITH_NO_MOTIFS, String.valueOf(discardPeptidesWithNoMotifs));
+			}
+
 			if (discardNonUniquePeptides != null) {
 				properties.put(DISCARD_NON_UNIQUE_PEPTIDES, String.valueOf(discardNonUniquePeptides));
 			}
@@ -378,6 +388,11 @@ public class ResultsProperties implements InputParameters {
 		updateProperties();
 	}
 
+	public void setDiscardPeptidesWithNoMotifs(Boolean discardPeptidesWithNoMotifs2) {
+		this.discardPeptidesWithNoMotifs = discardPeptidesWithNoMotifs2;
+		updateProperties();
+	}
+
 	public void setDiscardNonUniquePeptides(Boolean discardNonUniquePeptides) {
 		this.discardNonUniquePeptides = discardNonUniquePeptides;
 		updateProperties();
@@ -415,5 +430,11 @@ public class ResultsProperties implements InputParameters {
 	public Boolean isFixWrongPositionedPTMs() {
 		loadProperties();
 		return this.fixWrongPositionedPTMs;
+	}
+
+	@Override
+	public Boolean isDiscardPeptidesWithNoMotifs() {
+		loadProperties();
+		return this.discardPeptidesWithNoMotifs;
 	}
 }

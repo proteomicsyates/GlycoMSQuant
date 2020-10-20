@@ -92,6 +92,9 @@ public class ColumnsRunTableUtil {
 			case DISCARD_PEPTIDES_WITH_PTMS_IN_WRONG_MOTIFS:
 				ret.add(resultsProperties.isDiscardWrongPositionedPTMs());
 				break;
+			case FIX_PTM_POSITIONS:
+				ret.add(resultsProperties.isFixWrongPositionedPTMs());
+				break;
 			case DISCARD_NON_UNIQUE_PEPTIDES:
 				ret.add(resultsProperties.isDiscardNonUniquePeptides());
 				break;

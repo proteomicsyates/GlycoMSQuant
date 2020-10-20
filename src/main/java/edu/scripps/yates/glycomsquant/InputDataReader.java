@@ -3,6 +3,7 @@ package edu.scripps.yates.glycomsquant;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +23,10 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedProteinInterface;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
+import edu.scripps.yates.glycomsquant.util.AmbiguousPTMLocationException;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
+import edu.scripps.yates.glycomsquant.util.NotPossiblePTMLocationException;
+import edu.scripps.yates.glycomsquant.util.PeptidesPTMLocalizationReport;
 import edu.scripps.yates.utilities.luciphor.LuciphorReader;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
@@ -76,6 +80,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	public static final String INPUT_DATA_READER_START = "input data reader";
 	public static final String INPUT_DATA_READER_PEPTIDES_CORRECTED_BY_LUCIPHOR = "input data reader luciphor";
 	private static final double MIN_LUCIPHOR_FDR = 0.05;
+	public static final String PEPTIDE_PTM_LOCALIZATION_REPORT = "peptides with wrong PTMs";
 	private final double intensityThreshold;
 	private final AmountType amountType;
 	private final boolean normalizeExperimentsByProtein;
@@ -87,6 +92,8 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private final File luciphorFile;
 	private Map<String, QuantifiedPeptideInterface> peptideMap;
 	private final boolean fixWrongPositionedPTMs;
+	private final boolean discardPeptidesWithNoMotifs;
+	private static final DecimalFormat formatter = new DecimalFormat("#.#%");
 
 	/**
 	 * Constructor in which the proteinOfInterestACC and the fakePTM can be
@@ -96,18 +103,19 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @param proteinOfInterestACC
 	 * @param intensityThreshold
 	 * @param amountType
-	 * @param normalizeReplicates        if true, the intensities will be normalized
-	 *                                   by dividing by the sum of all intensities
-	 *                                   of the protein of interest and multiplying
-	 *                                   by the average of the intensities of the
-	 *                                   protein of interest<br>
+	 * @param normalizeReplicates         if true, the intensities will be
+	 *                                    normalized by dividing by the sum of all
+	 *                                    intensities of the protein of interest and
+	 *                                    multiplying by the average of the
+	 *                                    intensities of the protein of interest<br>
 	 * @param motifRegexp
 	 * @param discardWrongPositionedPTMs
 	 * @param fixWrongPositionedPTMs
+	 * @param discardPeptidesWithNoMotifs
 	 */
 	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
 			double intensityThreshold, AmountType amountType, boolean normalizeReplicates, String motifRegexp,
-			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs) {
+			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs) {
 		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
 		this.luciphorFile = luciphorFile;
@@ -123,6 +131,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.proteinOfInterestSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs;
+		this.discardPeptidesWithNoMotifs = discardPeptidesWithNoMotifs;
 	}
 
 	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {
@@ -182,9 +191,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 	private List<QuantifiedPeptideInterface> filterData(QuantCompareParser reader) throws QuantParserException {
 
-		int peptidesDiscardedByWrongProtein = 0;
-		int peptidesDiscardedByNotHavingMotifs = 0;
-		int peptidesDiscardedByPTMInWrongMotif = 0;
+		final PeptidesPTMLocalizationReport peptidesPTMLocalizationReport = new PeptidesPTMLocalizationReport();
 		final List<QuantifiedPeptideInterface> peptidesFixed = new ArrayList<QuantifiedPeptideInterface>();
 
 		final List<QuantifiedPeptideInterface> ret = new ArrayList<QuantifiedPeptideInterface>();
@@ -211,7 +218,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 							proteinOccurrenceMap.put(acc, proteinOccurrenceMap.get(acc) + 1);
 						}
 					}
-					peptidesDiscardedByWrongProtein++;
+					peptidesPTMLocalizationReport.addPeptideDiscardedByWrongProtein(peptide);
 					iterator.remove();
 					continue;
 				}
@@ -220,59 +227,70 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 			final boolean hasMotif = !GlycoPTMAnalyzerUtil
 					.getMotifPositions(peptide, proteinOfInterestSequence, motifRegexp).isEmpty();
 			if (!hasMotif) {
-				peptidesDiscardedByNotHavingMotifs++;
-				iterator.remove();
+				// before discarded, check if it has a ptm of interest
+				final boolean hasPTMOfInterest = peptide.getPTMsInPeptide().stream()
+						.map(ptmInPeptide -> PTMCode.getByValue(ptmInPeptide.getDeltaMass()))
+						.filter(ptmcode -> ptmcode != null && ptmcode != PTMCode._0).findAny().isPresent();
+				if (hasPTMOfInterest) {
+					peptidesPTMLocalizationReport.addPeptideWithPTMAndNoMotif(peptide);
+					if (discardWrongPositionedPTMs) {
+						iterator.remove();
+					}
+				} else {
+					if (discardPeptidesWithNoMotifs) {
+						iterator.remove();
+					}
+					peptidesPTMLocalizationReport.addPeptideDiscardedForNotHavingMotif(peptide);
+				}
+
 				continue;
-			} else {
 			}
-			if (discardWrongPositionedPTMs || fixWrongPositionedPTMs) {
 
-				boolean valid = true;
-				boolean fixed = false;
-				final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil
-						.getPTMsInPeptideByPosition(peptide);
-				final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
-				for (final int position : ptmPositions.keys()) {
-					final PTMInPeptide ptm = ptmPositions.get(position);
-					final PTMCode ptmCode = PTMCode.getByValue(ptm.getDeltaMass());
-					// if it is a PTM of interest
-					if (ptmCode != null && !ptmCode.isEmptyPTM()) {
-						// if there is no motif in this position this PTM is mislocalized!
-						if (!motifs.contains(position)) {
-
+			boolean valid = true;
+			final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil.getPTMsInPeptideByPosition(peptide);
+			final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
+			boolean peptideWithProblems = false;
+			for (final int position : ptmPositions.keys()) {
+				final PTMInPeptide ptm = ptmPositions.get(position);
+				final PTMCode ptmCode = PTMCode.getByValue(ptm.getDeltaMass());
+				// if it is a PTM of interest
+				if (ptmCode != null && !ptmCode.isEmptyPTM()) {
+					// if there is no motif in this position this PTM is mislocalized!
+					if (!motifs.contains(position)) {
+						peptideWithProblems = true;
+						// we can try to fix it
+						QuantifiedPeptideInterface newPeptide;
+						try {
+							newPeptide = fixPTMPosition(peptide);
+							peptidesPTMLocalizationReport.addFixedPeptide(peptide, newPeptide);
 							if (fixWrongPositionedPTMs) {
-								// we can try to fix it
-								final QuantifiedPeptideInterface newPeptide = fixPTMPosition(peptide);
-								if (newPeptide != null) {
-									peptidesFixed.add(newPeptide);
-									valid = false;
-									fixed = true;
-									System.out.println(
-											"Peptide " + peptide.getFullSequence() + " was fixed to " + newPeptide);
-									break;
-								} else {
-									if (discardWrongPositionedPTMs) {
-										valid = false;
-										break;
-									}
-								}
-
+								peptidesFixed.add(newPeptide);
+								valid = false;
 							} else if (discardWrongPositionedPTMs) {
 								valid = false;
-								break;
+							}
+
+						} catch (final AmbiguousPTMLocationException e) {
+							peptidesPTMLocalizationReport.addNotFixablePeptide(peptide);
+							if (discardWrongPositionedPTMs) {
+								valid = false;
+							}
+						} catch (final NotPossiblePTMLocationException e) {
+							peptidesPTMLocalizationReport.addPeptideWithPTMAndNoMotif(peptide);
+							if (discardWrongPositionedPTMs) {
+								valid = false;
 							}
 						}
+						break;
 					}
-				}
-				if (!valid) {
-					iterator.remove();
-					if (!fixed) {
-						peptidesDiscardedByPTMInWrongMotif++;
-					}
-					continue;
 				}
 			}
-
+			if (!valid) {
+				iterator.remove();
+				continue;
+			} else if (!peptideWithProblems) {
+				peptidesPTMLocalizationReport.addPeptideWithCorrectPTM(peptide);
+			}
 			if (normalizeExperimentsByProtein) {
 				final List<Amount> intensities = peptide.getAmounts().stream()
 						.filter(a -> a.getAmountType() == amountType).collect(Collectors.toList());
@@ -321,7 +339,6 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		}
 
 		//
-		int peptidesDiscardedByIntensityThreshold = 0;
 		int intensitiesDiscardedByIntensityThreshold = 0;
 		iterator = ret.iterator();
 		while (iterator.hasNext()) {
@@ -338,35 +355,71 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 			}
 			if (!anyIntensityValid) {
 				iterator.remove();
-				peptidesDiscardedByIntensityThreshold++;
+				peptidesPTMLocalizationReport.addPeptideDiscardedByIntensityThreshold(peptide);
 				continue;
 			}
 		}
+
 		firePropertyChange("progress", null, "Filtering done.");
 		firePropertyChange(NUM_VALID_PEPTIDES, null, ret.size());
-		firePropertyChange("progress", null, peptidesDiscardedByWrongProtein
-				+ " peptides discarded because they do not belong to protein " + this.proteinOfInterestACC);
-		if (discardWrongPositionedPTMs || fixWrongPositionedPTMs) {
-			firePropertyChange("progress", null, peptidesDiscardedByPTMInWrongMotif
-					+ " peptides discarded because they had a PTM of interest but in a wrong motif");
-			firePropertyChange("progress", null,
-					peptidesFixed.size() + " peptides had their PTMs re-localized to a correct motif");
+		firePropertyChange("progress", null,
+				"Peptides not belonging to protein of interest '" + this.proteinOfInterestACC + "': "
+						+ peptidesPTMLocalizationReport.getPeptidesDiscardedByWrongProtein().size() + " (DISCARDED)");
+		firePropertyChange("progress", null, "Peptides with PTMs of interest in valid motifs: "
+				+ peptidesPTMLocalizationReport.getPeptidesWithCorrectPTMs().size() + " (KEPT)");
+		String tmp5 = "Peptides not containing motifs of interest nor PTMs of interest: "
+				+ peptidesPTMLocalizationReport.getPeptidesDiscardedForNotHavingMotif().size();
+		if (discardPeptidesWithNoMotifs) {
+			tmp5 += " (DISCARDED)";
 		}
-		firePropertyChange("progress", null, peptidesDiscardedByNotHavingMotifs
-				+ " peptides discarded because they do not contain motifs of interest");
+		firePropertyChange("progress", null, tmp5);
+		String tmp2 = "Peptides with PTMs in wrong motifs and valid non-ambiguous alternative motifs: "
+				+ peptidesPTMLocalizationReport.getFixedPeptides().size();
+		if (fixWrongPositionedPTMs) {
+			tmp2 += " (FIXED and KEPT)";
+		} else {
+			if (!discardWrongPositionedPTMs) {
+				tmp2 += " (KEPT as they are, option to fix PTM position was not enabled).";
+			} else {
+				tmp2 += " (DISCARDED).";
+			}
+		}
+		firePropertyChange("progress", null, tmp2);
+
+		String tmp3 = "Peptides with PTMs of interest not having any valid motif: "
+				+ peptidesPTMLocalizationReport.getPeptidesWithPTMsAndNoMotifs().size();
+		if (discardWrongPositionedPTMs) {
+			tmp3 += " (DISCARDED)";
+		} else {
+			tmp3 += " (KEPT)";
+		}
+		firePropertyChange("progress", null, tmp3);
+
+		String tmp4 = "Peptides with PTM of interest in wrong motif and ambiguous alternative locations: "
+				+ peptidesPTMLocalizationReport.getNotFixablePeptides().size();
+		if (discardWrongPositionedPTMs) {
+			tmp4 += " (DISCARDED)";
+		} else {
+			tmp4 += " (KEPT)";
+		}
+		firePropertyChange("progress", null, tmp4);
 		if (Double.compare(0.0, intensityThreshold) != 0) {
-			firePropertyChange("progress", null, peptidesDiscardedByIntensityThreshold
-					+ " peptides discarded because none of their intensities in the different experiments pass intensity threshold of '"
-					+ intensityThreshold + "'");
+			firePropertyChange("progress", null,
+					"Peptides with none of their intensities in the different experiments pass intensity threshold of '"
+							+ intensityThreshold + "': "
+							+ peptidesPTMLocalizationReport.getPeptidesDiscardedByIntensityThreshold().size()
+							+ " (DISCARDED)");
 			firePropertyChange("progress", null,
 					intensitiesDiscardedByIntensityThreshold
 							+ " intensities discarded because they do not pass intensity threshold of '"
 							+ intensityThreshold + "'");
 		}
-		firePropertyChange("progress", null,
-				ret.size() + " peptides valid for analysis out of " + initialNumberOfPeptides);
+		firePropertyChange("progress", null, "False localization rate: "
+				+ formatter.format(peptidesPTMLocalizationReport.getPSMFalseLocalizationRate()));
+		firePropertyChange("progress", null, "Total peptides valid for analysis: " + ret.size() + " out of "
+				+ initialNumberOfPeptides + " (" + formatter.format(1.0 * ret.size() / initialNumberOfPeptides) + ")");
 		if (ret.size() == 0) {
-			if (peptidesDiscardedByWrongProtein == initialNumberOfPeptides) {
+			if (peptidesPTMLocalizationReport.getPeptidesDiscardedByWrongProtein().size() == initialNumberOfPeptides) {
 				String message = "All peptides where discarded because they don't belong to the protein of study ("
 						+ proteinOfInterestACC + ")!";
 				message += "\nThe proteins more common in the input file are: "
@@ -376,6 +429,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 			}
 			throw new IllegalArgumentException("None valid peptides on input file");
 		}
+		firePropertyChange(PEPTIDE_PTM_LOCALIZATION_REPORT, null, peptidesPTMLocalizationReport);
 		return ret;
 	}
 
@@ -430,7 +484,8 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 //
 //	}
 
-	private QuantifiedPeptideInterface fixPTMPosition(QuantifiedPeptideInterface peptide) {
+	private QuantifiedPeptideInterface fixPTMPosition(QuantifiedPeptideInterface peptide)
+			throws AmbiguousPTMLocationException, NotPossiblePTMLocationException {
 
 		final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
 		final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil.getPTMsInPeptideByPosition(peptide);
@@ -444,7 +499,11 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		}
 		if (ptmPositions.size() != motifs.size()) {
 			// we cannot fix it if there is a different number of sites than motifs
-			return null;
+			if (motifs.size() > ptmPositions.size()) {
+				throw new AmbiguousPTMLocationException();
+			} else {
+				throw new NotPossiblePTMLocationException();
+			}
 		}
 		// which positions we need to fix?
 		final TIntList wrongPositions = new TIntArrayList();

@@ -59,7 +59,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 					resultsProperties.getProteinOfInterestACC(), resultsProperties.getIntensityThreshold(),
 					resultsProperties.getAmountType(), resultsProperties.isNormalizeReplicates(),
 					resultsProperties.getMotifRegexp(), resultsProperties.isDiscardWrongPositionedPTMs(),
-					resultsProperties.isFixWrongPositionedPTMs());
+					resultsProperties.isFixWrongPositionedPTMs(), resultsProperties.isDiscardPeptidesWithNoMotifs());
 
 			final List<GlycoSite> glycoSites = readDataFile(dataFile, reader);
 			final List<QuantifiedPeptideInterface> peptides = GlycoPTMAnalyzerUtil.getPeptidesFromSites(glycoSites);

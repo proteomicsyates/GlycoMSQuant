@@ -34,4 +34,6 @@ public interface InputParameters {
 	public String getReferenceProteinSequence();
 
 	public Boolean isFixWrongPositionedPTMs();
+
+	public Boolean isDiscardPeptidesWithNoMotifs();
 }

@@ -84,6 +84,7 @@ import edu.scripps.yates.glycomsquant.gui.tasks.IterationGraphGenerator;
 import edu.scripps.yates.glycomsquant.gui.tasks.ResultLoaderFromDisk;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterationGraphPanel;
 import edu.scripps.yates.glycomsquant.threshold_iteration.IterativeThresholdAnalysis;
+import edu.scripps.yates.glycomsquant.util.PeptidesPTMLocalizationReport;
 import edu.scripps.yates.glycomsquant.util.ResultsLoadedFromDisk;
 import edu.scripps.yates.utilities.appversion.AppVersion;
 import edu.scripps.yates.utilities.properties.PropertiesUtil;
@@ -118,6 +119,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private boolean isSumIntensitiesAcrossReplicatesFromLoadedResults;
 	private JCheckBox discardWrongPositionedPTMsCheckBox;
 	private JCheckBox fixWrongPositionedPTMsCheckBox;
+	private JCheckBox discardPeptidesWithNoMotifsCheckBox;
 	private JCheckBoxMenuItem discardNonUniquePeptidesMenuItem;
 	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
 	private JCheckBoxMenuItem useReferenceProteinSequenceMenuItem;
@@ -238,10 +240,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel normalizeIntensityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c3 = new GridBagConstraints();
-		c3.insets = new Insets(0, 0, 5, 0);
+		c3.insets = new Insets(0, 0, 0, 0);
 		c3.fill = GridBagConstraints.BOTH;
 		c3.gridx = 0;
-		c3.gridy = 3;
+		c3.gridy = 4;
 		analysisParametersPanel.add(normalizeIntensityPanel, c3);
 
 		normalizeIntensityCheckBox = new JCheckBox("Normalize replicates");
@@ -251,10 +253,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel iterativeAnalysisPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c2 = new GridBagConstraints();
-		c2.insets = new Insets(0, 0, 5, 0);
+		c2.insets = new Insets(0, 0, 0, 0);
 		c2.fill = GridBagConstraints.BOTH;
 		c2.gridx = 0;
-		c2.gridy = 4;
+		c2.gridy = 5;
 		analysisParametersPanel.add(iterativeAnalysisPanel, c2);
 
 		iterativeThresholdAnalysisCheckBox = new JCheckBox("Iterative Threshold Analysis");
@@ -283,7 +285,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel sumIntensitiesAcrossReplicatesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c4 = new GridBagConstraints();
-		c4.insets = new Insets(0, 0, 5, 0);
+		c4.insets = new Insets(0, 0, 0, 0);
 		c4.fill = GridBagConstraints.BOTH;
 		c4.gridx = 0;
 		c4.gridy = 0;
@@ -298,10 +300,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel discardWrongPositionedPTMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c5 = new GridBagConstraints();
-		c5.insets = new Insets(0, 0, 5, 0);
+		c5.insets = new Insets(0, 0, 0, 0);
 		c5.fill = GridBagConstraints.BOTH;
 		c5.gridx = 0;
-		c5.gridy = 1;
+		c5.gridy = 2;
 		analysisParametersPanel.add(discardWrongPositionedPTMsPanel, c5);
 
 		discardWrongPositionedPTMsCheckBox = new JCheckBox("Discard peptides with PTMs in non-valid motifs");
@@ -312,10 +314,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		final JPanel fixWrongPositionedPTMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		final GridBagConstraints c52 = new GridBagConstraints();
-		c52.insets = new Insets(0, 0, 5, 0);
+		c52.insets = new Insets(0, 0, 0, 0);
 		c52.fill = GridBagConstraints.BOTH;
 		c52.gridx = 0;
-		c52.gridy = 2;
+		c52.gridy = 3;
 		analysisParametersPanel.add(fixWrongPositionedPTMsPanel, c52);
 
 		fixWrongPositionedPTMsCheckBox = new JCheckBox("Fix PTMs in non-valid motifs");
@@ -325,13 +327,27 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		fixWrongPositionedPTMsCheckBox.setSelected(true);
 		fixWrongPositionedPTMsPanel.add(fixWrongPositionedPTMsCheckBox);
 
+		final JPanel discardPeptidesWithNoMotifsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		final GridBagConstraints c53 = new GridBagConstraints();
+		c53.insets = new Insets(0, 0, 0, 0);
+		c53.fill = GridBagConstraints.BOTH;
+		c53.gridx = 0;
+		c53.gridy = 1;
+		analysisParametersPanel.add(discardPeptidesWithNoMotifsPanel, c53);
+
+		discardPeptidesWithNoMotifsCheckBox = new JCheckBox("Discard peptides with no PTM motifs");
+		discardPeptidesWithNoMotifsCheckBox.setToolTipText(
+				"<html>If selected, peptides not covering any site that can have a potential PTM of interest will be discarded</html>");
+		discardPeptidesWithNoMotifsCheckBox.setSelected(true);
+		discardPeptidesWithNoMotifsPanel.add(discardPeptidesWithNoMotifsCheckBox);
+
 		final JPanel intensityThresholdPanel = new JPanel();
 		final GridBagConstraints c = new GridBagConstraints();
-		c.insets = new Insets(0, 0, 5, 0);
+		c.insets = new Insets(0, 0, 0, 0);
 		c.fill = GridBagConstraints.BOTH;
 		c.anchor = GridBagConstraints.NORTH;
 		c.gridx = 0;
-		c.gridy = 5;
+		c.gridy = 6;
 		analysisParametersPanel.add(intensityThresholdPanel, c);
 		final GridBagLayout gbl_intensityThresholdPanel = new GridBagLayout();
 		gbl_intensityThresholdPanel.columnWidths = new int[] { 125, 86, 0 };
@@ -1060,6 +1076,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	protected void startAnalysis() {
 		try {
+			peptidesWithWrongPTMs = null;
 			if (isIterativeAnalysis()) {
 				checkValidityInputDataForIterativeAnalysis();
 				final int selectedOption = JOptionPane.showConfirmDialog(this,
@@ -1323,6 +1340,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
 	private AmountType amountType = AmountType.INTENSITY;
 	private ResultsProperties currentResultsProperties;
+	private PeptidesPTMLocalizationReport peptidesWithWrongPTMs;
 
 	public static void main(String[] args) {
 		// set to not disapear all tooltips
@@ -1401,10 +1419,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final String motifRegexp = getMotifRegexp();
 		final boolean discardWrongPositionedPTMs = isDiscardWrongPositionedPTMs();
 		final boolean fixWrongPositionedPTMs = isFixWrongPositionedPTMs();
+		final Boolean discardPeptidesWithNoMotifs = isDiscardPeptidesWithNoMotifs();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, intensityThreshold,
 				amountType, normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs,
-				fixWrongPositionedPTMs);
+				fixWrongPositionedPTMs, discardPeptidesWithNoMotifs);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}
@@ -1446,6 +1465,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setLuciphorFile(getLuciphorFile());
 		resultsProperties.setDiscardWrongPositionedPTMs(isDiscardWrongPositionedPTMs());
 		resultsProperties.setFixWrongPositionedPTMs(isFixWrongPositionedPTMs());
+		resultsProperties.setDiscardPeptidesWithNoMotifs(isDiscardPeptidesWithNoMotifs());
 		resultsProperties.setDiscardNonUniquePeptides(isDiscardNonUniquePeptides());
 		resultsProperties.setDontAllowConsecutiveMotifs(isDontAllowConsecutiveMotifs());
 		resultsProperties.setReferenceProteinSequence(getReferenceProteinSequence());
@@ -1482,6 +1502,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			showMessage("Reading input data...");
 		} else if (evt.getPropertyName().equals(InputDataReader.NUM_VALID_PEPTIDES)) {
 //			peptidesValid = (int) evt.getNewValue();
+		} else if (evt.getPropertyName().equals(InputDataReader.PEPTIDE_PTM_LOCALIZATION_REPORT)) {
+			peptidesWithWrongPTMs = (PeptidesPTMLocalizationReport) evt.getNewValue();
+
 		} else if (evt.getPropertyName().equals(GlycoPTMPeptideAnalyzer.HIVPOSITIONS_CALCULATED)) {
 			currentGlycoSites = (List<GlycoSite>) evt.getNewValue();
 			// only if it is not an iterative analysis, we generate the results.
@@ -1491,6 +1514,19 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				final File newIndividualResultFolder = FileManager.getNewIndividualResultFolder();
 				// now that we have the new results folder, we can update the properties
 				updateProperties(newIndividualResultFolder);
+				// print peptidesWithWrongPTMs if available
+				if (peptidesWithWrongPTMs != null) {
+					final File outputFile = new File(
+							FileManager.getPeptidesWithWrongPTMsFileName(newIndividualResultFolder));
+					try {
+						peptidesWithWrongPTMs.printToFile(outputFile);
+						showMessage("Report about peptides with PTMs in non-valid motifs is written at: "
+								+ outputFile.getAbsolutePath());
+
+					} catch (final IOException e) {
+						showError(e);
+					}
+				}
 				this.currentResultsProperties = new ResultsProperties(newIndividualResultFolder);
 				currentResultsProperties.setProteinSequence(getProteinSequence());
 				setDataSetNameOnTitle(currentResultsProperties.getName());
@@ -1854,6 +1890,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		this.componentStateKeeper.keepEnableStates(this);
 		this.componentStateKeeper.disable(this);
 		clearGraphs();
+		peptidesWithWrongPTMs = null;
 		final ResultLoaderFromDisk resultLoader = new ResultLoaderFromDisk(individualResultsFolder,
 				getReferenceProteinSequence());
 		resultLoader.addPropertyChangeListener(this);
@@ -1943,5 +1980,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 			return this.luciphorFile;
 		}
 		return null;
+	}
+
+	@Override
+	public Boolean isDiscardPeptidesWithNoMotifs() {
+		return this.discardPeptidesWithNoMotifsCheckBox.isSelected();
 	}
 }

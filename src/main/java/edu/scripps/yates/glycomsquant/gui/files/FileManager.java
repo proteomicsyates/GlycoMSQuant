@@ -204,4 +204,8 @@ public class FileManager {
 		}
 	}
 
+	public static String getPeptidesWithWrongPTMsFileName(File individualResultFolder) {
+		return individualResultFolder.getAbsolutePath() + File.separator + "peptides_PTM_localization_report.txt";
+	}
+
 }
