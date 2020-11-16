@@ -250,10 +250,11 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("dnu")) {
 				discardNonUniquePeptides = Boolean.valueOf(cmd.getOptionValue("dnu"));
 			}
-			boolean dontAllowConsecutiveMotifs = false;
-			if (cmd.hasOption("con")) {
-				dontAllowConsecutiveMotifs = Boolean.valueOf(cmd.getOptionValue("con"));
-			}
+			final boolean dontAllowConsecutiveMotifs = true;
+//			boolean dontAllowConsecutiveMotifs = false;
+//			if (cmd.hasOption("con")) {
+//				dontAllowConsecutiveMotifs = Boolean.valueOf(cmd.getOptionValue("con"));
+//			}
 			boolean useReferenceProtein = false;
 			if (cmd.hasOption("ref")) {
 				useReferenceProtein = Boolean.valueOf(cmd.getOptionValue("ref"));

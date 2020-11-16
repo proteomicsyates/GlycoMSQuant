@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,7 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.GlycoSite;
 import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
 import edu.scripps.yates.glycomsquant.PTMCode;
@@ -52,6 +54,7 @@ import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.util.Pair;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.map.hash.THashMap;
 
@@ -176,11 +179,11 @@ public class ChartUtils {
 	}
 
 	public static ChartPanel createIntensitiesBoxAndWhiskerChartForGroupedPeptides(
-			Collection<GroupedQuantifiedPeptide> peptides, String title, String subtitle,
-			boolean sumIntensitiesAcrossReplicates, int width, int height) {
+			Collection<GroupedQuantifiedPeptide> peptides, int positionInProtein, String proteinAcc, String title,
+			String subtitle, boolean sumIntensitiesAcrossReplicates, int width, int height) {
 
 		final BoxAndWhiskerCategoryDataset dataset = createIntensitiesErrorDatasetBoxAndWhiskerforGroupedPeptides(
-				peptides, sumIntensitiesAcrossReplicates);
+				peptides, positionInProtein, proteinAcc, sumIntensitiesAcrossReplicates);
 		final BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer() {
 			private static final long serialVersionUID = 7752611432598679547L;
 
@@ -258,27 +261,55 @@ public class ChartUtils {
 	}
 
 	public static BoxAndWhiskerCategoryDataset createIntensitiesErrorDatasetBoxAndWhiskerforGroupedPeptides(
-			Collection<GroupedQuantifiedPeptide> peptides, boolean sumIntensitiesAcrossReplicates) {
+			Collection<GroupedQuantifiedPeptide> peptides, int positionInProtein, String proteinAcc,
+			boolean sumIntensitiesAcrossReplicates) {
 		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
 
 		final Map<PTMCode, List<Double>> valuesPerPTMCode = new THashMap<PTMCode, List<Double>>();
 		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
 
 			for (final PTMCode ptmCode : PTMCode.values()) {
-				final TDoubleList intensities = groupedPeptide.getIntensitiesByPTMCode(ptmCode);
-				if (!valuesPerPTMCode.containsKey(ptmCode)) {
-					valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+				// only get the intensities of the ptmCodes that are present in the position
+				// corresponding to the positionInProtein
+				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
+					final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, proteinAcc,
+							positionInProtein);
+					final TIntList positionsInProtein = GlycoPTMAnalyzerUtil
+							.getPositionsByPTMCodesFromPeptide(peptide, proteinAcc).get(ptmCode);
+					if (positionsInProtein != null && positionsInProtein.contains(positionInPeptide)) {
+
+						// then, we have a peptide with the modification we want in the position we want
+						// we create a fakeGroupedQuantifiedPeptide just to get the intensity
+						final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
+								proteinAcc, positionInPeptide);
+						final TDoubleList intensities = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
+						if (!valuesPerPTMCode.containsKey(ptmCode)) {
+							valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+						}
+						for (final double intensity : intensities.toArray()) {
+							valuesPerPTMCode.get(ptmCode).add(intensity);
+						}
+					}
 				}
-				for (final double intensity : intensities.toArray()) {
-					valuesPerPTMCode.get(ptmCode).add(intensity);
-				}
+
+//				final TDoubleList intensities = groupedPeptide.getIntensitiesByPTMCode(ptmCode);
+//				if (!valuesPerPTMCode.containsKey(ptmCode)) {
+//					valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+//				}
+//				for (final double intensity : intensities.toArray()) {
+//					valuesPerPTMCode.get(ptmCode).add(intensity);
+//				}
 			}
 
 		}
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final String columnKey = "";
-			final List<Double> list = valuesPerPTMCode.get(ptmCode);
-			dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
+			if (valuesPerPTMCode.containsKey(ptmCode)) {
+				final List<Double> list = valuesPerPTMCode.get(ptmCode);
+				dataset.add(list, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
+			} else {
+				dataset.add(Collections.emptyList(), GuiUtils.translateCode(ptmCode.getCode()), columnKey);
+			}
 		}
 
 		return dataset;
@@ -549,9 +580,10 @@ public class ChartUtils {
 	}
 
 	public static ChartPanel createIntensitiesErrorBarChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
-			String title, String subtitle, boolean makeLog, ErrorType errorType, Integer width, Integer height) {
+			int positionInProtein, String proteinAcc, String title, String subtitle, boolean makeLog,
+			ErrorType errorType, Integer width, Integer height) {
 		final DefaultStatisticalCategoryDataset datasetWithErrors = createIntensityErrorDatasetForPeptides(peptides,
-				makeLog, errorType);
+				positionInProtein, proteinAcc, makeLog, errorType);
 		String logInsideString = "(log2) ";
 		if (!makeLog) {
 			logInsideString = "";
@@ -620,18 +652,35 @@ public class ChartUtils {
 	}
 
 	private static DefaultStatisticalCategoryDataset createIntensityErrorDatasetForPeptides(
-			Collection<GroupedQuantifiedPeptide> peptides, boolean makeLog, ErrorType errorType) {
+			Collection<GroupedQuantifiedPeptide> peptides, int positionInProtein, String proteinAcc, boolean makeLog,
+			ErrorType errorType) {
 		final DefaultStatisticalCategoryDataset dataset = new DefaultStatisticalCategoryDataset();
 
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList intensities = new TDoubleArrayList();
-			for (final GroupedQuantifiedPeptide peptide : peptides) {
+			for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+				// only get the intensities of the ptmCodes that are present in the position
+				// corresponding to the positionInProtein
+				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
+					final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, proteinAcc,
+							positionInProtein);
+					final TIntList positionsInPeptide = GlycoPTMAnalyzerUtil
+							.getPositionsByPTMCodesFromPeptide(peptide, proteinAcc).get(ptmCode);
+					if (positionsInPeptide != null && positionsInPeptide.contains(positionInPeptide)) {
 
-				final TDoubleList intensitiesByPTMCode = peptide.getIntensitiesByPTMCode(ptmCode);
-				if (intensitiesByPTMCode != null) {
-					intensities.addAll(intensitiesByPTMCode);
+						// then, we have a peptide with the modification we want in the position we want
+						// we create a fakeGroupedQuantifiedPeptide just to get the intensity
+						final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
+								proteinAcc, positionInPeptide);
+						final TDoubleList intensitiesByPTMCode = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
+
+//				final TDoubleList intensitiesByPTMCode = groupedPeptide.getIntensitiesByPTMCode(ptmCode);
+						if (intensitiesByPTMCode != null) {
+							intensities.addAll(intensitiesByPTMCode);
+						}
+
+					}
 				}
-
 			}
 			double average = Maths.mean(intensities);
 			if (makeLog && Double.compare(0.0, average) != 0) {

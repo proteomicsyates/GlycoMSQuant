@@ -121,7 +121,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JCheckBox fixWrongPositionedPTMsCheckBox;
 	private JCheckBox discardPeptidesWithNoMotifsCheckBox;
 	private JCheckBoxMenuItem discardNonUniquePeptidesMenuItem;
-	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
+//	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
 	private JCheckBoxMenuItem useReferenceProteinSequenceMenuItem;
 	private JMenuItem editReferenceProteinMenuItem;
 	private ReferenceProteinSequenceEditor referenceProteinSequenceEditor;
@@ -883,12 +883,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		discardNonUniquePeptidesMenuItem
 				.setToolTipText("<html>If enabled, peptides shared by multiple proteins will be discarded.</html>");
 		advancedParametersMenu.add(discardNonUniquePeptidesMenuItem);
-		dontAllowConsecutiveMotifsMenuItem = new JCheckBoxMenuItem("Don't allow consecutive motifs", true);
-		dontAllowConsecutiveMotifsMenuItem
-				.setToolTipText("<html>If enabled, motifs found in consecutive positions will be marked as ambiguous."
-						+ "<br>Additionally, if a peptide is found modified in both positions, will be discarded."
-						+ "<br>This is usually done when PTMs in consecutive positions are not physically possible.</html>");
-		advancedParametersMenu.add(dontAllowConsecutiveMotifsMenuItem);
+//		dontAllowConsecutiveMotifsMenuItem = new JCheckBoxMenuItem("Don't allow consecutive motifs", true);
+//		dontAllowConsecutiveMotifsMenuItem
+//				.setToolTipText("<html>If enabled, motifs found in consecutive positions will be marked as ambiguous."
+//						+ "<br>Additionally, if a peptide is found modified in both positions, will be discarded."
+//						+ "<br>This is usually done when PTMs in consecutive positions are not physically possible.</html>");
+//		advancedParametersMenu.add(dontAllowConsecutiveMotifsMenuItem);
 		useReferenceProteinSequenceMenuItem = new JCheckBoxMenuItem("Use reference protein", false);
 		useReferenceProteinSequenceMenuItem.setToolTipText(
 				"<html>If enabled, protein sites with PTMs to quantify will be aligned and map to a reference protein such as HXB2.</html>");
@@ -1709,9 +1709,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		if (resultsProperties.isDiscardNonUniquePeptides() != null) {
 			this.discardNonUniquePeptidesMenuItem.setSelected(resultsProperties.isDiscardNonUniquePeptides());
 		}
-		if (resultsProperties.isDontAllowConsecutiveMotifs() != null) {
-			this.dontAllowConsecutiveMotifsMenuItem.setSelected(resultsProperties.isDontAllowConsecutiveMotifs());
-		}
+//		if (resultsProperties.isDontAllowConsecutiveMotifs() != null) {
+//			this.dontAllowConsecutiveMotifsMenuItem.setSelected(resultsProperties.isDontAllowConsecutiveMotifs());
+//		}
 		if (resultsProperties.getReferenceProteinSequence() != null
 				&& !"".equals(resultsProperties.getReferenceProteinSequence())) {
 			this.useReferenceProteinSequenceMenuItem.setSelected(true);
@@ -1945,7 +1945,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 	@Override
 	public Boolean isDontAllowConsecutiveMotifs() {
-		return this.dontAllowConsecutiveMotifsMenuItem.isSelected();
+//		return this.dontAllowConsecutiveMotifsMenuItem.isSelected();
+		return true;
 	}
 
 	public static AppVersion getVersion() {

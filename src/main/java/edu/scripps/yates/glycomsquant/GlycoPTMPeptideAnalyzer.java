@@ -149,11 +149,12 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 			final int position = sites.get(i).getPosition();
 			if (position == sites.get(i + 1).getPosition() - 1) {
 				// they are consecutive
-				// mark them as ambiguous and remove any peptide that is modified in both sites
-				markSitesAsAmbiguous(sites.get(i), sites.get(i + 1));
+				// just keep the second site according to Saby's suggestion 16 Nov 2020
 
-				firePropertyChange("progress", null,
-						"Consecutive sites " + position + " and " + (position + 1) + " are marked as ambiguous");
+				firePropertyChange("progress", null, "Consecutive sites " + position + " and " + (position + 1)
+						+ " are found. Just keeping site at " + (position + 1));
+				// we continue to the next without adding it
+				continue;
 			}
 			if (!sites.get(i).getCoveredPeptides().isEmpty()
 					|| motifsWithNoPeptides.contains(sites.get(i).getPosition())) {
@@ -168,6 +169,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		if (!sites.get(sites.size() - 1).getCoveredPeptides().isEmpty()) {
 			ret.add(sites.get(sites.size() - 1));
 		}
+
 		return ret;
 	}
 

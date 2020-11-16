@@ -777,7 +777,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		loadSequence(getProteinSequence(), peptideOccupancyArray);
 	}
 
-	public void showChartsFromPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides, int positionInProtein) {
+	public void showChartsFromPeptidesOLD(Collection<GroupedQuantifiedPeptide> selectedPeptides,
+			int positionInProtein) {
 		// set position as -1
 		selectedPeptides.stream().forEach(pep -> pep.setPositionInPeptide(-1));
 		final int width = 300;
@@ -866,7 +867,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			// proportions pie chart
 
 			// intensities whiskeyChart
-			final ChartPanel chart2 = createIntensitiesWhiskeyChartForPeptides(peptides, width, height);
+			final ChartPanel chart2 = createIntensitiesWhiskeyChartForPeptides(peptides, positionInProtein, width,
+					height);
 			final GridBagConstraints c3 = new GridBagConstraints();
 			c3.gridx = 0;
 			c3.gridy = 1;
@@ -876,7 +878,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			chart2.updateUI();
 
 			// intensities error bar
-			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, width, height);
+			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, positionInProtein, width,
+					height);
 			final GridBagConstraints c2 = new GridBagConstraints();
 			c2.gridx = 1;
 			c2.gridy = 1;
@@ -884,6 +887,158 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			c2.anchor = GridBagConstraints.FIRST_LINE_START;
 			this.graphsPanel.add(chart1, c2);
 			chart1.updateUI();
+		} finally {
+			this.graphsPanel.repaint();
+			this.repaint();
+		}
+	}
+
+	public void showChartsFromPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides, int positionInProtein) {
+		// set position as -1
+		selectedPeptides.stream().forEach(pep -> pep.setPositionInPeptide(-1));
+		final int width = 300;
+		final int height = 200;
+		graphsPanel.removeAll();
+		try {
+
+			if (selectedPeptides.isEmpty()) {
+
+				String text = "No peptides covering position " + positionInProtein;
+
+				if (positionInProtein != -1) {
+					final String positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(
+							currentProteinAcc, positionInProtein, referenceProteinSequence);
+					if (positionInReference != null) {
+						text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE
+								+ ")</i>&nbsp;";
+					}
+				}
+				final JLabel headerLabel = new JLabel("<html>" + text + "</html>");
+				headerLabel.setFont(GuiUtils.headerFont());
+				final JPanel headerPanel = new JPanel();
+				headerPanel.setBackground(Color.white);
+				headerPanel.add(headerLabel);
+				final GridBagConstraints c = new GridBagConstraints();
+				c.gridx = 0;
+				c.gridy = 0;
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.ipady = 20;
+				c.anchor = GridBagConstraints.NORTH;
+				this.graphsPanel.add(headerPanel, c);
+				return;
+			}
+			// sort peptides in a list
+			final List<GroupedQuantifiedPeptide> peptides = new ArrayList<GroupedQuantifiedPeptide>();
+			peptides.addAll(selectedPeptides);
+			Collections.sort(peptides, new Comparator<GroupedQuantifiedPeptide>() {
+
+				@Override
+				public int compare(GroupedQuantifiedPeptide o1, GroupedQuantifiedPeptide o2) {
+
+					return o1.getKey(false).compareTo(o2.getKey(false));
+				}
+			});
+
+			String text = null;
+
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides,
+					sumIntensitiesAcrossReplicates);
+
+			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
+			// we obtain a list of positionsInProtein
+			final TIntList positionsInProtein = new TIntArrayList();
+//			if (positionInProtein != -1) {
+//				positionsInProtein.add(positionInProtein);
+//			} else {
+			// get all the positions in the protein with motifs that are covered by these
+			// peptides
+			for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
+					final int peptideStartInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide.getSequence(),
+							currentProteinAcc);
+
+					final TIntList motifPositionsInPeptide = GlycoPTMAnalyzerUtil.getMotifPositions(peptide,
+							currentProteinAcc);
+					for (final int motifPositionInPeptide : motifPositionsInPeptide.toArray()) {
+						final int motifPositionInProtein = peptideStartInProtein + motifPositionInPeptide - 1;
+						if (!positionsInProtein.contains(motifPositionInProtein)) {
+							positionsInProtein.add(motifPositionInProtein);
+						}
+					}
+				}
+			}
+			positionsInProtein.sort();
+//			}
+			int y = 0;
+			for (final int positionInProtein2 : positionsInProtein.toArray()) {
+				if (positionInProtein2 != -1) {
+					final String positionInReference = ProteinSequences.getInstance().mapPositionToReferenceProtein(
+							currentProteinAcc, positionInProtein2, referenceProteinSequence);
+					if (peptides.size() > 1) {
+						text = "Charts summarizing <br>" + peptides.size() + " peptides " + numMeasurementsText
+								+ "<br> covering position " + positionInProtein2;
+					} else {
+						text = "Charts summarizing <br>peptide " + peptides.iterator().next().getKey(false) + " "
+								+ numMeasurementsText + "<br> covering position " + positionInProtein2;
+					}
+					if (positionInReference != null) {
+						text += " <i>(" + positionInReference + " in reference " + ProteinSequences.REFERENCE + ")</i>";
+					}
+					text += ":";
+				} else {
+
+					if (peptides.size() > 1) {
+						text = "Charts summarizing <br>the " + peptides.size() + " selected peptides <br>"
+								+ numMeasurementsText + ":";
+					} else {
+						text = "Charts summarizing <br>selected peptide " + peptides.iterator().next().getKey(false)
+								+ " <br>" + numMeasurementsText + ":";
+					}
+
+				}
+				final JLabel headerLabel = new JLabel(
+						"<html><div style='text-align: center;'>" + text + "</div></html>");
+				headerLabel.setFont(GuiUtils.headerFont());
+				final JPanel headerPanel = new JPanel();
+				headerPanel.setBackground(Color.white);
+				headerPanel.add(headerLabel);
+				final GridBagConstraints c = new GridBagConstraints();
+				c.gridx = 0;
+				c.gridy = y;
+				c.gridwidth = 2; // number of charts horizontally
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.ipady = 20;
+				c.anchor = GridBagConstraints.NORTH;
+				this.graphsPanel.add(headerPanel, c);
+
+				// starting in row 1
+				// proportions pie chart
+				y++;
+				// intensities whiskeyChart
+				final ChartPanel chart2 = createIntensitiesWhiskeyChartForPeptides(peptides, positionInProtein2, width,
+						height);
+				final GridBagConstraints c3 = new GridBagConstraints();
+				c3.gridx = 0;
+				c3.gridy = y;
+				c3.fill = GridBagConstraints.NONE;
+				c3.anchor = GridBagConstraints.FIRST_LINE_START;
+				this.graphsPanel.add(chart2, c3);
+				chart2.updateUI();
+
+				// intensities error bar
+				final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, positionInProtein2, width,
+						height);
+				final GridBagConstraints c2 = new GridBagConstraints();
+				c2.gridx = 1;
+				c2.gridy = y;
+				c2.fill = GridBagConstraints.NONE;
+				c2.anchor = GridBagConstraints.FIRST_LINE_START;
+				this.graphsPanel.add(chart1, c2);
+				chart1.updateUI();
+				// next line
+				y++;
+			}
+
 		} finally {
 			this.graphsPanel.repaint();
 			this.repaint();
@@ -1006,7 +1161,8 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			this.graphsPanel.add(chart4, c5);
 			chart4.updateUI();
 			// intensities whiskeyChart
-			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, width, height);
+			final ChartPanel chart1 = createIntensitiesErrorBarChartForPeptides(peptides, positionInProtein, width,
+					height);
 			final GridBagConstraints c2 = new GridBagConstraints();
 			c2.gridx = 1;
 			c2.gridy = 2;
@@ -1029,10 +1185,10 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	}
 
 	private ChartPanel createIntensitiesErrorBarChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
-			int width, int height) {
+			int positionInProtein, int width, int height) {
 
-		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForPeptides(selectedPeptides, "", "",
-				false, ErrorType.SEM, width, height);
+		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForPeptides(selectedPeptides,
+				positionInProtein, currentProteinAcc, "", "", false, ErrorType.SEM, width, height);
 		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
@@ -1045,10 +1201,10 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	}
 
 	private ChartPanel createIntensitiesWhiskeyChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
-			int width, int height) {
+			int positionInProtein, int width, int height) {
 
 		final ChartPanel chartPanel = ChartUtils.createIntensitiesBoxAndWhiskerChartForGroupedPeptides(selectedPeptides,
-				"", "", sumIntensitiesAcrossReplicates, width, height);
+				positionInProtein, currentProteinAcc, "", "", sumIntensitiesAcrossReplicates, width, height);
 		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
