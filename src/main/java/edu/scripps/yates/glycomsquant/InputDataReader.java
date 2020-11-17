@@ -259,29 +259,31 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 					if (!motifs.contains(position)) {
 						peptideWithProblems = true;
 						// we can try to fix it
-						QuantifiedPeptideInterface newPeptide;
-						try {
-							newPeptide = fixPTMPosition(peptide);
-							peptidesPTMLocalizationReport.addFixedPeptide(peptide, newPeptide);
-							if (fixWrongPositionedPTMs) {
-								peptidesFixed.add(newPeptide);
-								valid = false;
-							} else if (discardWrongPositionedPTMs) {
-								valid = false;
-							}
+						if (fixWrongPositionedPTMs || discardWrongPositionedPTMs) {
+							QuantifiedPeptideInterface newPeptide;
+							try {
+								newPeptide = fixPTMPosition(peptide);
+								peptidesPTMLocalizationReport.addFixedPeptide(peptide, newPeptide);
+								if (fixWrongPositionedPTMs) {
+									peptidesFixed.add(newPeptide);
+									valid = false;
+								} else if (discardWrongPositionedPTMs) {
+									valid = false;
+								}
 
-						} catch (final AmbiguousPTMLocationException e) {
-							peptidesPTMLocalizationReport.addNotFixablePeptide(peptide);
-							if (discardWrongPositionedPTMs) {
-								valid = false;
+							} catch (final AmbiguousPTMLocationException e) {
+								peptidesPTMLocalizationReport.addNotFixablePeptide(peptide);
+								if (discardWrongPositionedPTMs) {
+									valid = false;
+								}
+							} catch (final NotPossiblePTMLocationException e) {
+								peptidesPTMLocalizationReport.addPeptideWithPTMAndNoMotif(peptide);
+								if (discardWrongPositionedPTMs) {
+									valid = false;
+								}
 							}
-						} catch (final NotPossiblePTMLocationException e) {
-							peptidesPTMLocalizationReport.addPeptideWithPTMAndNoMotif(peptide);
-							if (discardWrongPositionedPTMs) {
-								valid = false;
-							}
+							break;
 						}
-						break;
 					}
 				}
 			}
