@@ -540,12 +540,10 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 			String aa = null;
 			PTMPosition ptmPosition = null;
-			if (motifposition > 0 && motifposition < peptide.getSequence().length()) {
+			if (motifposition > 0 && motifposition <= peptide.getSequence().length()) {
 				aa = String.valueOf(peptide.getSequence().charAt(motifposition - 1));
 			} else if (motifposition == 0) {
 				ptmPosition = PTMPosition.NTERM;
-			} else if (motifposition == peptide.getSequence().length()) {
-				ptmPosition = PTMPosition.CTERM;
 			}
 			final PTMEx newPTM = new PTMEx(massShift, aa, motifposition, ptmPosition);
 			newPTMs.add(newPTM);
@@ -556,12 +554,10 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				if (rightPosition.contains(ptmSite.getPosition())) {
 					String aa = null;
 					PTMPosition ptmPosition = null;
-					if (ptmSite.getPosition() > 0 && ptmSite.getPosition() < peptide.getSequence().length()) {
+					if (ptmSite.getPosition() > 0 && ptmSite.getPosition() <= peptide.getSequence().length()) {
 						aa = String.valueOf(peptide.getSequence().charAt(ptmSite.getPosition() - 1));
 					} else if (ptmSite.getPosition() == 0) {
 						ptmPosition = PTMPosition.NTERM;
-					} else if (ptmSite.getPosition() == peptide.getSequence().length()) {
-						ptmPosition = PTMPosition.CTERM;
 					}
 					final PTMEx newPTM = new PTMEx(ptm.getMassShift(), aa, ptmSite.getPosition(), ptmPosition);
 					newPTMs.add(newPTM);
