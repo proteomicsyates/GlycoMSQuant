@@ -62,7 +62,13 @@ public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 	}
 
 	protected void initComponents() {
-		final int rows = glycoSites.size() / columns;
+		int rows = 0;
+		final int resto = glycoSites.size() % columns;
+		if (resto != 0) {
+			rows = Math.floorDiv(glycoSites.size(), columns) + 1;
+		} else {
+			rows = Math.floorDiv(glycoSites.size(), columns);
+		}
 		final int width = columns * minChartSize + margin * (columns + 1);
 		final int height = rows * minChartSize + margin * (rows + 1);
 		setPreferredSize(new Dimension(width, height));
