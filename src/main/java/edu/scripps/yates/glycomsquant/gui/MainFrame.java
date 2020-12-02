@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -1783,6 +1785,28 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 //							final JPanel panel = new JPanel();
 //							panel.setLayout(new GridLayout(chartList.size(), 1, 0, 20));
 
+							// sort them so that they are first the ones as ChartPanel
+							Collections.sort(chartList, new Comparator<JPanel>() {
+
+								@Override
+								public int compare(JPanel o1, JPanel o2) {
+									int n1 = 0;
+									int n2 = 0;
+
+									if (o1 instanceof ProportionsPieChartsPanel) {
+										n1 = 1;
+									} else if (o1 instanceof ProportionsPeptidesScatterPlotChartsPanel) {
+										n1 = 2;
+									}
+									if (o2 instanceof ProportionsPieChartsPanel) {
+										n2 = 1;
+									} else if (o2 instanceof ProportionsPeptidesScatterPlotChartsPanel) {
+										n2 = 2;
+									}
+
+									return Integer.compare(n1, n2);
+								}
+							});
 							for (int i = 0; i < chartList.size(); i++) {
 								final JPanel jPanel = chartList.get(i);
 
