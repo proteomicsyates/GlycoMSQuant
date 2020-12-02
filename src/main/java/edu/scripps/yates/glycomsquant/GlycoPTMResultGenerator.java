@@ -333,6 +333,9 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 				switch (errorType) {
 				case SEM:
 					error = hivPosition.getSEMOfProportionsByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
+					if (Double.isNaN(error)) {
+						error = 0.0;
+					}
 					break;
 //				case STDEV:
 //					error = hivPosition.getSTDEVPercentageByPTMCode(ptmCode);

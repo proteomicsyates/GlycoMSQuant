@@ -209,7 +209,7 @@ public class GlycoSite {
 			return Maths.sem(peptideIntensitiesByPTMCode.get(ptmCode));
 		}
 
-		return 0.0;
+		return Double.NaN;
 	}
 
 	/**
@@ -222,7 +222,7 @@ public class GlycoSite {
 		if (peptideIntensitiesByPTMCode.containsKey(ptmCode)) {
 			return Maths.sem(peptideIntensitiesByPTMCode.get(ptmCode));
 		}
-		return 0.0;
+		return Double.NaN;
 	}
 
 	public double getProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
@@ -265,7 +265,7 @@ public class GlycoSite {
 		if (individualPeptidePercentages != null && !individualPeptidePercentages.isEmpty()) {
 			return Maths.sem(this.individualProportionsByPTMCode.get(ptmCode));
 		}
-		return 0.0;
+		return Double.NaN;
 	}
 
 	private String getValuesString() {

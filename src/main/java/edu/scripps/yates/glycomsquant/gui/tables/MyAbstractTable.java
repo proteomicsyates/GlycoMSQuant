@@ -282,7 +282,17 @@ public abstract class MyAbstractTable extends JTable {
 		for (int row = 0; row < rowCount; row++) {
 			for (int col = 0; col < columnCount; col++) {
 				final Object valueAt = getModel().getValueAt(row, col);
-				fw.write(valueAt.toString() + "\t");
+				String string = null;
+				if (valueAt instanceof Double) {
+					if (Double.isNaN((double) valueAt)) {
+						string = "";
+					} else {
+						string = valueAt.toString();
+					}
+				} else {
+					string = valueAt.toString();
+				}
+				fw.write(string + "\t");
 			}
 			fw.write("\n");
 		}

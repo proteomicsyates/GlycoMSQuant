@@ -633,6 +633,9 @@ public class ChartUtils {
 				switch (errorType) {
 				case SEM:
 					error = hivPosition.getSEMIntensityByPTMCode(ptmCode);
+					if (Double.isNaN(error)) {
+						error = 0.0;
+					}
 					break;
 //				case STDEV:
 //					error = hivPosition.getSTDEVIntensityByPTMCode(ptmCode);
