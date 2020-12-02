@@ -139,7 +139,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	private List<GlycoSite> dontAllowConsecutiveMotifs(List<GlycoSite> sites) {
 		final List<GlycoSite> ret = new ArrayList<GlycoSite>();
 		final TIntSet motifsWithNoPeptides = new TIntHashSet();
-		for (int i = 0; i < sites.size() - 1; i++) {
+		for (int i = 0; i < sites.size(); i++) {
 			if (sites.get(i).getCoveredPeptides().isEmpty()) {
 				motifsWithNoPeptides.add(sites.get(i).getPosition());
 			}
@@ -166,7 +166,8 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 
 		}
 		// add the last one
-		if (!sites.get(sites.size() - 1).getCoveredPeptides().isEmpty()) {
+		if (!sites.get(sites.size() - 1).getCoveredPeptides().isEmpty()
+				|| motifsWithNoPeptides.contains(sites.get(sites.size() - 1).getPosition())) {
 			ret.add(sites.get(sites.size() - 1));
 		}
 
