@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 
 import edu.scripps.yates.census.read.QuantCompareParser;
+import edu.scripps.yates.census.read.QuantCompareTimsTOFParser;
 import edu.scripps.yates.census.read.QuantParserException;
 import edu.scripps.yates.census.read.model.QuantifiedPSM;
 import edu.scripps.yates.census.read.model.QuantifiedPeptide;
@@ -139,7 +140,12 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		if (parsersByFile.containsKey(inputFile)) {
 			reader = parsersByFile.get(inputFile);
 		} else {
-			reader = new QuantCompareParser(inputFile);
+			// I try as timsTofFirst
+
+			reader = new QuantCompareTimsTOFParser(inputFile);
+			if (!reader.canRead()) {
+				reader = new QuantCompareParser(inputFile);
+			}
 			MainFrame.getInstance();
 			// charge state sensible and ptm sensible
 			reader.setChargeSensible(MainFrame.isChargeStateSensible());
@@ -224,8 +230,16 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				}
 			}
 			// discard if doesn't have a motif of interest
-			final boolean hasMotif = !GlycoPTMAnalyzerUtil
-					.getMotifPositions(peptide, proteinOfInterestSequence, motifRegexp).isEmpty();
+			boolean hasMotif = false;
+			// REMOVE THIS WHEN TIMSTOF DATA IS FIXED
+			try {
+				hasMotif = !GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestSequence, motifRegexp)
+						.isEmpty();
+			} catch (final IllegalArgumentException e) {
+				e.printStackTrace();
+				iterator.remove();
+				continue;
+			}
 			if (!hasMotif) {
 				// before discarded, check if it has a ptm of interest
 				final boolean hasPTMOfInterest = peptide.getPTMsInPeptide().stream()
