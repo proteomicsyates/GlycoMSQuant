@@ -296,8 +296,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		List<QuantifiedPeptideInterface> peptides = null;
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		final InputDataReader q = new InputDataReader(inputFile, luciphorFile, proteinOfInterestACC, intensityThreshold,
-				amountType, normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs,
-				this.fixWrongPositionedPTMs, this.discardPeptidesWithNoMotifs);
+				normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs, this.fixWrongPositionedPTMs,
+				this.discardPeptidesWithNoMotifs);
 		try {
 			peptides = q.runReader();
 		} catch (final QuantParserException e) {

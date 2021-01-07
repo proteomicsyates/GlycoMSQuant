@@ -83,7 +83,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private static final double MIN_LUCIPHOR_FDR = 0.05;
 	public static final String PEPTIDE_PTM_LOCALIZATION_REPORT = "peptides with wrong PTMs";
 	private final double intensityThreshold;
-	private final AmountType amountType;
+	private AmountType amountType;
 	private final boolean normalizeExperimentsByProtein;
 	private List<QuantifiedPeptideInterface> peptides;
 	private final Map<File, QuantCompareParser> parsersByFile = new THashMap<File, QuantCompareParser>();
@@ -115,7 +115,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @param discardPeptidesWithNoMotifs
 	 */
 	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
-			double intensityThreshold, AmountType amountType, boolean normalizeReplicates, String motifRegexp,
+			double intensityThreshold, boolean normalizeReplicates, String motifRegexp,
 			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs) {
 		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
@@ -127,7 +127,6 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		}
 
 		this.intensityThreshold = intensityThreshold;
-		this.amountType = amountType;
 		this.normalizeExperimentsByProtein = normalizeReplicates;
 		this.proteinOfInterestSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
@@ -141,9 +140,10 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 			reader = parsersByFile.get(inputFile);
 		} else {
 			// I try as timsTofFirst
-
+			amountType = AmountType.XIC;
 			reader = new QuantCompareTimsTOFParser(inputFile);
 			if (!reader.canRead()) {
+				amountType = AmountType.INTENSITY;
 				reader = new QuantCompareParser(inputFile);
 			}
 			MainFrame.getInstance();
@@ -230,16 +230,9 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				}
 			}
 			// discard if doesn't have a motif of interest
-			boolean hasMotif = false;
-			// REMOVE THIS WHEN TIMSTOF DATA IS FIXED
-			try {
-				hasMotif = !GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestSequence, motifRegexp)
-						.isEmpty();
-			} catch (final IllegalArgumentException e) {
-				e.printStackTrace();
-				iterator.remove();
-				continue;
-			}
+			final boolean hasMotif = !GlycoPTMAnalyzerUtil
+					.getMotifPositions(peptide, proteinOfInterestSequence, motifRegexp).isEmpty();
+
 			if (!hasMotif) {
 				// before discarded, check if it has a ptm of interest
 				final boolean hasPTMOfInterest = peptide.getPTMsInPeptide().stream()

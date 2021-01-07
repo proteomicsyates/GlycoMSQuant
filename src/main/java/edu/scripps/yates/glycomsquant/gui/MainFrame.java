@@ -1424,8 +1424,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final Boolean discardPeptidesWithNoMotifs = isDiscardPeptidesWithNoMotifs();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, intensityThreshold,
-				amountType, normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs,
-				fixWrongPositionedPTMs, discardPeptidesWithNoMotifs);
+				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs, fixWrongPositionedPTMs,
+				discardPeptidesWithNoMotifs);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}

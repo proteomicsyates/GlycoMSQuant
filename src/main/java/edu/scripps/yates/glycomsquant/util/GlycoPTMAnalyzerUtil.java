@@ -623,11 +623,7 @@ public class GlycoPTMAnalyzerUtil {
 		for (final QuantifiedPeptideInterface peptide : peptides) {
 			final String peptideKey = getPeptideKey(peptide, true);
 			if (!ret.containsKey(peptideKey)) {
-				try {
-					ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc));
-				} catch (final IllegalArgumentException e) {
-					e.printStackTrace();
-				}
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}
