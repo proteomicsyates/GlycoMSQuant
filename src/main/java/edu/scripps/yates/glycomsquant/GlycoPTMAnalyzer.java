@@ -306,9 +306,9 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			System.exit(-1);
 		}
 		if (peptides != null && !peptides.isEmpty()) {
-			log.info(peptides.size() + " peptides readed from input file.");
+			log.info(peptides.size() + " peptides read from input file.");
 		} else {
-			log.error("Some error occurrer because no peptides where readed.");
+			log.error("Some error occurrer because no peptides where read.");
 			System.exit(-1);
 		}
 

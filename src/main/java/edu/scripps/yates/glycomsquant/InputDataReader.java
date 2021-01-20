@@ -202,7 +202,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 		final List<QuantifiedPeptideInterface> ret = new ArrayList<QuantifiedPeptideInterface>();
 		ret.addAll(reader.getPeptideMap().values());
-		firePropertyChange("progress", null, "Input file readed. Working with " + ret.size() + " peptides.");
+		firePropertyChange("progress", null, "Input file read. Working with " + ret.size() + " peptides.");
 		firePropertyChange("progress", "", "Filtering list of peptides...");
 		final int initialNumberOfPeptides = ret.size();
 		final THashMap<String, TDoubleList> intensitiesByExperiment = new THashMap<String, TDoubleList>();
