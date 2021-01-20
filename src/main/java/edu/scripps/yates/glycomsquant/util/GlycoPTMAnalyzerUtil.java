@@ -381,7 +381,7 @@ public class GlycoPTMAnalyzerUtil {
 		final TObjectDoubleMap<PTMCode> summedIntensities = new TObjectDoubleHashMap<PTMCode>();
 		double sumIntensity = 0.0;
 		for (final PTMCode ptmCode2 : PTMCode.values()) {
-			// per peptide (sequence+charge), we average all the intensities across
+			// per peptide (sequence+charge), we summ all the intensities across
 			// replicates and we calculate the proportions with that
 			final double summedIntensity = getSummedIntensityAcrossReplicatesByPTMCode(ptmCode2, peptides);
 			summedIntensities.put(ptmCode2, summedIntensity);
