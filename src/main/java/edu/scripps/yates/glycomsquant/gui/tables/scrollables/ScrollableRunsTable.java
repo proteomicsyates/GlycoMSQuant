@@ -46,6 +46,8 @@ public class ScrollableRunsTable extends JPanel {
 
 	private JScrollPane scroll;
 
+	private JButton loadRunButton;
+
 	private static boolean dontAskAndLoadResults = false;
 
 	public ScrollableRunsTable(int wide) {
@@ -69,7 +71,7 @@ public class ScrollableRunsTable extends JPanel {
 		addRunTableListeners(table);
 
 		// in the north, add the delete button
-		final JPanel deleterunPanel = new JPanel();
+		final JPanel northPanel = new JPanel();
 		deleteRunButton = new JButton("Delete selected run(s)");
 		deleteRunButton.setToolTipText("Click to delete the selected run(s)");
 		deleteRunButton.setEnabled(false);
@@ -81,8 +83,33 @@ public class ScrollableRunsTable extends JPanel {
 				deleteSelectedRuns();
 			}
 		});
-		deleterunPanel.add(deleteRunButton);
-		add(deleterunPanel, BorderLayout.NORTH);
+		northPanel.add(deleteRunButton);
+
+		loadRunButton = new JButton("Load selected run");
+		loadRunButton.setToolTipText("Click to load the results of the selected run");
+		loadRunButton.setEnabled(false);
+		loadRunButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int row = table.getSelectedRow();
+				if (row == -1) {
+					// no selection
+					return;
+				}
+				if (table.getRowSorter() != null) {
+					row = table.getRowSorter().convertRowIndexToModel(row);
+				}
+				final int index = ColumnsRunTable.getColumns().indexOf(ColumnsRunTable.RUN_PATH);
+				String value = table.getModel().getValueAt(row, index).toString();
+				// remove the PREFIX
+				value = value.replaceAll(ColumnsRunTableUtil.PREFIX, "");
+				clickOnresult(value);
+			}
+		});
+		northPanel.add(loadRunButton);
+
+		add(northPanel, BorderLayout.NORTH);
 
 		scroll = new JScrollPane(table);
 
@@ -155,7 +182,7 @@ public class ScrollableRunsTable extends JPanel {
 						MainFrame.getInstance().enableRunComparison(false);
 					}
 					ScrollableRunsTable.this.deleteRunButton.setEnabled(table.getSelectedRowCount() > 0);
-
+					ScrollableRunsTable.this.loadRunButton.setEnabled(table.getSelectedRowCount() == 1);
 				}
 			});
 			table.addMouseListener(new MouseAdapter() {
