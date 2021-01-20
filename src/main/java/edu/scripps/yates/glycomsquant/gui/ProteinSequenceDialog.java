@@ -395,10 +395,10 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		int proteinSequenceIndex = 0;
 		while (proteinSequenceIndex < proteinSequence.length()) {
 			c.gridx = 0;
-			final int endLine = Float
-					.valueOf(Maths.min(proteinSequenceIndex + proteinSequenceLineLength, proteinSequence.length() - 1))
+			final int endLine = Float.valueOf(
+					Maths.min(proteinSequenceIndex + proteinSequenceLineLength - 1, proteinSequence.length() - 1))
 					.intValue();
-			final String proteinSequenceLine = proteinSequence.substring(proteinSequenceIndex, endLine);
+			final String proteinSequenceLine = proteinSequence.substring(proteinSequenceIndex, endLine + 1);
 
 			for (int index = 0; index < proteinSequenceLine.length(); index++) {
 				final int indexInProtein = index + proteinSequenceIndex;
