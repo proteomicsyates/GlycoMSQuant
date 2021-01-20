@@ -1,6 +1,10 @@
 package edu.scripps.yates.glycomsquant.gui.tables.comparison;
 
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
 
 import javax.swing.JTable;
 import javax.swing.table.JTableHeader;
@@ -8,7 +12,9 @@ import javax.swing.table.TableModel;
 
 import org.apache.log4j.Logger;
 
-public class MyComparisonTable extends JTable {
+import edu.scripps.yates.glycomsquant.gui.tables.SavesToFile;
+
+public class MyComparisonTable extends JTable implements SavesToFile {
 	/**
 	 * 
 	 */
@@ -62,5 +68,36 @@ public class MyComparisonTable extends JTable {
 			((MyComparisonTableModel) model).setColumnCount(0);
 		}
 
+	}
+
+	@Override
+	public void saveToFile(File outputFile) throws IOException {
+		final FileWriter fw = new FileWriter(outputFile);
+		final List<String> headers = ColumnsComparisonTable.getColumnsString();
+		for (final String header : headers) {
+			fw.write(header + "\t");
+		}
+		fw.write("\n");
+		final int rowCount = getModel().getRowCount();
+		final int columnCount = getModel().getColumnCount();
+		for (int row = 0; row < rowCount; row++) {
+			for (int col = 0; col < columnCount; col++) {
+				final Object valueAt = getModel().getValueAt(row, col);
+				String string = null;
+				if (valueAt instanceof Double) {
+					if (Double.isNaN((double) valueAt)) {
+						string = "";
+					} else {
+						string = valueAt.toString();
+					}
+				} else {
+					string = valueAt.toString();
+				}
+				fw.write(string + "\t");
+			}
+			fw.write("\n");
+		}
+		fw.close();
+		log.info("Table saved at file: '" + outputFile.getAbsolutePath() + "'");
 	}
 }

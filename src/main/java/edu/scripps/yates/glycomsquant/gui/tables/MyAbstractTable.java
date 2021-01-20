@@ -21,7 +21,7 @@ import org.apache.log4j.Logger;
 
 import gnu.trove.list.array.TIntArrayList;
 
-public abstract class MyAbstractTable extends JTable {
+public abstract class MyAbstractTable extends JTable implements SavesToFile {
 	/**
 	 * 
 	 */
@@ -270,6 +270,7 @@ public abstract class MyAbstractTable extends JTable {
 		return -1;
 	}
 
+	@Override
 	public void saveToFile(File outputFile) throws IOException {
 		final FileWriter fw = new FileWriter(outputFile);
 		final List<String> headers = getColumnNames();

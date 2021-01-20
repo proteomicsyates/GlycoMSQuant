@@ -16,7 +16,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import edu.scripps.yates.glycomsquant.AppDefaults;
 import edu.scripps.yates.glycomsquant.PTMCode;
-import edu.scripps.yates.glycomsquant.gui.tables.MyAbstractTable;
+import edu.scripps.yates.glycomsquant.gui.tables.SavesToFile;
 import edu.scripps.yates.utilities.maths.Maths;
 
 public class GuiUtils {
@@ -101,7 +101,7 @@ public class GuiUtils {
 	 *                        dialogs are shown
 	 * @param table
 	 */
-	public static void saveTableToFile(Component parentComponent, MyAbstractTable table) {
+	public static void saveTableToFile(Component parentComponent, SavesToFile table) {
 		File currentDirectory = new File(System.getProperty("user.dir"));
 		final File file = new File(AppDefaults.getInstance().getInputFile());
 		if (file != null && file.getParentFile() != null && file.getParentFile().exists()) {

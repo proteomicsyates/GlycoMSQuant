@@ -2,6 +2,8 @@ package edu.scripps.yates.glycomsquant.gui.tables.comparison;
 
 import java.awt.BorderLayout;
 import java.awt.SystemColor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -9,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.DefaultListSelectionModel;
+import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
@@ -27,6 +31,7 @@ import org.apache.log4j.Logger;
 import edu.scripps.yates.glycomsquant.PTMCode;
 import edu.scripps.yates.glycomsquant.comparison.MyMannWhitneyTestResult;
 import edu.scripps.yates.glycomsquant.comparison.RunComparisonTest;
+import edu.scripps.yates.glycomsquant.util.GuiUtils;
 import edu.scripps.yates.utilities.swing.SwingUtils;
 import gnu.trove.map.hash.THashMap;
 
@@ -43,7 +48,22 @@ public class ComparisonTableDialog extends JFrame {
 	private Map<String, MyMannWhitneyTestResult> comparisonsByKey;
 
 	public ComparisonTableDialog() {
+
 		SwingUtils.setComponentPreferredSizeRelativeToScreen(this, 0.5, 3.0 / 4);
+
+		final JPanel northPanel = new JPanel();
+		final JButton exportButton = new JButton("Save to tsv");
+		exportButton.setToolTipText("Click to export table to a TAB-separated text file");
+		exportButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				GuiUtils.saveTableToFile(ComparisonTableDialog.this, getTable());
+			}
+		});
+		northPanel.add(exportButton);
+		getContentPane().add(northPanel, BorderLayout.NORTH);
+
 		// super(parentFrame, ModalityType.MODELESS);
 		getContentPane().setBackground(SystemColor.info);
 
