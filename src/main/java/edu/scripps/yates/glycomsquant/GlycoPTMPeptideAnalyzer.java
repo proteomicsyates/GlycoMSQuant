@@ -39,7 +39,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	public static final String HIVPOSITIONS_ERROR = "HIVPositions_error";
 	public static final String HIVPOSITIONS_PEPTIDES_TO_REMOVE = "HIVPositions peptides to remove";
 
-	private final List<QuantifiedPeptideInterface> peptideNodes;
+	private final List<QuantifiedPeptideInterface> peptides;
 	private final String proteinOfInterestACC;
 //	private final static 
 	private final String proteinSequence;
@@ -51,7 +51,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
 			AmountType amountType, String motifRegexp, boolean dontAllowConsecutiveMotifs,
 			String referenceProteinSequence) {
-		this.peptideNodes = peptideNodes;
+		this.peptides = peptideNodes;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
 		this.amountType = amountType;
@@ -61,10 +61,10 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 
 	}
 
-	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
+	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptides, String proteinOfInterestACC,
 			File fastaFile, AmountType amountType, String motifRegexp, boolean dontAllowConsecutiveMotifs,
 			String referenceProteinSequence) {
-		this.peptideNodes = peptideNodes;
+		this.peptides = peptides;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance(fastaFile, motifRegexp)
 				.getProteinSequence(proteinOfInterestACC);
@@ -84,7 +84,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 			map.put(position, new GlycoSite(position, proteinOfInterestACC, referenceProteinSequence));
 		}
 		// now loop over the peptides to add the intensities to the covered sites
-		for (final QuantifiedPeptideInterface peptide : peptideNodes) {
+		for (final QuantifiedPeptideInterface peptide : peptides) {
 			final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence,
 					peptide.getSequence());
 			if (positionsOfPeptideInProtein.size() > 1 || positionsOfPeptideInProtein.isEmpty()) {
