@@ -24,12 +24,13 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	private final static Logger log = Logger.getLogger(GroupedQuantifiedPeptide.class);
 	private String key;
 	private String keyWithNoCharge;
-	private final int chargeState;
+	private int chargeState = -1;
 	private String sequence;
 	private TMap<PTMCode, TDoubleList> intensitiesByPTMCode;
 	private final String proteinAcc;
 	private Integer positionInPeptide;
 	private final int startingPositionInProtein;
+	private final boolean useCharge;
 
 	/**
 	 * 
@@ -37,12 +38,20 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	 * @param proteinAcc
 	 * @param positionInPeptide position in the peptide for which this
 	 *                          {@link GroupedQuantifiedPeptide} was created
+	 * @param usecharge         whether to use the charge or not, meaning that if
+	 *                          not, peptides with the same sequence and different
+	 *                          charge can be grouped in this class and therefore
+	 *                          the call to getChargeState doesn't make sense
 	 */
-	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, Integer positionInPeptide) {
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, Integer positionInPeptide,
+			boolean useCharge) {
 		this.proteinAcc = proteinAcc;
 		this.startingPositionInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide, proteinAcc);
 		this.positionInPeptide = positionInPeptide;
-		chargeState = peptide.getPSMs().get(0).getChargeState();
+		this.useCharge = useCharge;
+		if (useCharge) {
+			chargeState = peptide.getPSMs().get(0).getChargeState();
+		}
 		add(peptide);
 
 	}
@@ -54,10 +63,11 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	 * 
 	 * @param peptide
 	 * @param proteinAcc
+	 * @param useCharge
 	 * 
 	 */
-	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc) {
-		this(peptide, proteinAcc, null);
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, boolean useCharge) {
+		this(peptide, proteinAcc, null, useCharge);
 	}
 
 	/**
@@ -72,14 +82,14 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	@Override
 	public boolean add(QuantifiedPeptideInterface peptide) {
 		if (key != null) {
-			final String key2 = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, true);
+			final String key2 = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, useCharge);
 			if (!key2.equals(key)) {
 				throw new IllegalArgumentException(
 						"peptide " + peptide.getFullSequence() + " cannot be grouped in group with key=" + this.key);
 			}
 		} else {
-			key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, true);
-			keyWithNoCharge = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, true);
+			key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, useCharge);
+			keyWithNoCharge = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, false);
 		}
 		return super.add(peptide);
 	}
@@ -185,5 +195,9 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 				setPositionInPeptide(positionInPeptide2);
 			}
 		}
+	}
+
+	public boolean isUseCharge() {
+		return this.useCharge;
 	}
 }

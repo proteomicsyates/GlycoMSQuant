@@ -58,6 +58,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final String referenceProteinSequence;
 	private final File luciphorFile;
 	private final Boolean discardPeptidesWithNoMotifs;
+	private final Boolean useCharge;
 
 	public GlycoPTMAnalyzer(InputParameters inputParams) {
 		CurrentInputParameters.getInstance().setInputParameters(inputParams);
@@ -77,6 +78,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.dontAllowConsecutiveMotifs = inputParams.isDontAllowConsecutiveMotifs();
 		this.referenceProteinSequence = inputParams.getReferenceProteinSequence();
 		this.discardPeptidesWithNoMotifs = inputParams.isDiscardPeptidesWithNoMotifs();
+		this.useCharge = inputParams.isUseCharge();
 		printWelcome();
 	}
 
@@ -84,7 +86,8 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			String prefix, String suffix, double intensityThreshold, AmountType amountType,
 			boolean normalizeExperimentsByProtein, boolean sumIntensitiesAcrossReplicates, String motifRegexp,
 			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs,
-			boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs, boolean useReferenceProtein) {
+			boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs, boolean useReferenceProtein,
+			boolean useCharge) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
@@ -105,6 +108,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		} else {
 			this.referenceProteinSequence = null;
 		}
+		this.useCharge = useCharge;
 		printWelcome();
 
 		CurrentInputParameters.getInstance().setInputParameters(this);
@@ -186,7 +190,13 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		final Option option13 = new Option("luc", "luciphor", true,
 				"[OPTIONAL] Full path to the Luciphor results file that re-localizes and scores PTMs in peptides.");
 		option13.setRequired(false);
-		options.addOption(option13);
+
+		final Option option14 = new Option("use_z", "use_charge", false,
+				"[OPTIONAL] Whether is using the charge to group peptides with the same sequence (and"
+						+ " charge if present) so that then the proportions are calculated for each grouped"
+						+ " peptide and then averaged. By default, it will not use charge.");
+		option14.setRequired(false);
+		options.addOption(option14);
 	}
 
 	public static void main(String[] args) {
@@ -259,7 +269,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("ref")) {
 				useReferenceProtein = Boolean.valueOf(cmd.getOptionValue("ref"));
 			}
-
+			boolean useCharge = false;
+			if (cmd.hasOption("use_z")) {
+				useCharge = Boolean.valueOf(cmd.getOptionValue("use_z"));
+			}
 			File luciphorFile = null;
 			if (cmd.hasOption("luc")) {
 				luciphorFile = new File(cmd.getOptionValue("luc"));
@@ -268,7 +281,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 					luciphorFile, prefix, suffix, intensityThreshold, amountType, normalizeExperimentsByProtein,
 					sumIntensitiesByReplicates, motifRegexp, discardWrongPositionedPTMs, fixWrongPositionedPTMs,
 					discardPeptidesWithNoMotifs, discardNonUniquePeptides, dontAllowConsecutiveMotifs,
-					useReferenceProtein);
+					useReferenceProtein, useCharge);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {
@@ -297,7 +310,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		final InputDataReader q = new InputDataReader(inputFile, luciphorFile, proteinOfInterestACC, intensityThreshold,
 				normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs, this.fixWrongPositionedPTMs,
-				this.discardPeptidesWithNoMotifs);
+				this.discardPeptidesWithNoMotifs, this.useCharge);
 		try {
 			peptides = q.runReader();
 		} catch (final QuantParserException e) {
@@ -315,7 +328,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		log.info("Now analyzing the " + peptides.size() + " peptides...");
 		final GlycoPTMPeptideAnalyzer glycoPTMPeptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
 				proteinOfInterestACC, amountType, this.motifRegexp, this.dontAllowConsecutiveMotifs,
-				this.referenceProteinSequence);
+				this.referenceProteinSequence, this.useCharge);
 		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getGlycoSites();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
@@ -473,5 +486,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	@Override
 	public Boolean isDiscardPeptidesWithNoMotifs() {
 		return this.discardPeptidesWithNoMotifs;
+	}
+
+	@Override
+	public Boolean isUseCharge() {
+		return this.useCharge;
 	}
 }

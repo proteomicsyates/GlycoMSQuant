@@ -104,6 +104,9 @@ public class ColumnsRunTableUtil {
 			case USE_REFERENCE_PROTEIN:
 				ret.add(resultsProperties.getReferenceProteinSequence() != null);
 				break;
+			case USE_CHARGE:
+				ret.add(resultsProperties.isUseCharge());
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

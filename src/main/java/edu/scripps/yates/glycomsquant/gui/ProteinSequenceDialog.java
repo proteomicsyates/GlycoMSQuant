@@ -92,10 +92,10 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		this.referenceProteinSequence = referenceProteinSequence;
 
 		this.glycoSites = glycoSites;
-
+		final boolean useCharge = glycoSites.get(0).isUseCharge();
 		// we create groupedPeptides not linked to any position
 		final Map<String, GroupedQuantifiedPeptide> groupedPeptideByKey = GlycoPTMAnalyzerUtil
-				.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest);
+				.getGroupedPeptidesFromPeptides(peptides, proteinOfInterest, useCharge);
 
 		// add to this.groupedPeptides
 		this.groupedPeptides.addAll(groupedPeptideByKey.values());

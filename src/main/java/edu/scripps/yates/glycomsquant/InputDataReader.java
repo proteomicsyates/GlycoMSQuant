@@ -72,6 +72,10 @@ import gnu.trove.set.hash.THashSet;
  *
  */
 public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPeptideInterface>, Object> {
+	public boolean isUseCharge() {
+		return useCharge;
+	}
+
 	private final static Logger log = Logger.getLogger(InputDataReader.class);
 	private final File inputFile;
 	private final String proteinOfInterestACC;
@@ -94,6 +98,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private Map<String, QuantifiedPeptideInterface> peptideMap;
 	private final boolean fixWrongPositionedPTMs;
 	private final boolean discardPeptidesWithNoMotifs;
+	private final boolean useCharge;
 	private static final DecimalFormat formatter = new DecimalFormat("#.#%");
 
 	/**
@@ -113,10 +118,12 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @param discardWrongPositionedPTMs
 	 * @param fixWrongPositionedPTMs
 	 * @param discardPeptidesWithNoMotifs
+	 * @param useCharge
 	 */
 	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
 			double intensityThreshold, boolean normalizeReplicates, String motifRegexp,
-			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs) {
+			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs,
+			boolean useCharge) {
 		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
 		this.luciphorFile = luciphorFile;
@@ -132,6 +139,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs;
 		this.discardPeptidesWithNoMotifs = discardPeptidesWithNoMotifs;
+		this.useCharge = useCharge;
 	}
 
 	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {

@@ -36,6 +36,7 @@ public class ResultsProperties implements InputParameters {
 	private static final String REFERENCE_PROTEIN_SEQUENCE = "reference_protein_sequence";
 	private static final String FIX_WRONG_POSITIONED_PTMS = "fix_wrong_positioned_PTMs";
 	private static final String DISCARD_PEPTIDES_WITH_NO_MOTIFS = "discard_peptides_with_no_motifs";
+	private static final String USE_CHARGE = "use_charge";
 	private final File individualResultsFolder;
 	private File inputDataFile;
 	private File resultsTableFile;
@@ -56,6 +57,7 @@ public class ResultsProperties implements InputParameters {
 	private Boolean dontAllowConsecutiveMotifs;
 	private String referenceProteinSequence;
 	private File luciphorFile;
+	private Boolean useCharge;
 
 	/**
 	 * 
@@ -149,6 +151,11 @@ public class ResultsProperties implements InputParameters {
 				}
 				if (properties.containsKey(REFERENCE_PROTEIN_SEQUENCE)) {
 					this.referenceProteinSequence = properties.getProperty(REFERENCE_PROTEIN_SEQUENCE);
+				}
+				if (properties.containsKey(USE_CHARGE)) {
+					this.useCharge = Boolean.valueOf(properties.getProperty(USE_CHARGE));
+				} else {
+					this.useCharge = true; // by default, for compatibility with previous versions before 1.3.11
 				}
 				loaded = true;
 			}
@@ -284,6 +291,9 @@ public class ResultsProperties implements InputParameters {
 			if (referenceProteinSequence != null) {
 				properties.put(REFERENCE_PROTEIN_SEQUENCE, referenceProteinSequence);
 			}
+			if (useCharge != null) {
+				properties.put(USE_CHARGE, String.valueOf(this.useCharge));
+			}
 			final FileWriter writer = new FileWriter(propertiesFile);
 			properties.store(writer, "Properties of the GlycoMSAnalyzer run performed on "
 					+ dateFormatter.format(FileManager.getDateFromFolderName(individualResultsFolder)));
@@ -414,6 +424,11 @@ public class ResultsProperties implements InputParameters {
 		updateProperties();
 	}
 
+	public void setUseCharge(Boolean useCharge) {
+		this.useCharge = useCharge;
+		updateProperties();
+	}
+
 	@Override
 	public Boolean isDontAllowConsecutiveMotifs() {
 		loadProperties();
@@ -436,5 +451,11 @@ public class ResultsProperties implements InputParameters {
 	public Boolean isDiscardPeptidesWithNoMotifs() {
 		loadProperties();
 		return this.discardPeptidesWithNoMotifs;
+	}
+
+	@Override
+	public Boolean isUseCharge() {
+		loadProperties();
+		return this.useCharge;
 	}
 }

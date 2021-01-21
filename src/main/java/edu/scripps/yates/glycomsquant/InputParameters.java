@@ -36,4 +36,13 @@ public interface InputParameters {
 	public Boolean isFixWrongPositionedPTMs();
 
 	public Boolean isDiscardPeptidesWithNoMotifs();
+
+	/**
+	 * Whether is using the charge to group peptides with the same sequence (and
+	 * charge if true) so that then the proportions are calculated for each grouped
+	 * peptide and then averaged.
+	 * 
+	 * @return
+	 */
+	public Boolean isUseCharge();
 }

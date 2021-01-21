@@ -589,16 +589,21 @@ public class GlycoPTMAnalyzerUtil {
 	 *                          {@link GroupedQuantifiedPeptide} is created
 	 * @param positionInProtein position in protein for which this
 	 *                          {@link GroupedQuantifiedPeptide} is created
+	 * @param useCharge         Whether is using the charge to group peptides with
+	 *                          the same sequence (and charge if true) so that then
+	 *                          the proportions are calculated for each grouped
+	 *                          peptide and then averaged.
 	 * @return
 	 */
 	public static Map<String, GroupedQuantifiedPeptide> getGroupedPeptidesFromPeptides(
-			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc, int positionInProtein) {
+			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc, int positionInProtein,
+			boolean useCharge) {
 		final Map<String, GroupedQuantifiedPeptide> ret = new THashMap<String, GroupedQuantifiedPeptide>();
 		for (final QuantifiedPeptideInterface peptide : peptides) {
-			final String peptideKey = getPeptideKey(peptide, true);
+			final String peptideKey = getPeptideKey(peptide, useCharge);
 			final int positionInPeptide = getPositionInPeptide(peptide, proteinAcc, positionInProtein);
 			if (!ret.containsKey(peptideKey)) {
-				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, positionInPeptide));
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, positionInPeptide, useCharge));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}
@@ -614,16 +619,19 @@ public class GlycoPTMAnalyzerUtil {
 	 * @param peptides
 	 * @param proteinAcc protein for which this {@link GroupedQuantifiedPeptide} is
 	 *                   created
+	 * @param useCharge  Whether is using the charge to group peptides with the same
+	 *                   sequence (and charge if true) so that then the proportions
+	 *                   are calculated for each grouped peptide and then averaged.
 	 * 
 	 * @return
 	 */
 	public static Map<String, GroupedQuantifiedPeptide> getGroupedPeptidesFromPeptides(
-			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc) {
+			Collection<QuantifiedPeptideInterface> peptides, String proteinAcc, boolean useCharge) {
 		final Map<String, GroupedQuantifiedPeptide> ret = new THashMap<String, GroupedQuantifiedPeptide>();
 		for (final QuantifiedPeptideInterface peptide : peptides) {
-			final String peptideKey = getPeptideKey(peptide, true);
+			final String peptideKey = getPeptideKey(peptide, useCharge);
 			if (!ret.containsKey(peptideKey)) {
-				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc));
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, useCharge));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}

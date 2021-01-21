@@ -20,7 +20,8 @@ public enum ColumnsRunTable {
 	DISCARD_NON_UNIQUE_PEPTIDES("dnu", 5, "Discard non-unique peptides", Boolean.class),
 
 	NOT_ALLOW_CONSECUTIVE_SITES("con", 5, "Don't allow consecutive motifs", Boolean.class),
-	USE_REFERENCE_PROTEIN("ref", 5, "Use of reference protein", Boolean.class)
+	USE_REFERENCE_PROTEIN("ref", 5, "Use of reference protein", Boolean.class),
+	USE_CHARGE("z", 5, "Use charge for grouping peptides and calculate proportions", Boolean.class)
 	// RESEARCHER("researcher", 20, "Researcher name (internal data for the
 	// Spanish HPP consortium)"), //
 	// GENE_CLASSIFICATION("gene class", 15, "Gene classification (internal data

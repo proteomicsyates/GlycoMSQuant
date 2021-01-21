@@ -266,8 +266,9 @@ public class ChartUtils {
 		final DefaultBoxAndWhiskerCategoryDataset dataset = new DefaultBoxAndWhiskerCategoryDataset();
 
 		final Map<PTMCode, List<Double>> valuesPerPTMCode = new THashMap<PTMCode, List<Double>>();
+		boolean useCharge = true;
 		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
-
+			useCharge = groupedPeptide.isUseCharge();
 			for (final PTMCode ptmCode : PTMCode.values()) {
 				// only get the intensities of the ptmCodes that are present in the position
 				// corresponding to the positionInProtein
@@ -281,7 +282,7 @@ public class ChartUtils {
 						// then, we have a peptide with the modification we want in the position we want
 						// we create a fakeGroupedQuantifiedPeptide just to get the intensity
 						final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
-								proteinAcc, positionInPeptide);
+								proteinAcc, positionInPeptide, useCharge);
 						final TDoubleList intensities = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
 						if (!valuesPerPTMCode.containsKey(ptmCode)) {
 							valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
@@ -658,10 +659,12 @@ public class ChartUtils {
 			Collection<GroupedQuantifiedPeptide> peptides, int positionInProtein, String proteinAcc, boolean makeLog,
 			ErrorType errorType) {
 		final DefaultStatisticalCategoryDataset dataset = new DefaultStatisticalCategoryDataset();
-
+		boolean useCharge = true;
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList intensities = new TDoubleArrayList();
+
 			for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+				useCharge = groupedPeptide.isUseCharge();
 				// only get the intensities of the ptmCodes that are present in the position
 				// corresponding to the positionInProtein
 				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
@@ -674,7 +677,7 @@ public class ChartUtils {
 						// then, we have a peptide with the modification we want in the position we want
 						// we create a fakeGroupedQuantifiedPeptide just to get the intensity
 						final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
-								proteinAcc, positionInPeptide);
+								proteinAcc, positionInPeptide, useCharge);
 						final TDoubleList intensitiesByPTMCode = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
 
 //				final TDoubleList intensitiesByPTMCode = groupedPeptide.getIntensitiesByPTMCode(ptmCode);

@@ -53,8 +53,9 @@ public class GlycoSite {
 	private final Set<String> replicates = new THashSet<String>();
 	private final TIntList ambiguousSites = new TIntArrayList();
 	private String referencePosition;
+	private final boolean useCharge;
 
-	public GlycoSite(int position, String protein, String referenceProteinSequence) {
+	public GlycoSite(int position, String protein, String referenceProteinSequence, boolean useCharge) {
 		super();
 
 		this.position = position;
@@ -66,7 +67,7 @@ public class GlycoSite {
 			// in this case, there is map to reference no reference
 			this.referencePosition = String.valueOf(position);
 		}
-
+		this.useCharge = useCharge;
 	}
 
 	public String printOut() {
@@ -91,6 +92,7 @@ public class GlycoSite {
 
 	public static GlycoSite readGlycoSiteFromString(String string, InputDataReader reader,
 			String referenceProteinSequence) {
+		final boolean useCharge = reader.isUseCharge();
 		final String[] lines = string.split("\n");
 		GlycoSite ret = null;
 		// first line has to start with GLYCOSITE
@@ -104,7 +106,7 @@ public class GlycoSite {
 				if (ret == null && line.startsWith(GLYCOSITE)) {
 					final int position = Integer.valueOf(split[1]);
 					final String protein = split[2];
-					ret = new GlycoSite(position, protein, referenceProteinSequence);
+					ret = new GlycoSite(position, protein, referenceProteinSequence, useCharge);
 				} else {
 					// first column is PTMCode
 					final PTMCode ptmCode = PTMCode.getByValue(Double.valueOf(split[0]));
@@ -149,10 +151,11 @@ public class GlycoSite {
 		nonRedundantPeptidesByPTMCode.get(ptmCode).add(peptide);
 		coveredPeptides.add(peptide);
 
-		final String key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, true);
+		final String key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, useCharge);
 		if (!peptidesByNoPTMPeptideKey.containsKey(key)) {
 			final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, protein, getPosition());
-			peptidesByNoPTMPeptideKey.put(key, new GroupedQuantifiedPeptide(peptide, protein, positionInPeptide));
+			peptidesByNoPTMPeptideKey.put(key,
+					new GroupedQuantifiedPeptide(peptide, protein, positionInPeptide, useCharge));
 		}
 		final boolean added = peptidesByNoPTMPeptideKey.get(key).add(peptide);
 
@@ -317,8 +320,8 @@ public class GlycoSite {
 	}
 
 	public Collection<GroupedQuantifiedPeptide> getCoveredGroupedPeptides() {
-		return GlycoPTMAnalyzerUtil.getGroupedPeptidesFromPeptides(getCoveredPeptides(), protein, getPosition())
-				.values();
+		return GlycoPTMAnalyzerUtil
+				.getGroupedPeptidesFromPeptides(getCoveredPeptides(), protein, getPosition(), this.useCharge).values();
 	}
 
 	public void addAmbiguousSitePosition(int position) {
@@ -412,6 +415,10 @@ public class GlycoSite {
 
 	public String getReferencePosition() {
 		return referencePosition;
+	}
+
+	public boolean isUseCharge() {
+		return this.useCharge;
 	}
 
 }

@@ -47,10 +47,11 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	private final String motifRegexp;
 	private final boolean dontAllowConsecutiveMotifs;
 	private final String referenceProteinSequence;
+	private final boolean useCharge;
 
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
 			AmountType amountType, String motifRegexp, boolean dontAllowConsecutiveMotifs,
-			String referenceProteinSequence) {
+			String referenceProteinSequence, boolean useCharge) {
 		this.peptides = peptideNodes;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
@@ -58,12 +59,12 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		this.motifRegexp = motifRegexp;
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
 		this.referenceProteinSequence = referenceProteinSequence;
-
+		this.useCharge = useCharge;
 	}
 
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptides, String proteinOfInterestACC,
 			File fastaFile, AmountType amountType, String motifRegexp, boolean dontAllowConsecutiveMotifs,
-			String referenceProteinSequence) {
+			String referenceProteinSequence, boolean useCharge) {
 		this.peptides = peptides;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance(fastaFile, motifRegexp)
@@ -72,6 +73,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		this.motifRegexp = motifRegexp;
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
 		this.referenceProteinSequence = referenceProteinSequence;
+		this.useCharge = useCharge;
 	}
 
 	public List<GlycoSite> getGlycoSites() {
@@ -81,7 +83,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		// create HIVPosition objects
 		final TIntObjectMap<GlycoSite> map = new TIntObjectHashMap<GlycoSite>();
 		for (final int position : motifPositions.toArray()) {
-			map.put(position, new GlycoSite(position, proteinOfInterestACC, referenceProteinSequence));
+			map.put(position, new GlycoSite(position, proteinOfInterestACC, referenceProteinSequence, useCharge));
 		}
 		// now loop over the peptides to add the intensities to the covered sites
 		for (final QuantifiedPeptideInterface peptide : peptides) {
@@ -102,7 +104,8 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmPositionInProtein.getDeltaMass());
 				if (!map.containsKey(position)) {
 					// this shoudn't happen because we already created the sites before this loop
-					map.put(position, new GlycoSite(position, proteinOfInterestACC, this.referenceProteinSequence));
+					map.put(position,
+							new GlycoSite(position, proteinOfInterestACC, this.referenceProteinSequence, useCharge));
 				}
 				final List<Double> intensities = peptide.getAmounts().stream()
 						.filter(a -> a.getAmountType() == amountType).map(a -> a.getValue())
