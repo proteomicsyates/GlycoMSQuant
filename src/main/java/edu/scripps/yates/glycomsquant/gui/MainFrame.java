@@ -267,7 +267,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		useChargeCheckBox.setToolTipText("<html>Use charge for calculating the proportions or not.<br>"
 				+ "This parameter determines how to group the peptides to calculate individual proportions<br>"
 				+ " that then will be averaged to obtain the values per protein site.</html>");
-		useChargeCheckBox.setSelected(false);
+		useChargeCheckBox.setSelected(true);
 		useChargePanel.add(useChargeCheckBox);
 		//
 		final JPanel discardPeptidesWithNoMotifsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
