@@ -20,7 +20,10 @@ public enum ColumnsSitesTable {
 //			PTMCode._0), //
 	SEM_NoPTM("SEM(Int) No-PTM", 10, "Standard Error Mean of intensities of non-modified sites", Double.class,
 			PTMCode._0), //
-	PERCENT_NoPTM("% No-PTM", 10, "Percentage of abundance of non-modified sites", Double.class, true, PTMCode._0), //
+	AVG_PROPORTIONS_NoPTM("Avg % No-PTM", 10, "Average of proportions of non-modified sites", Double.class, true,
+			PTMCode._0), //
+	MEDIAN_PROPORTIONS_NoPTM("Med % No-PTM", 10, "Median of proportions of non-modified sites", Double.class, true,
+			PTMCode._0), //
 //	STDEV_PERCENT_NoPTM("Stdev(%) No-PTM", 10,
 //			"Standard deviation of the percentage of abundance of non-modified sites", Double.class, true, PTMCode._0), //
 	SEM_PERCENT_NoPTM("SEM(%) No-PTM", 10, "Standard Error Mean of the percentage of abundance of non-modified sites",
@@ -33,8 +36,10 @@ public enum ColumnsSitesTable {
 //			PTMCode._2), //
 	SEM_2("SEM(Int) 2.988", 10, "Standard Error Mean of intensities of sites modified with PTM 2.988", Double.class,
 			PTMCode._2), //
-	PERCENT_2("% 2.988", 10, "Percentage of abundance of sites modified with PTM 2.988", Double.class, true,
+	AVG_PROPORTIONS_2("Avg % 2.988", 10, "Average of proportions of sites modified with PTM 2.988", Double.class, true,
 			PTMCode._2), //
+	MEDIAN_PROPORTIONS_2("Med % 2.988", 10, "Median of proportions of sites modified with PTM 2.988", Double.class,
+			true, PTMCode._2), //
 //	STDEV_PERCENT_2("Stdev(%) 2.988", 10,
 //			"Standard deviation of the percentage of abundance of sites modified with PTM 2.988", Double.class, true,
 //			PTMCode._2), //
@@ -50,8 +55,10 @@ public enum ColumnsSitesTable {
 //			PTMCode._203), //
 	SEM_203("SEM(Int) 203.079", 10, "Standard Error Mean of intensities of sites modified with PTM 203.079",
 			Double.class, PTMCode._203), //
-	PERCENT_203("% 203.079", 10, "Percentage of abundance of sites modified with PTM 203.079", Double.class, true,
-			PTMCode._203), //
+	AVG_PROPORTIONS_203("Avg % 203.079", 10, "Average of proportions of sites modified with PTM 203.079", Double.class,
+			true, PTMCode._203), //
+	MEDIAN_PROPORTIONS_203("Med % 203.079", 10, "Median of proportions of sites modified with PTM 203.079",
+			Double.class, true, PTMCode._203), //
 //	STDEV_PERCENT_203("Stdev(%) 203.079", 10,
 //			"Standard deviation of the percentage of abundance of sites modified with PTM 203.079", Double.class, true,
 //			PTMCode._203), //

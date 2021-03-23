@@ -79,14 +79,24 @@ public class ColumnsSitesTableUtil {
 			case PEPTIDES_NoPTM:
 				ret.add(glycoSite.getPeptidesByPTMCode(PTMCode._0).size());
 				break;
-			case PERCENT_2:
-				ret.add(glycoSite.getProportionByPTMCode(PTMCode._2, sumIntensitiesAcrossReplicates));
+			case AVG_PROPORTIONS_2:
+				ret.add(glycoSite.getAvgProportionByPTMCode(PTMCode._2, sumIntensitiesAcrossReplicates));
 				break;
-			case PERCENT_203:
-				ret.add(glycoSite.getProportionByPTMCode(PTMCode._203, sumIntensitiesAcrossReplicates));
+
+			case AVG_PROPORTIONS_203:
+				ret.add(glycoSite.getAvgProportionByPTMCode(PTMCode._203, sumIntensitiesAcrossReplicates));
 				break;
-			case PERCENT_NoPTM:
-				ret.add(glycoSite.getProportionByPTMCode(PTMCode._0, sumIntensitiesAcrossReplicates));
+			case AVG_PROPORTIONS_NoPTM:
+				ret.add(glycoSite.getAvgProportionByPTMCode(PTMCode._0, sumIntensitiesAcrossReplicates));
+				break;
+			case MEDIAN_PROPORTIONS_NoPTM:
+				ret.add(glycoSite.getMedianProportionByPTMCode(PTMCode._0, sumIntensitiesAcrossReplicates));
+				break;
+			case MEDIAN_PROPORTIONS_2:
+				ret.add(glycoSite.getMedianProportionByPTMCode(PTMCode._2, sumIntensitiesAcrossReplicates));
+				break;
+			case MEDIAN_PROPORTIONS_203:
+				ret.add(glycoSite.getMedianProportionByPTMCode(PTMCode._203, sumIntensitiesAcrossReplicates));
 				break;
 			case SEM_2:
 				ret.add(glycoSite.getSEMIntensityByPTMCode(PTMCode._2));

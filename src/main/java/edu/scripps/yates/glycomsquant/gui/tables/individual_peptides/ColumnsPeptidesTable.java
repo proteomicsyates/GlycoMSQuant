@@ -12,10 +12,11 @@ enum ColumnsPeptidesTable {
 	KEY("key", 250, "Unmodified sequence + charge", String.class, true), //
 	CHARGE("z", 20, "Charge state of the peptide", Integer.class),
 	TOTAL_SPC("SPC", 20, "Spectral counts that contributed to this peptide", Integer.class),
-	SPC_PER_REPLICATE("SPC/rep", 40, "Spectral counts that contributed to this peptide in each of the replicates",
-			Integer.class),
+	SPC_PER_REPLICATE(
+			"SPC/rep", 40, "Spectral counts that contributed to this peptide in each of the replicates", Integer.class),
 	REPLICATES("Replicate", 80, "Replicate", Integer.class),
-
+	NUMBER_INDIVIDUAL_MEASUREMENTS("# meas.", 20, "Number of measurements (intensities) of the same peptide",
+			Integer.class), //
 	LENGTH("Len", 20, "Length of the peptide", Integer.class, true), //
 	SITES("Site(s)", 60, "Position(s) with PTMs of interest covered by the peptide in the protein sequence",
 			String.class, true), //

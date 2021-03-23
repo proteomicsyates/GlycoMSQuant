@@ -103,18 +103,27 @@ public class MyGroupedPeptidesTable extends MyAbstractTable {
 	}
 
 	private List<GroupedQuantifiedPeptide> getSelectedPeptides(int[] selectedRows) {
-		final List<GroupedQuantifiedPeptide> ret = new ArrayList<GroupedQuantifiedPeptide>();
-		final List<ColumnsGroupedPeptidesTable> columns = ColumnsGroupedPeptidesTable.getColumns();
-		final int peptideKeyIndex = columns.indexOf(ColumnsGroupedPeptidesTable.SEQUENCE);
+		final List<GroupedQuantifiedPeptide> selectedPeptides = new ArrayList<GroupedQuantifiedPeptide>();
+
 		for (final int selectedRow : selectedRows) {
-			final int row = getRowSorter().convertRowIndexToModel(selectedRow);
-			final String peptideKey = getModel().getValueAt(row, peptideKeyIndex).toString();
-			log.info(peptideKey + " selected");
-			if (getPeptidesBySequenceAndCharge().containsKey(peptideKey)) {
-				ret.add(getPeptidesBySequenceAndCharge().get(peptideKey));
-			}
+			final int rowInModel = convertRowIndexToModel(selectedRow);
+
+			final GroupedQuantifiedPeptide peptide = groupedPeptideList.get(rowInModel);
+			selectedPeptides.add(peptide);
 		}
-		return ret;
+		return selectedPeptides;
+//		final List<GroupedQuantifiedPeptide> ret = new ArrayList<GroupedQuantifiedPeptide>();
+//		final List<ColumnsGroupedPeptidesTable> columns = ColumnsGroupedPeptidesTable.getColumns();
+//		final int peptideKeyIndex = columns.indexOf(ColumnsGroupedPeptidesTable.SEQUENCE);
+//		for (final int selectedRow : selectedRows) {
+//			final int row = getRowSorter().convertRowIndexToModel(selectedRow);
+//			final String peptideKey = getModel().getValueAt(row, peptideKeyIndex).toString();
+//			log.info(peptideKey + " selected");
+//			if (getPeptidesBySequenceAndCharge().containsKey(peptideKey)) {
+//				ret.add(getPeptidesBySequenceAndCharge().get(peptideKey));
+//			}
+//		}
+//		return ret;
 	}
 
 	private Map<String, GroupedQuantifiedPeptide> getPeptidesBySequenceAndCharge() {

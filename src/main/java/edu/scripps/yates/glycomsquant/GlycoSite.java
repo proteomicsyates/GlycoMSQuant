@@ -228,12 +228,9 @@ public class GlycoSite {
 		return Double.NaN;
 	}
 
-	public double getProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
+	public double getAvgProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
 		if (!individualProportionsByPTMCode.containsKey(ptmCode)) {
 			individualProportionsByPTMCode.clear();
-			if (this.getPosition() == 334) {
-				log.info("asdf");
-			}
 			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
 
 				final GroupedQuantifiedPeptide peptides = peptidesByNoPTMPeptideKey.get(peptideKey);
@@ -255,9 +252,33 @@ public class GlycoSite {
 		return 0.0;
 	}
 
+	public double getMedianProportionByPTMCode(PTMCode ptmCode, boolean sumIntensitiesAcrossReplicates) {
+		if (!individualProportionsByPTMCode.containsKey(ptmCode)) {
+			individualProportionsByPTMCode.clear();
+			for (final String peptideKey : peptidesByNoPTMPeptideKey.keySet()) {
+
+				final GroupedQuantifiedPeptide peptides = peptidesByNoPTMPeptideKey.get(peptideKey);
+				peptides.setPositionInPeptideWithPositionInProtein(getPosition());
+				final Map<PTMCode, TDoubleList> individualProportions = GlycoPTMAnalyzerUtil
+						.getIndividualProportionsByPTMCode(peptides, sumIntensitiesAcrossReplicates);
+
+				for (final PTMCode ptmCode2 : individualProportions.keySet()) {
+					if (!individualProportionsByPTMCode.containsKey(ptmCode2)) {
+						individualProportionsByPTMCode.put(ptmCode2, new TDoubleArrayList());
+					}
+					individualProportionsByPTMCode.get(ptmCode2).addAll(individualProportions.get(ptmCode2));
+				}
+			}
+		}
+		if (individualProportionsByPTMCode.containsKey(ptmCode)) {
+			return Maths.median(individualProportionsByPTMCode.get(ptmCode));
+		}
+		return 0.0;
+	}
+
 	public TDoubleList getIndividualPeptideProportionsByPTMCode(PTMCode ptmCode,
 			boolean sumIntensitiesAcrossReplicates) {
-		getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
+		getAvgProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
 		return this.individualProportionsByPTMCode.get(ptmCode);
 	}
 
@@ -274,7 +295,7 @@ public class GlycoSite {
 	private String getValuesString() {
 		final StringBuilder sb = new StringBuilder();
 		for (final PTMCode ptmCode : PTMCode.values()) {
-			sb.append("(" + ptmCode + ":" + getProportionByPTMCode(ptmCode, true) + "%) ");
+			sb.append("(" + ptmCode + ":" + getAvgProportionByPTMCode(ptmCode, true) + "%) ");
 		}
 		return sb.toString();
 	}

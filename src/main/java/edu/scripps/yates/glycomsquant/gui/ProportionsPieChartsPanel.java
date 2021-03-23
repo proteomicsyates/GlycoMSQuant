@@ -2,6 +2,7 @@ package edu.scripps.yates.glycomsquant.gui;
 
 import java.awt.Paint;
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -9,9 +10,11 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.data.general.PieDataset;
 
 import edu.scripps.yates.glycomsquant.GlycoSite;
+import edu.scripps.yates.glycomsquant.GroupedQuantifiedPeptide;
 import edu.scripps.yates.glycomsquant.InputParameters;
 import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
+import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 
 public class ProportionsPieChartsPanel extends AbstractMultipleChartsBySitePanel {
 
@@ -29,7 +32,10 @@ public class ProportionsPieChartsPanel extends AbstractMultipleChartsBySitePanel
 	@Override
 	protected ChartPanel createChart(GlycoSite glycoSite) {
 		final String title = getChartTitle(glycoSite);
-		final String subtitle = glycoSite.getTotalSPC() + " SPC / " + glycoSite.getTotalNumPeptides() + " Peptides";
+		final Collection<GroupedQuantifiedPeptide> coveredPeptides = glycoSite.getCoveredGroupedPeptides();
+		final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(coveredPeptides);
+		final String subtitle = glycoSite.getTotalSPC() + " SPC / " + glycoSite.getTotalNumPeptides() + " Peps / "
+				+ numMeasurements + " Meas";
 		return ChartUtils.createProportionsPieChartForGlycoSite(glycoSite, title, subtitle,
 				sumIntensitiesAcrossReplicates, null, null);
 

@@ -774,6 +774,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		}
 
 		final JPanel panelForCharts = new JPanel();
+//		panelForCharts.setBackground(Color.white);
 		panelForCharts.setPreferredSize(new Dimension(10, 400));
 		panelForCharts.setBorder(new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "Charts",
@@ -787,6 +788,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		chartPanelScroll.setBorder(null);
 		chartPanelScroll.getVerticalScrollBar().setUnitIncrement(16);
 		this.chartPanel = new JPanel();
+		this.chartPanel.setBackground(Color.white);
 		chartPanelScroll.setViewportView(chartPanel);
 		// TODO
 //		chartPanel.setLayout(new BorderLayout(0, 0));

@@ -184,6 +184,10 @@ public class ColumnsGroupedPeptidesTableUtil {
 			case NUMBER_INDIVIDUAL_PEPTIDES:
 				ret.add(groupedPeptide.size());
 				break;
+			case NUMBER_INDIVIDUAL_MEASUREMENTS:
+
+				ret.add(GlycoPTMAnalyzerUtil.getNumIndividualIntensities(groupedPeptide));
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

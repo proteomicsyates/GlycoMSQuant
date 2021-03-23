@@ -22,6 +22,7 @@ import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.DefaultStatisticalCategoryDataset;
 
+import edu.scripps.yates.glycomsquant.gui.ProportionsPeptidesBoxAndWhiskerPlotChartsPanel;
 import edu.scripps.yates.glycomsquant.gui.ProportionsPeptidesScatterPlotChartsPanel;
 import edu.scripps.yates.glycomsquant.gui.ProportionsPieChartsPanel;
 import edu.scripps.yates.glycomsquant.gui.charts.BarChart;
@@ -119,17 +120,18 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 		}
 
 		// with PSMs on the names
-		String title = "Site % abundances";
+		String title = "Proportions per site";
 		final boolean psms = false;
 		generatedImages.add(writeStackedChartOfPercentages(title, subtitle, psms));
 
 //		if (inputParameters.isSumIntensitiesAcrossReplicates()) {
 		// proportion error graphs
-		title = "SEM of %";
-		generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, ErrorType.SEM));
+		final ErrorType errorType = ErrorType.SEM;
+		title = "Avg proportions and " + errorType + " per site";
+		generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, errorType));
 //			title = "STDEV of %";
 //			generatedImages.add(writeProportionsErrorBarChart(title, subtitle, psms, ErrorType.STDEV));
-		title = "distributions of %";
+		title = "Distribution of proportions per site";
 		generatedImages.add(writeProportionsBoxAndWhiskerChart(title, subtitle, psms,
 				inputParameters.isSumIntensitiesAcrossReplicates()));
 
@@ -158,6 +160,15 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 			generatedImages.addAll(scatterPlots.saveImages());
 		}
 
+		// box and whisker plots per site with distributions of peptide individual
+		// proportions
+		final ProportionsPeptidesBoxAndWhiskerPlotChartsPanel boxWiskerPlots = new ProportionsPeptidesBoxAndWhiskerPlotChartsPanel(
+				glycoSites, resultsFolder, inputParameters);
+		charts.add(boxWiskerPlots);
+		if (saveGraphsToFiles) {
+			generatedImages.addAll(boxWiskerPlots.saveImages());
+		}
+
 		firePropertyChange(CHART_GENERATED, null, charts);
 	}
 
@@ -182,7 +193,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 	private File writeProportionsBoxAndWhiskerChart(String title, String subtitle, boolean psms,
 			boolean sumIntensitiesAcrossReplicates) throws IOException {
 		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGlycoSites(glycoSites, title,
-				subtitle, psms, sumIntensitiesAcrossReplicates);
+				subtitle, psms, sumIntensitiesAcrossReplicates, null);
 		this.charts.add(chartPanel);
 		if (saveGraphsToFiles) {
 			final File file = new File(
@@ -203,8 +214,8 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 
 		final DefaultStatisticalCategoryDataset datasetWithErrors = createProportionsErrorDataset(psms, errorType);
 
-		final BarChart chart = new BarChart(title, subtitle, "site # (" + psmsString + ")",
-				"% abundance and " + errorType, datasetWithErrors, PlotOrientation.VERTICAL);
+		final BarChart chart = new BarChart(title, subtitle, "site # (" + psmsString + ")", "% abundance",
+				datasetWithErrors, PlotOrientation.VERTICAL);
 //		chart.getChartPanel().setSize(new Dimension(DEFAULT_GRAPH_SIZE, DEFAULT_GRAPH_SIZE));
 		// do not separate the bars on each site
 		chart.getRenderer().setItemMargin(0);
@@ -300,7 +311,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 						+ hivPosition.getPeptidesByPTMCode(PTMCode._203).size() + ")";
 			}
 			for (final PTMCode ptmCode : PTMCode.values()) {
-				final double avgIntensity = hivPosition.getProportionByPTMCode(ptmCode,
+				final double avgIntensity = hivPosition.getAvgProportionByPTMCode(ptmCode,
 						inputParameters.isSumIntensitiesAcrossReplicates());
 				dataset.addValue(avgIntensity, GuiUtils.translateCode(ptmCode.getCode()), columnKey);
 			}
@@ -328,7 +339,7 @@ public class GlycoPTMResultGenerator extends SwingWorker<Void, Object> {
 
 			for (final PTMCode ptmCode : PTMCode.values()) {
 
-				final double average = hivPosition.getProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
+				final double average = hivPosition.getAvgProportionByPTMCode(ptmCode, sumIntensitiesAcrossReplicates);
 				double error = 0.0;
 				switch (errorType) {
 				case SEM:

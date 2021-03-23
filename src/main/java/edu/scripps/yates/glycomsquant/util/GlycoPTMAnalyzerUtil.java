@@ -326,7 +326,7 @@ public class GlycoPTMAnalyzerUtil {
 
 	}
 
-	public static int getNumIndividualIntensities(Collection<GroupedQuantifiedPeptide> peptides,
+	public static int getNumIndividualPeptideVersions(Collection<GroupedQuantifiedPeptide> peptides,
 			boolean sumIntensitiesAcrossReplicates) {
 		int num = 0;
 		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
@@ -341,6 +341,25 @@ public class GlycoPTMAnalyzerUtil {
 				// grouped peptide after summing intensities across replicates for each them
 				num += groupedPeptide.size();
 			}
+		}
+		return num;
+
+	}
+
+	public static int getNumIndividualIntensities(GroupedQuantifiedPeptide peptide) {
+		final List<GroupedQuantifiedPeptide> list = new ArrayList<GroupedQuantifiedPeptide>();
+		list.add(peptide);
+		return getNumIndividualIntensities(list);
+	}
+
+	public static int getNumIndividualIntensities(Collection<GroupedQuantifiedPeptide> peptides) {
+		int num = 0;
+		for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
+
+			final TDoubleList intensities = getIntensities(groupedPeptide);
+
+			num += intensities.size();
+
 		}
 		return num;
 
@@ -555,7 +574,28 @@ public class GlycoPTMAnalyzerUtil {
 		return ret;
 	}
 
-	private static double getIntensityFromPeptideInReplicate(QuantifiedPeptideInterface peptide, String replicate) {
+	private static TDoubleList getIntensitiesPerReplicate(GroupedQuantifiedPeptide peptides, String replicate) {
+		final TDoubleList ret = new TDoubleArrayList();
+
+		// reduce list to have unique hashcodes
+		final TIntSet hashCodes = new TIntHashSet();
+		for (final QuantifiedPeptideInterface peptide : peptides) {
+			if (hashCodes.contains(peptide.hashCode())) {
+				continue;
+			}
+			hashCodes.add(peptide.hashCode());
+
+			final double intensityFromPeptideInReplicate = getIntensityFromPeptideInReplicate(peptide, replicate);
+			// if it is NaN means that the peptide was not detected in that replicate
+			if (!Double.isNaN(intensityFromPeptideInReplicate)) {
+				ret.add(intensityFromPeptideInReplicate);
+			}
+		}
+
+		return ret;
+	}
+
+	public static double getIntensityFromPeptideInReplicate(QuantifiedPeptideInterface peptide, String replicate) {
 		final TDoubleList values = new TDoubleArrayList();
 		for (final Amount amount : peptide.getAmounts()) {
 			if (!amount.getCondition().getName().equals(replicate)) {
@@ -692,6 +732,16 @@ public class GlycoPTMAnalyzerUtil {
 		return ret;
 	}
 
+	public static TDoubleList getIntensities(GroupedQuantifiedPeptide groupedQuantifiedPeptide) {
+		final TDoubleList ret = new TDoubleArrayList();
+		final List<String> replicates = getReplicateNamesFromPeptide(groupedQuantifiedPeptide);
+		for (final String replicate : replicates) {
+			final TDoubleList intensitiesPerReplicate = getIntensitiesPerReplicate(groupedQuantifiedPeptide, replicate);
+			ret.addAll(intensitiesPerReplicate);
+		}
+		return ret;
+	}
+
 	/**
 	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
 	 * class, so it must be initialized before this call. If peptide is not found is
@@ -734,6 +784,18 @@ public class GlycoPTMAnalyzerUtil {
 			List<GroupedQuantifiedPeptide> groupedPeptides) {
 		final List<QuantifiedPeptideInterface> ret = new ArrayList<QuantifiedPeptideInterface>();
 		groupedPeptides.stream().forEach(groupedPeptide -> ret.addAll(groupedPeptide));
+		return ret;
+	}
+
+	public static int getNumIndividualIntensities(QuantifiedPeptideInterface peptide) {
+		int ret = 0;
+		final List<String> replicates = getReplicateNamesFromPeptide(peptide);
+		for (final String replicate : replicates) {
+			final double intensity = getIntensityFromPeptideInReplicate(peptide, replicate);
+			if (!Double.isNaN(intensity)) {
+				ret++;
+			}
+		}
 		return ret;
 	}
 }

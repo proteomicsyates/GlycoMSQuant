@@ -52,7 +52,7 @@ public class ComparisonTableDialog extends JFrame {
 		SwingUtils.setComponentPreferredSizeRelativeToScreen(this, 0.5, 3.0 / 4);
 
 		final JPanel northPanel = new JPanel();
-		final JButton exportButton = new JButton("Save to tsv");
+		final JButton exportButton = new JButton("Save to file");
 		exportButton.setToolTipText("Click to export table to a TAB-separated text file");
 		exportButton.addActionListener(new ActionListener() {
 

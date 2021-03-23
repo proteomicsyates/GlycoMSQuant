@@ -25,7 +25,7 @@ public class ScrollableTable<T extends MyAbstractTable> extends JPanel {
 	public ScrollableTable(T table) {
 		super(new BorderLayout());
 		final JPanel northPanel = new JPanel();
-		final JButton exportButton = new JButton("Save to tsv");
+		final JButton exportButton = new JButton("Save to file");
 		exportButton.setToolTipText("Click to export table to a TAB-separated text file");
 		exportButton.addActionListener(new ActionListener() {
 

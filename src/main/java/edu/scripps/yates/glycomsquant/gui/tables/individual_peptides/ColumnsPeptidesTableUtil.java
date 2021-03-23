@@ -152,20 +152,29 @@ public class ColumnsPeptidesTableUtil {
 						sb.append(VALUE_SEPARATOR);
 					}
 
-					final Amount amount = peptide.getAmounts().stream()
+					final Set<Amount> amounts = peptide.getAmounts().stream()
 							.filter(am -> am.getCondition().getName().equalsIgnoreCase(replicate)
 									&& am.getAmountType() == CurrentInputParameters.getInstance().getInputParameters()
 											.getAmountType())
-							.findAny().get();
+							.collect(Collectors.toSet());
+					final StringBuilder sbAmounts = new StringBuilder();
 
-					final double value = amount.getValue();
+					for (final Amount amount : amounts) {
+						if (!sbAmounts.toString().equals("")) {
+							sbAmounts.append(",");
+						}
+						sbAmounts.append(GuiUtils.formatDouble(amount.getValue(), false));
+					}
 
-					sb.append(GuiUtils.formatDouble(value, false));
+					sb.append(sbAmounts.toString());
 				}
 				ret.add(sb.toString());
 
 				break;
+			case NUMBER_INDIVIDUAL_MEASUREMENTS:
 
+				ret.add(GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptide));
+				break;
 			case SPC_PER_REPLICATE:
 				sb = new StringBuilder();
 

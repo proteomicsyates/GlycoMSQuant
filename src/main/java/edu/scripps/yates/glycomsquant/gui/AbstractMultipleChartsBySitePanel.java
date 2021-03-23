@@ -45,9 +45,9 @@ public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 	protected final static int margin = 1;// marging between charts
 	private static final Logger log = Logger.getLogger(AbstractMultipleChartsBySitePanel.class);
 	public static Font itemsFont = new java.awt.Font("arial", Font.PLAIN, 8);
-	protected Font titleFont = new java.awt.Font("arial", Font.BOLD, 12);
-	protected Font subtitleFont = new java.awt.Font("arial", Font.BOLD, 10);
-	protected Font legendFont = new Font("arial", Font.BOLD, 9);
+	public static Font titleFont = new java.awt.Font("arial", Font.BOLD, 12);
+	public static Font subtitleFont = new java.awt.Font("arial", Font.BOLD, 10);
+	public static Font legendFont = new Font("arial", Font.BOLD, 9);
 	public static Font axisFont = new Font("arial", Font.BOLD, 10);
 	protected final InputParameters inputParameters;
 
@@ -62,6 +62,7 @@ public abstract class AbstractMultipleChartsBySitePanel extends JPanel {
 	}
 
 	protected void initComponents() {
+		this.setBackground(Color.white);
 		int rows = 0;
 		final int resto = glycoSites.size() % columns;
 		if (resto != 0) {

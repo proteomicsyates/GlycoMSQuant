@@ -2,6 +2,7 @@ package edu.scripps.yates.glycomsquant.gui;
 
 import java.awt.Paint;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -16,15 +17,15 @@ import edu.scripps.yates.glycomsquant.gui.charts.ChartUtils;
 import edu.scripps.yates.glycomsquant.gui.files.FileManager;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 
-public class ProportionsPeptidesScatterPlotChartsPanel extends AbstractMultipleChartsBySitePanel {
+public class ProportionsPeptidesBoxAndWhiskerPlotChartsPanel extends AbstractMultipleChartsBySitePanel {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 9209240955358988792L;
-	private static final Logger log = Logger.getLogger(ProportionsPeptidesScatterPlotChartsPanel.class);
+	private static final Logger log = Logger.getLogger(ProportionsPeptidesBoxAndWhiskerPlotChartsPanel.class);
 
-	public ProportionsPeptidesScatterPlotChartsPanel(List<GlycoSite> glycoSites, File resultsFolder,
+	public ProportionsPeptidesBoxAndWhiskerPlotChartsPanel(List<GlycoSite> glycoSites, File resultsFolder,
 			InputParameters inputParameters) {
 		super(glycoSites, resultsFolder, inputParameters);
 
@@ -46,12 +47,15 @@ public class ProportionsPeptidesScatterPlotChartsPanel extends AbstractMultipleC
 	protected ChartPanel createChart(GlycoSite glycoSite) {
 		final Collection<GroupedQuantifiedPeptide> coveredPeptides = glycoSite.getCoveredGroupedPeptides();
 		final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(coveredPeptides);
-		final String subtitle = glycoSite.getTotalSPC()
-				+ " SPC / " + glycoSite.getTotalNumPeptides() + " Peps / " + numMeasurements + " Meas";
+		final List<GlycoSite> glycoSites = new ArrayList<GlycoSite>();
+		glycoSites.add(glycoSite);
+		final boolean psms = false;
+		final String subtitle = glycoSite.getTotalSPC() + " SPC / " + glycoSite.getTotalNumPeptides() + " Peps / "
+				+ numMeasurements + " Meas";
 		final String chartTitle = super.getChartTitle(glycoSite);
-		return ChartUtils.createScatterPlotChartForGlycoSite(
-				glycoSite, sumIntensitiesAcrossReplicates, chartTitle, subtitle,
-				null, null);
+		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGlycoSites(glycoSites,
+				chartTitle, subtitle, psms, sumIntensitiesAcrossReplicates, "");
+		return chartPanel;
 
 	}
 

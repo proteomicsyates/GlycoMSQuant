@@ -27,6 +27,7 @@ import javax.swing.JScrollPane;
 import javax.swing.border.LineBorder;
 
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CategoryPlot;
@@ -824,10 +825,11 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides,
+			final int numPeptideVersions = GlycoPTMAnalyzerUtil.getNumIndividualPeptideVersions(peptides,
 					sumIntensitiesAcrossReplicates);
+			final int numIntensities = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides);
 
-			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
+			final String numMeasurementsText = " (" + numIntensities + " measurements)";
 			if (positionInProtein != -1) {
 				final String positionInReference = ProteinSequences.getInstance()
 						.mapPositionToReferenceProtein(currentProteinAcc, positionInProtein, referenceProteinSequence);
@@ -941,8 +943,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides,
-					sumIntensitiesAcrossReplicates);
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			// we obtain a list of positionsInProtein
@@ -1083,8 +1084,7 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			String text = null;
 
-			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides,
-					sumIntensitiesAcrossReplicates);
+			final int numMeasurements = GlycoPTMAnalyzerUtil.getNumIndividualIntensities(peptides);
 
 			final String numMeasurementsText = " (" + numMeasurements + " measurements)";
 			if (positionInProtein != -1) {
@@ -1132,8 +1132,10 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 			// starting in row 1
 			// proportions pie chart
-			final ChartPanel chart3 = ChartUtils.createProportionsPieChartForGroupedPeptides(peptides, "", "",
+			final String title = "Avg proportions";
+			final ChartPanel chart3 = ChartUtils.createProportionsPieChartForGroupedPeptides(peptides, title, "",
 					sumIntensitiesAcrossReplicates, width, height);
+			chart3.getChart().getTitle().setFont(AbstractMultipleChartsBySitePanel.titleFont);
 			final GridBagConstraints c4 = new GridBagConstraints();
 			c4.gridx = 0;
 			c4.gridy = 1;
@@ -1178,17 +1180,23 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 
 	private ChartPanel createProportionsScatterPlotChartForPeptides(Collection<GroupedQuantifiedPeptide> peptides,
 			int width, int height) {
+		final String title = "Avg proportions per peptide";
 		final ChartPanel chartPanel = ChartUtils.createProportionsScatterPlotChartForPeptides(peptides,
-				sumIntensitiesAcrossReplicates, "", "", width, height);
-
+				sumIntensitiesAcrossReplicates, title, "", width, height);
+		chartPanel.getChart().getTitle().setFont(AbstractMultipleChartsBySitePanel.titleFont);
 		return chartPanel;
 	}
 
 	private ChartPanel createIntensitiesErrorBarChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
 			int positionInProtein, int width, int height) {
-
+		final boolean makeLog = false;
+		String logInsideString = "(log2) ";
+		if (!makeLog) {
+			logInsideString = "";
+		}
+		final String title = "Mean " + logInsideString + "intensity and " + ErrorType.SEM + " per PTM";
 		final ChartPanel chartPanel = ChartUtils.createIntensitiesErrorBarChartForPeptides(selectedPeptides,
-				positionInProtein, currentProteinAcc, "", "", false, ErrorType.SEM, width, height);
+				positionInProtein, currentProteinAcc, title, "", false, ErrorType.SEM, width, height);
 		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
@@ -1197,15 +1205,19 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 		final CategoryAxis domainAxis = plot.getDomainAxis();
 		domainAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
 		domainAxis.setTickLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
+		chartPanel.getChart().getTitle().setFont(AbstractMultipleChartsBySitePanel.titleFont);
 		return chartPanel;
 	}
 
 	private ChartPanel createIntensitiesWhiskeyChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
 			int positionInProtein, int width, int height) {
 
+		final String title = "Intensity distributions per PTM";
 		final ChartPanel chartPanel = ChartUtils.createIntensitiesBoxAndWhiskerChartForGroupedPeptides(selectedPeptides,
-				positionInProtein, currentProteinAcc, "", "", sumIntensitiesAcrossReplicates, width, height);
-		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
+				positionInProtein, currentProteinAcc, title, "", sumIntensitiesAcrossReplicates, width, height);
+		final JFreeChart chart = chartPanel.getChart();
+		chart.getTitle().setFont(AbstractMultipleChartsBySitePanel.titleFont);
+		final CategoryPlot plot = (CategoryPlot) chart.getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
 		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);
@@ -1219,9 +1231,13 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private ChartPanel createProportionsWhiskeyChartForPeptides(Collection<GroupedQuantifiedPeptide> selectedPeptides,
 			int width, int height) {
 
+		final String title = "Distribution of proportions per PTM";
 		final ChartPanel chartPanel = ChartUtils.createProportionsBoxAndWhiskerChartForGroupedPeptides(selectedPeptides,
-				"", "", sumIntensitiesAcrossReplicates, width, height);
-		final CategoryPlot plot = (CategoryPlot) chartPanel.getChart().getPlot();
+				title, "", sumIntensitiesAcrossReplicates, width, height);
+
+		final JFreeChart chart = chartPanel.getChart();
+		chart.getTitle().setFont(AbstractMultipleChartsBySitePanel.titleFont);
+		final CategoryPlot plot = (CategoryPlot) chart.getPlot();
 		final ValueAxis rangeAxis = plot.getRangeAxis();
 		// font for the axis
 		rangeAxis.setLabelFont(AbstractMultipleChartsBySitePanel.axisFont);

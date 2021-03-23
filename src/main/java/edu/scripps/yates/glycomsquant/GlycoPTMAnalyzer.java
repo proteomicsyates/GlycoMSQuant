@@ -345,7 +345,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		for (final PTMCode ptmCode : PTMCode.values()) {
 			final TDoubleList list = new TDoubleArrayList();
 			for (final GlycoSite hivPosition : hivPositions) {
-				list.add(hivPosition.getProportionByPTMCode(ptmCode, isSumIntensitiesAcrossReplicates()));
+				list.add(hivPosition.getAvgProportionByPTMCode(ptmCode, isSumIntensitiesAcrossReplicates()));
 			}
 			ret.put(ptmCode, Maths.mean(list));
 
