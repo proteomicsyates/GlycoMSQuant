@@ -66,11 +66,15 @@ public class GlycoPTMAnalyzerUtil {
 			final TIntArrayList positions = StringUtils.allPositionsOf(proteinOfInterestSequence, sequence);
 			for (final int position : positions.toArray()) {
 				final int lastPositionOfPeptideInProtein = position + sequence.length() - 1;
-				if (lastPositionOfPeptideInProtein + 2 <= proteinOfInterestSequence.length()) {
-					extendedSequence += "" + proteinOfInterestSequence.charAt(lastPositionOfPeptideInProtein + 1 - 1)
-							+ proteinOfInterestSequence.charAt(lastPositionOfPeptideInProtein + 2 - 1);
-					ret.add(extendedSequence);
+				if (lastPositionOfPeptideInProtein + 1 <= proteinOfInterestSequence.length()) {
+					extendedSequence += "" + proteinOfInterestSequence.charAt(lastPositionOfPeptideInProtein + 1 - 1);
+
 				}
+				if (lastPositionOfPeptideInProtein + 2 <= proteinOfInterestSequence.length()) {
+					extendedSequence += "" + proteinOfInterestSequence.charAt(lastPositionOfPeptideInProtein + 2 - 1);
+
+				}
+				ret.add(extendedSequence);
 			}
 
 		} else {
