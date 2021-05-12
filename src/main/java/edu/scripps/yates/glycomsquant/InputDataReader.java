@@ -113,7 +113,8 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 *                                    normalized by dividing by the sum of all
 	 *                                    intensities of the protein of interest and
 	 *                                    multiplying by the average of the
-	 *                                    intensities of the protein of interest<br>
+	 *                                    intensities of the protein of interest in
+	 *                                    that replicate<br>
 	 * @param motifRegexp
 	 * @param discardWrongPositionedPTMs
 	 * @param fixWrongPositionedPTMs
