@@ -36,6 +36,7 @@ public class ResultsProperties implements InputParameters {
 	private static final String REFERENCE_PROTEIN_SEQUENCE = "reference_protein_sequence";
 	private static final String FIX_WRONG_POSITIONED_PTMS = "fix_wrong_positioned_PTMs";
 	private static final String DISCARD_PEPTIDES_WITH_NO_MOTIFS = "discard_peptides_with_no_motifs";
+	private static final String DISCARD_PEPTIDES_REPEATED_IN_PROTEINS = "discardPeptidesRepeatedInProtein";
 	private static final String USE_CHARGE = "use_charge";
 	private final File individualResultsFolder;
 	private File inputDataFile;
@@ -58,6 +59,7 @@ public class ResultsProperties implements InputParameters {
 	private String referenceProteinSequence;
 	private File luciphorFile;
 	private Boolean useCharge;
+	private Boolean discardPeptidesRepeatedInProtein;
 
 	/**
 	 * 
@@ -156,6 +158,12 @@ public class ResultsProperties implements InputParameters {
 					this.useCharge = Boolean.valueOf(properties.getProperty(USE_CHARGE));
 				} else {
 					this.useCharge = true; // by default, for compatibility with previous versions before 1.3.11
+				}
+				if (properties.containsKey(DISCARD_PEPTIDES_REPEATED_IN_PROTEINS)) {
+					this.discardPeptidesRepeatedInProtein = Boolean
+							.valueOf(properties.getProperty(DISCARD_PEPTIDES_REPEATED_IN_PROTEINS));
+				} else {
+					this.discardPeptidesRepeatedInProtein = true; // by default for compatibility
 				}
 				loaded = true;
 			}
@@ -294,6 +302,10 @@ public class ResultsProperties implements InputParameters {
 			if (useCharge != null) {
 				properties.put(USE_CHARGE, String.valueOf(this.useCharge));
 			}
+			if (discardPeptidesRepeatedInProtein != null) {
+				properties.put(DISCARD_PEPTIDES_REPEATED_IN_PROTEINS,
+						String.valueOf(this.discardPeptidesRepeatedInProtein));
+			}
 			final FileWriter writer = new FileWriter(propertiesFile);
 			properties.store(writer, "Properties of the GlycoMSAnalyzer run performed on "
 					+ dateFormatter.format(FileManager.getDateFromFolderName(individualResultsFolder)));
@@ -323,6 +335,10 @@ public class ResultsProperties implements InputParameters {
 	public void setSumIntensitiesAcrossReplicates(Boolean sumIntensitiesAcrossReplicates) {
 		this.sumIntensitiesAcrossReplicates = sumIntensitiesAcrossReplicates;
 		updateProperties();
+	}
+
+	public void setDiscardPeptidesRepeatedInProtein(Boolean discardPeptidesRepeatedInProtein) {
+		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
 	}
 
 	@Override
@@ -457,5 +473,10 @@ public class ResultsProperties implements InputParameters {
 	public Boolean isUseCharge() {
 		loadProperties();
 		return this.useCharge;
+	}
+
+	@Override
+	public Boolean isDiscardPeptidesRepeatedInProtein() {
+		return this.discardPeptidesRepeatedInProtein;
 	}
 }

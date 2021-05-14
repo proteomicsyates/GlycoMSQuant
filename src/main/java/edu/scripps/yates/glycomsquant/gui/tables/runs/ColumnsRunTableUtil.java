@@ -107,6 +107,9 @@ public class ColumnsRunTableUtil {
 			case USE_CHARGE:
 				ret.add(resultsProperties.isUseCharge());
 				break;
+			case DISCARD_REPEATED_PEPTIDES:
+				ret.add(resultsProperties.isDiscardPeptidesRepeatedInProtein());
+				break;
 			default:
 				throw new IllegalArgumentException("Column " + column + " is not supported by this exporter");
 

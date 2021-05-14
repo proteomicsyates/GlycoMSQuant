@@ -48,10 +48,11 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 	private final boolean dontAllowConsecutiveMotifs;
 	private final String referenceProteinSequence;
 	private final boolean useCharge;
+	private final boolean discardPeptidesRepeatedInProtein;
 
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptideNodes, String proteinOfInterestACC,
 			AmountType amountType, String motifRegexp, boolean dontAllowConsecutiveMotifs,
-			String referenceProteinSequence, boolean useCharge) {
+			String referenceProteinSequence, boolean useCharge, boolean discardPeptidesRepeatedInProtein) {
 		this.peptides = peptideNodes;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
@@ -60,11 +61,12 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
 		this.referenceProteinSequence = referenceProteinSequence;
 		this.useCharge = useCharge;
+		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
 	}
 
 	public GlycoPTMPeptideAnalyzer(List<QuantifiedPeptideInterface> peptides, String proteinOfInterestACC,
 			File fastaFile, AmountType amountType, String motifRegexp, boolean dontAllowConsecutiveMotifs,
-			String referenceProteinSequence, boolean useCharge) {
+			String referenceProteinSequence, boolean useCharge, boolean discardPeptidesRepeatedInProtein) {
 		this.peptides = peptides;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.proteinSequence = ProteinSequences.getInstance(fastaFile, motifRegexp)
@@ -74,6 +76,7 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		this.dontAllowConsecutiveMotifs = dontAllowConsecutiveMotifs;
 		this.referenceProteinSequence = referenceProteinSequence;
 		this.useCharge = useCharge;
+		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
 	}
 
 	public List<GlycoSite> getGlycoSites() {
@@ -89,9 +92,18 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 		for (final QuantifiedPeptideInterface peptide : peptides) {
 			final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence,
 					peptide.getSequence());
+
+			boolean markGlycoSiteWithAmbiguousPeptide = false;
 			if (positionsOfPeptideInProtein.size() > 1 || positionsOfPeptideInProtein.isEmpty()) {
 				// discard peptides that can be mapped to multiple positions in the protein
-				continue;
+				// change made in May 12:
+				// do not discard them, unless the parameter is saying to so that, and keep
+				// going but mark the glycosite as having ambiguous peptides
+				if (discardPeptidesRepeatedInProtein) {
+					continue;
+				} else {
+					markGlycoSiteWithAmbiguousPeptide = true;
+				}
 			}
 			final List<PTMInProtein> positionsInProtein = getPTMPositionsInProtein(peptide);
 
@@ -104,9 +116,12 @@ public class GlycoPTMPeptideAnalyzer extends SwingWorker<List<GlycoSite>, Object
 				final PTMCode ptmCodeObj = PTMCode.getByValue(ptmPositionInProtein.getDeltaMass());
 				if (!map.containsKey(position)) {
 					// this shoudn't happen because we already created the sites before this loop
-					map.put(position,
-							new GlycoSite(position, proteinOfInterestACC, this.referenceProteinSequence, useCharge));
+					final GlycoSite newGlycoSite = new GlycoSite(position, proteinOfInterestACC,
+							this.referenceProteinSequence, useCharge);
+
+					map.put(position, newGlycoSite);
 				}
+				map.get(position).hasAmbiguousPeptides(markGlycoSiteWithAmbiguousPeptide);
 				final List<Double> intensities = peptide.getAmounts().stream()
 						.filter(a -> a.getAmountType() == amountType).map(a -> a.getValue())
 						.collect(Collectors.toList());

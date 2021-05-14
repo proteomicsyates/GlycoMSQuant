@@ -59,6 +59,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	private final File luciphorFile;
 	private final Boolean discardPeptidesWithNoMotifs;
 	private final Boolean useCharge;
+	private final Boolean discardPeptidesRepeatedInProtein;
 
 	public GlycoPTMAnalyzer(InputParameters inputParams) {
 		CurrentInputParameters.getInstance().setInputParameters(inputParams);
@@ -79,6 +80,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		this.referenceProteinSequence = inputParams.getReferenceProteinSequence();
 		this.discardPeptidesWithNoMotifs = inputParams.isDiscardPeptidesWithNoMotifs();
 		this.useCharge = inputParams.isUseCharge();
+		this.discardPeptidesRepeatedInProtein = inputParams.isDiscardPeptidesRepeatedInProtein();
 		printWelcome();
 	}
 
@@ -87,7 +89,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			boolean normalizeExperimentsByProtein, boolean sumIntensitiesAcrossReplicates, String motifRegexp,
 			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs,
 			boolean discardNonUniquePeptides, boolean dontAllowConsecutiveMotifs, boolean useReferenceProtein,
-			boolean useCharge) {
+			boolean useCharge, boolean discardPeptidesRepeatedInProtein) {
 		this.inputFile = inputFile;
 		this.proteinOfInterestACC = proteinOfInterestACC;
 		this.fastaFile = fastaFile;
@@ -109,6 +111,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			this.referenceProteinSequence = null;
 		}
 		this.useCharge = useCharge;
+		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
 		printWelcome();
 
 		CurrentInputParameters.getInstance().setInputParameters(this);
@@ -197,6 +200,11 @@ public class GlycoPTMAnalyzer implements InputParameters {
 						+ " peptide and then averaged. By default, it will not use charge.");
 		option14.setRequired(false);
 		options.addOption(option14);
+
+		final Option option15 = new Option("drp", "discard_repeated_peptides", false,
+				"[OPTIONAL] If present, peptides found several times in a single protein will be discarded.");
+		option15.setRequired(false);
+		options.addOption(option15);
 	}
 
 	public static void main(String[] args) {
@@ -273,6 +281,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 			if (cmd.hasOption("use_z")) {
 				useCharge = Boolean.valueOf(cmd.getOptionValue("use_z"));
 			}
+			boolean discardPeptidesRepeatedInProtein = false;
+			if (cmd.hasOption("drp")) {
+				discardPeptidesRepeatedInProtein = Boolean.valueOf(cmd.getOptionValue("drp"));
+			}
 			File luciphorFile = null;
 			if (cmd.hasOption("luc")) {
 				luciphorFile = new File(cmd.getOptionValue("luc"));
@@ -281,7 +293,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 					luciphorFile, prefix, suffix, intensityThreshold, amountType, normalizeExperimentsByProtein,
 					sumIntensitiesByReplicates, motifRegexp, discardWrongPositionedPTMs, fixWrongPositionedPTMs,
 					discardPeptidesWithNoMotifs, discardNonUniquePeptides, dontAllowConsecutiveMotifs,
-					useReferenceProtein, useCharge);
+					useReferenceProtein, useCharge, discardPeptidesRepeatedInProtein);
 			analyzer.run();
 			System.exit(0);
 		} catch (final Exception e) {
@@ -328,7 +340,7 @@ public class GlycoPTMAnalyzer implements InputParameters {
 		log.info("Now analyzing the " + peptides.size() + " peptides...");
 		final GlycoPTMPeptideAnalyzer glycoPTMPeptideAnalyzer = new GlycoPTMPeptideAnalyzer(peptides,
 				proteinOfInterestACC, amountType, this.motifRegexp, this.dontAllowConsecutiveMotifs,
-				this.referenceProteinSequence, this.useCharge);
+				this.referenceProteinSequence, this.useCharge, this.discardPeptidesRepeatedInProtein);
 		final List<GlycoSite> hivPositions = glycoPTMPeptideAnalyzer.getGlycoSites();
 		log.info(
 				"Analysis resulted in " + hivPositions.size() + " positions in protein '" + proteinOfInterestACC + "'");
@@ -491,5 +503,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	@Override
 	public Boolean isUseCharge() {
 		return this.useCharge;
+	}
+
+	@Override
+	public Boolean isDiscardPeptidesRepeatedInProtein() {
+		return this.discardPeptidesRepeatedInProtein;
 	}
 }

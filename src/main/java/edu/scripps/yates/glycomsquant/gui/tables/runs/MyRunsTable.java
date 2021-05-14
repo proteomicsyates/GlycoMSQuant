@@ -76,10 +76,10 @@ public class MyRunsTable extends MyAbstractTable {
 				final List<Object> runInfoList = ColumnsRunTableUtil.getInstance(folder).getRunInfoList(folder,
 						ColumnsRunTable.getColumns(), i + 1);
 				model.addRow(runInfoList.toArray());
-				log.info("Table now with " + model.getRowCount() + " rows");
+				log.debug("Table now with " + model.getRowCount() + " rows");
 			}
 
-			log.info(resultFolders.size() + " folders added to attached window");
+			log.debug(resultFolders.size() + " folders added to attached window");
 		}
 		SwingUtilities.invokeLater(new Runnable() {
 

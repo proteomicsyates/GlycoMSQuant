@@ -54,6 +54,7 @@ public class GlycoSite {
 	private final TIntList ambiguousSites = new TIntArrayList();
 	private String referencePosition;
 	private final boolean useCharge;
+	private boolean hasAmbiguousPeptides;
 
 	public GlycoSite(int position, String protein, String referenceProteinSequence, boolean useCharge) {
 		super();
@@ -155,7 +156,7 @@ public class GlycoSite {
 		if (!peptidesByNoPTMPeptideKey.containsKey(key)) {
 			final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, protein, getPosition());
 			peptidesByNoPTMPeptideKey.put(key,
-					new GroupedQuantifiedPeptide(peptide, protein, positionInPeptide, useCharge));
+					new GroupedQuantifiedPeptide(peptide, protein, positionInPeptide, useCharge, getPosition()));
 		}
 		final boolean added = peptidesByNoPTMPeptideKey.get(key).add(peptide);
 
@@ -440,6 +441,14 @@ public class GlycoSite {
 
 	public boolean isUseCharge() {
 		return this.useCharge;
+	}
+
+	public void hasAmbiguousPeptides(boolean hasAmbiguousPeptides) {
+		this.hasAmbiguousPeptides = hasAmbiguousPeptides;
+	}
+
+	public boolean hasAmbiguousPeptides() {
+		return hasAmbiguousPeptides;
 	}
 
 }

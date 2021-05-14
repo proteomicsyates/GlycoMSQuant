@@ -26,6 +26,7 @@ import edu.scripps.yates.utilities.proteomicsmodel.Peptide;
 import edu.scripps.yates.utilities.proteomicsmodel.utils.ModelUtils;
 import edu.scripps.yates.utilities.sequence.PTMInPeptide;
 import edu.scripps.yates.utilities.strings.StringUtils;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
@@ -60,11 +61,12 @@ public class GlycoPTMAnalyzerUtil {
 			throw new IllegalArgumentException("Protein of interest sequence is not provided or not found");
 		}
 		final List<String> ret = new ArrayList<String>();
-		String extendedSequence = sequence;
+
 		// only if the last or the previous to the last aminoacids are N
 		if (sequence.charAt(sequence.length() - 1) == 'N' || sequence.charAt(sequence.length() - 2) == 'N') {
 			final TIntArrayList positions = StringUtils.allPositionsOf(proteinOfInterestSequence, sequence);
 			for (final int position : positions.toArray()) {
+				String extendedSequence = sequence;
 				final int lastPositionOfPeptideInProtein = position + sequence.length() - 1;
 				if (lastPositionOfPeptideInProtein + 1 <= proteinOfInterestSequence.length()) {
 					extendedSequence += "" + proteinOfInterestSequence.charAt(lastPositionOfPeptideInProtein + 1 - 1);
@@ -74,10 +76,13 @@ public class GlycoPTMAnalyzerUtil {
 					extendedSequence += "" + proteinOfInterestSequence.charAt(lastPositionOfPeptideInProtein + 2 - 1);
 
 				}
-				ret.add(extendedSequence);
+				if (!ret.contains(extendedSequence)) {
+					ret.add(extendedSequence);
+				}
 			}
 
 		} else {
+			final String extendedSequence = sequence;
 			ret.add(extendedSequence);
 		}
 		if (ret.isEmpty()) {
@@ -647,7 +652,8 @@ public class GlycoPTMAnalyzerUtil {
 			final String peptideKey = getPeptideKey(peptide, useCharge);
 			final int positionInPeptide = getPositionInPeptide(peptide, proteinAcc, positionInProtein);
 			if (!ret.containsKey(peptideKey)) {
-				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, positionInPeptide, useCharge));
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, positionInPeptide, useCharge,
+						positionInProtein));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}
@@ -675,7 +681,8 @@ public class GlycoPTMAnalyzerUtil {
 		for (final QuantifiedPeptideInterface peptide : peptides) {
 			final String peptideKey = getPeptideKey(peptide, useCharge);
 			if (!ret.containsKey(peptideKey)) {
-				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, useCharge));
+				final Integer nullNumber = null;
+				ret.put(peptideKey, new GroupedQuantifiedPeptide(peptide, proteinAcc, useCharge, nullNumber));
 			} else {
 				ret.get(peptideKey).add(peptide);
 			}
@@ -695,18 +702,29 @@ public class GlycoPTMAnalyzerUtil {
 	public static int getPositionInPeptide(QuantifiedPeptideInterface peptide, String proteinAcc,
 			int positionInProtein) {
 		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
-		final TIntArrayList positions = StringUtils.allPositionsOf(proteinSequence, peptide.getSequence());
-		if (positions.size() > 1) {
-			throw new IllegalArgumentException("Peptide " + peptide.getSequence()
-					+ " maps to multiple position to protein " + proteinAcc + " with sequence " + proteinSequence);
-		}
-		if (positions == null || positions.isEmpty()) {
+		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence,
+				peptide.getSequence());
+		if (positionsOfPeptideInProtein == null || positionsOfPeptideInProtein.isEmpty()) {
 			throw new IllegalArgumentException("Peptide " + peptide.getSequence() + " does not map to protein "
 					+ proteinAcc + " with sequence " + proteinSequence);
 		}
-		final int positionOfPeptideInProtein = positions.get(0);
-		final int positionInPeptide = positionInProtein - positionOfPeptideInProtein + 1;
-		return positionInPeptide;
+//		if (positionsOfPeptideInProtein.size() > 1) {
+//			throw new IllegalArgumentException("Peptide " + peptide.getSequence()
+//					+ " maps to multiple position to protein " + proteinAcc + " with sequence " + proteinSequence);
+//		}
+		for (final int positionOfPeptideInProtein : positionsOfPeptideInProtein.toArray()) {
+			if (positionInProtein < positionOfPeptideInProtein
+					|| positionInProtein > positionOfPeptideInProtein + peptide.getSequence().length() - 1) {
+				// this happens when the peptide is found more than once in the protein and this
+				// position is not the one corresponding to "positionInProtein"
+				continue;
+			}
+
+			final int positionInPeptide = positionInProtein - positionOfPeptideInProtein + 1;
+			return positionInPeptide;
+		}
+		throw new IllegalArgumentException("Peptide " + peptide.getSequence() + " does not map to protein " + proteinAcc
+				+ " with sequence " + proteinSequence);
 	}
 
 	public static TIntObjectMap<GlycoSite> getSitesByPosition(List<GlycoSite> sites) {
@@ -782,6 +800,38 @@ public class GlycoPTMAnalyzerUtil {
 					+ " in sequence " + proteinSequence + " in multiple positions. It should be discarded.");
 		}
 		return positionsOfPeptideInProtein.get(0);
+	}
+
+	public static TIntList getPositionsInProtein(QuantifiedPeptideInterface peptide, String proteinAcc,
+			Integer positionToCoverInProtein) {
+		return getPositionsInProtein(peptide.getSequence(), proteinAcc, positionToCoverInProtein);
+	}
+
+	public static TIntList getPositionsInProtein(String peptideSequence, String proteinAcc,
+			Integer positionToCoverInProtein) {
+
+		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
+		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence, peptideSequence);
+		if (positionsOfPeptideInProtein.isEmpty()) {
+			throw new IllegalArgumentException("Peptide " + peptideSequence + " doesn't map to protein " + proteinAcc
+					+ " in sequence " + proteinSequence);
+		}
+		if (positionToCoverInProtein != null) {
+			final TIntIterator iterator = positionsOfPeptideInProtein.iterator();
+			while (iterator.hasNext()) {
+				final int positionOfPeptideInProtein = iterator.next();
+				// is this position valid for the positionToCoverInProtein?
+				if (positionOfPeptideInProtein > positionToCoverInProtein) {
+					iterator.remove();
+					continue;
+				}
+				if (positionOfPeptideInProtein + peptideSequence.length() - 1 < positionToCoverInProtein) {
+					iterator.remove();
+					continue;
+				}
+			}
+		}
+		return positionsOfPeptideInProtein;
 	}
 
 	public static List<QuantifiedPeptideInterface> getPeptidesFromGroupedPeptides(

@@ -126,6 +126,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	private JCheckBoxMenuItem discardNonUniquePeptidesMenuItem;
 //	private JCheckBoxMenuItem dontAllowConsecutiveMotifsMenuItem;
 	private JCheckBoxMenuItem useReferenceProteinSequenceMenuItem;
+	private JCheckBoxMenuItem discardPeptidesRepeatedInProteinMenuItem;
 	private JMenuItem editReferenceProteinMenuItem;
 	private ReferenceProteinSequenceEditor referenceProteinSequenceEditor;
 	private JFileChooser fileChooserLuciphor;
@@ -670,9 +671,12 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
-				showSequenceDialog(getProteinOfInterestACC(), currentGlycoSites, currentPeptides);
-
+				try {
+					showSequenceDialog(getProteinOfInterestACC(), currentGlycoSites, currentPeptides);
+				} catch (final Exception e2) {
+					e2.printStackTrace();
+					showError(e2.getMessage());
+				}
 			}
 		});
 
@@ -902,6 +906,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		discardNonUniquePeptidesMenuItem
 				.setToolTipText("<html>If enabled, peptides shared by multiple proteins will be discarded.</html>");
 		advancedParametersMenu.add(discardNonUniquePeptidesMenuItem);
+		discardPeptidesRepeatedInProteinMenuItem = new JCheckBoxMenuItem("Discard peptides repeated in protein", false);
+		discardPeptidesRepeatedInProteinMenuItem.setToolTipText(
+				"<html>If enabled, peptides found multiple times in a single protein will be discarded.</html>");
+		advancedParametersMenu.add(discardPeptidesRepeatedInProteinMenuItem);
 //		dontAllowConsecutiveMotifsMenuItem = new JCheckBoxMenuItem("Don't allow consecutive motifs", true);
 //		dontAllowConsecutiveMotifsMenuItem
 //				.setToolTipText("<html>If enabled, motifs found in consecutive positions will be marked as ambiguous."
@@ -1487,6 +1495,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		resultsProperties.setFixWrongPositionedPTMs(isFixWrongPositionedPTMs());
 		resultsProperties.setDiscardPeptidesWithNoMotifs(isDiscardPeptidesWithNoMotifs());
 		resultsProperties.setDiscardNonUniquePeptides(isDiscardNonUniquePeptides());
+		resultsProperties.setDiscardPeptidesRepeatedInProtein(isDiscardPeptidesRepeatedInProtein());
 		resultsProperties.setDontAllowConsecutiveMotifs(isDontAllowConsecutiveMotifs());
 		resultsProperties.setReferenceProteinSequence(getReferenceProteinSequence());
 		resultsProperties.setUseCharge(isUseCharge());
@@ -1503,7 +1512,8 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 				log.info("Analyzing peptides...");
 				final GlycoPTMPeptideAnalyzer peptideAnalyzer = new GlycoPTMPeptideAnalyzer(currentPeptides,
 						getProteinOfInterestACC(), getFastaFile(), getAmountType(), getMotifRegexp(),
-						isDontAllowConsecutiveMotifs(), getReferenceProteinSequence(), isUseCharge());
+						isDontAllowConsecutiveMotifs(), getReferenceProteinSequence(), isUseCharge(),
+						isDiscardPeptidesRepeatedInProtein());
 				peptideAnalyzer.addPropertyChangeListener(this);
 				peptideAnalyzer.execute();
 			} else {
@@ -2039,5 +2049,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	@Override
 	public Boolean isDiscardPeptidesWithNoMotifs() {
 		return this.discardPeptidesWithNoMotifsCheckBox.isSelected();
+	}
+
+	@Override
+	public Boolean isDiscardPeptidesRepeatedInProtein() {
+		return this.discardPeptidesRepeatedInProteinMenuItem.isSelected();
 	}
 }

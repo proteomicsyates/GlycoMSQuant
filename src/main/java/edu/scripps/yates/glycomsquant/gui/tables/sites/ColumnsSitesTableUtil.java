@@ -150,15 +150,19 @@ public class ColumnsSitesTableUtil {
 				ret.add(glycoSite.getTotalSPC());
 				break;
 			case ISSUE:
+				final StringBuilder sb = new StringBuilder();
 				if (glycoSite.isAmbiguous()) {
 					final TIntList positions = glycoSite.getAmbiguousSites();
 					final String plural = positions.size() > 1 ? "s" : "";
 
 					final String positionsString = StringUtils.getSortedSeparatedValueString(positions, ",");
-					ret.add("Ambiguous with site" + plural + ": " + positionsString);
+					sb.append("Ambiguous with site" + plural + ": " + positionsString);
+				} else if (glycoSite.hasAmbiguousPeptides()) {
+					sb.append("This site contains peptides that are repeated in the protein sequence");
 				} else {
 					ret.add("");
 				}
+				ret.add(sb.toString());
 				break;
 			case REFERENCE_SITE:
 				ret.add(glycoSite.getReferencePosition());

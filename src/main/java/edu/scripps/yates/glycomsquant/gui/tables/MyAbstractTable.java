@@ -116,13 +116,13 @@ public abstract class MyAbstractTable extends JTable implements SavesToFile {
 
 	public final void addColumnsInTable(List<String> columnsStringList) {
 		final MyTableModel model = getModel();
-		log.info("Adding colums " + columnsStringList.size() + " columns");
+		log.debug("Adding colums " + columnsStringList.size() + " columns");
 		if (columnsStringList != null) {
 
 			for (final String columnName : columnsStringList) {
 				model.addColumn(columnName);
 			}
-			log.info("Added " + getColumnCount() + " colums");
+			log.debug("Added " + getColumnCount() + " colums");
 			for (int i = 0; i < getColumnCount(); i++) {
 				final TableColumn column = getColumnModel().getColumn(i);
 				final List<String> columHeaders = getColumnNames();

@@ -99,6 +99,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private final boolean fixWrongPositionedPTMs;
 	private final boolean discardPeptidesWithNoMotifs;
 	private final boolean useCharge;
+	private final boolean discardPeptidesRepeatedInProtein;
 	private static final DecimalFormat formatter = new DecimalFormat("#.#%");
 
 	/**
@@ -109,22 +110,24 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @param proteinOfInterestACC
 	 * @param intensityThreshold
 	 * @param amountType
-	 * @param normalizeReplicates         if true, the intensities will be
-	 *                                    normalized by dividing by the sum of all
-	 *                                    intensities of the protein of interest and
-	 *                                    multiplying by the average of the
-	 *                                    intensities of the protein of interest in
-	 *                                    that replicate<br>
+	 * @param normalizeReplicates              if true, the intensities will be
+	 *                                         normalized by dividing by the sum of
+	 *                                         all intensities of the protein of
+	 *                                         interest and multiplying by the
+	 *                                         average of the intensities of the
+	 *                                         protein of interest in that
+	 *                                         replicate<br>
 	 * @param motifRegexp
 	 * @param discardWrongPositionedPTMs
 	 * @param fixWrongPositionedPTMs
 	 * @param discardPeptidesWithNoMotifs
 	 * @param useCharge
+	 * @param discardPeptidesRepeatedInProtein
 	 */
 	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
 			double intensityThreshold, boolean normalizeReplicates, String motifRegexp,
 			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs,
-			boolean useCharge) {
+			boolean useCharge, boolean discardPeptidesRepeatedInProtein) {
 		this.motifRegexp = motifRegexp;
 		this.inputFile = inputDataFile;
 		this.luciphorFile = luciphorFile;
@@ -141,6 +144,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs;
 		this.discardPeptidesWithNoMotifs = discardPeptidesWithNoMotifs;
 		this.useCharge = useCharge;
+		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
 	}
 
 	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {
@@ -504,7 +508,6 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 	private QuantifiedPeptideInterface fixPTMPosition(QuantifiedPeptideInterface peptide)
 			throws AmbiguousPTMLocationException, NotPossiblePTMLocationException {
-
 		final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
 		final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil.getPTMsInPeptideByPosition(peptide);
 		for (final int pos : ptmPositions.keys()) {

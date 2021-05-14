@@ -286,23 +286,29 @@ public class ChartUtils {
 				// only get the intensities of the ptmCodes that are present in the position
 				// corresponding to the positionInProtein
 				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
-					final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, proteinAcc,
-							positionInProtein);
-					final TIntList positionsInProtein = GlycoPTMAnalyzerUtil
-							.getPositionsByPTMCodesFromPeptide(peptide, proteinAcc).get(ptmCode);
-					if (positionsInProtein != null && positionsInProtein.contains(positionInPeptide)) {
+					try {
+						final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, proteinAcc,
+								positionInProtein);
+						final TIntList positionsInProtein = GlycoPTMAnalyzerUtil
+								.getPositionsByPTMCodesFromPeptide(peptide, proteinAcc).get(ptmCode);
+						if (positionsInProtein != null && positionsInProtein.contains(positionInPeptide)) {
 
-						// then, we have a peptide with the modification we want in the position we want
-						// we create a fakeGroupedQuantifiedPeptide just to get the intensity
-						final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
-								proteinAcc, positionInPeptide, useCharge);
-						final TDoubleList intensities = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
-						if (!valuesPerPTMCode.containsKey(ptmCode)) {
-							valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+							// then, we have a peptide with the modification we want in the position we want
+							// we create a fakeGroupedQuantifiedPeptide just to get the intensity
+							final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
+									proteinAcc, positionInPeptide, useCharge, positionInProtein);
+							final TDoubleList intensities = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
+							if (!valuesPerPTMCode.containsKey(ptmCode)) {
+								valuesPerPTMCode.put(ptmCode, new ArrayList<Double>());
+							}
+							for (final double intensity : intensities.toArray()) {
+								valuesPerPTMCode.get(ptmCode).add(intensity);
+							}
 						}
-						for (final double intensity : intensities.toArray()) {
-							valuesPerPTMCode.get(ptmCode).add(intensity);
-						}
+					} catch (final IllegalArgumentException e) {
+						// this happens when selecting a position in the protein, the peptides covering
+						// that position are selected, and then the sites covered by these peptides are
+						// selected, but obviously not all peptides cover all sites
 					}
 				}
 
@@ -657,23 +663,31 @@ public class ChartUtils {
 				// only get the intensities of the ptmCodes that are present in the position
 				// corresponding to the positionInProtein
 				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
-					final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, proteinAcc,
-							positionInProtein);
-					final TIntList positionsInPeptide = GlycoPTMAnalyzerUtil
-							.getPositionsByPTMCodesFromPeptide(peptide, proteinAcc).get(ptmCode);
-					if (positionsInPeptide != null && positionsInPeptide.contains(positionInPeptide)) {
+					try {
+						final int positionInPeptide = GlycoPTMAnalyzerUtil.getPositionInPeptide(peptide, proteinAcc,
+								positionInProtein);
+						final TIntList positionsInPeptide = GlycoPTMAnalyzerUtil
+								.getPositionsByPTMCodesFromPeptide(peptide, proteinAcc).get(ptmCode);
+						if (positionsInPeptide != null && positionsInPeptide.contains(positionInPeptide)) {
 
-						// then, we have a peptide with the modification we want in the position we want
-						// we create a fakeGroupedQuantifiedPeptide just to get the intensity
-						final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
-								proteinAcc, positionInPeptide, useCharge);
-						final TDoubleList intensitiesByPTMCode = fakeQuantifiedPeptide.getIntensitiesByPTMCode(ptmCode);
+							// then, we have a peptide with the modification we want in the position we want
+							// we create a fakeGroupedQuantifiedPeptide just to get the intensity
+							final Integer nullNumber = null;
+							final GroupedQuantifiedPeptide fakeQuantifiedPeptide = new GroupedQuantifiedPeptide(peptide,
+									proteinAcc, positionInPeptide, useCharge, nullNumber);
+							final TDoubleList intensitiesByPTMCode = fakeQuantifiedPeptide
+									.getIntensitiesByPTMCode(ptmCode);
 
 //				final TDoubleList intensitiesByPTMCode = groupedPeptide.getIntensitiesByPTMCode(ptmCode);
-						if (intensitiesByPTMCode != null) {
-							intensities.addAll(intensitiesByPTMCode);
-						}
+							if (intensitiesByPTMCode != null) {
+								intensities.addAll(intensitiesByPTMCode);
+							}
 
+						}
+					} catch (final IllegalArgumentException e) {
+						// this happens when selecting a position in the protein, the peptides covering
+						// that position are selected, and then the sites covered by these peptides are
+						// selected, but obviously not all peptides cover all sites
 					}
 				}
 			}

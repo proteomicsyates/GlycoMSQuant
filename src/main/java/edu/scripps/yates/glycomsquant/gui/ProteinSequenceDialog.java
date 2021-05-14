@@ -26,6 +26,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.LineBorder;
 
+import org.apache.log4j.Logger;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.CategoryAxis;
@@ -54,6 +55,8 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.hash.THashSet;
 
 public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAttachedPeptideListDialog {
+	private final static Logger log = Logger.getLogger(ProteinSequenceDialog.class);
+
 	/**
 	 * 
 	 */
@@ -659,8 +662,16 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 	private Set<GroupedQuantifiedPeptide> getPeptidesCoveringPosition(int positionInProtein) {
 		if (!peptidesByPositionsInProtein.containsKey(positionInProtein)) {
 			for (final GroupedQuantifiedPeptide peptide : getGroupedPeptides(positionInProtein)) {
-				final int firstPositionOfPeptideInProtein = GlycoPTMAnalyzerUtil
-						.getPositionsInProtein(peptide.getSequence(), this.currentProteinAcc);
+				final TIntList positionsOfPeptideInProtein = GlycoPTMAnalyzerUtil
+						.getPositionsInProtein(peptide.getSequence(), this.currentProteinAcc, positionInProtein);
+				if (positionsOfPeptideInProtein.size() > 1) {
+					log.info("This shoudn't happen");// because if we specify already a positionInProtein that is not
+														// null, we should only have one here
+				}
+				if (positionsOfPeptideInProtein.isEmpty()) {
+					continue;
+				}
+				final int firstPositionOfPeptideInProtein = positionsOfPeptideInProtein.get(0);
 				final int lastPositionOfPeptideInProtein = firstPositionOfPeptideInProtein
 						+ peptide.getSequence().length() - 1;
 				if (positionInProtein >= firstPositionOfPeptideInProtein
@@ -955,15 +966,19 @@ public class ProteinSequenceDialog extends AbstractJFrameWithAttachedHelpAndAtta
 			// peptides
 			for (final GroupedQuantifiedPeptide groupedPeptide : peptides) {
 				for (final QuantifiedPeptideInterface peptide : groupedPeptide) {
-					final int peptideStartInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide.getSequence(),
-							currentProteinAcc);
+
+					final TIntList peptideStartsInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(
+							peptide.getSequence(), currentProteinAcc,
+							positionInProtein == -1 ? null : positionInProtein);
 
 					final TIntList motifPositionsInPeptide = GlycoPTMAnalyzerUtil.getMotifPositions(peptide,
 							currentProteinAcc);
-					for (final int motifPositionInPeptide : motifPositionsInPeptide.toArray()) {
-						final int motifPositionInProtein = peptideStartInProtein + motifPositionInPeptide - 1;
-						if (!positionsInProtein.contains(motifPositionInProtein)) {
-							positionsInProtein.add(motifPositionInProtein);
+					for (final int peptideStartInProtein : peptideStartsInProtein.toArray()) {
+						for (final int motifPositionInPeptide : motifPositionsInPeptide.toArray()) {
+							final int motifPositionInProtein = peptideStartInProtein + motifPositionInPeptide - 1;
+							if (!positionsInProtein.contains(motifPositionInProtein)) {
+								positionsInProtein.add(motifPositionInProtein);
+							}
 						}
 					}
 				}

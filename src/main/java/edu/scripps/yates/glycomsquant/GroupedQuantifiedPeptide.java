@@ -10,6 +10,7 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
 import gnu.trove.map.TMap;
 import gnu.trove.set.hash.THashSet;
 
@@ -29,24 +30,33 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	private TMap<PTMCode, TDoubleList> intensitiesByPTMCode;
 	private final String proteinAcc;
 	private Integer positionInPeptide;
-	private final int startingPositionInProtein;
+	private final TIntList startingPositionsInProtein;
 	private final boolean useCharge;
 
 	/**
 	 * 
 	 * @param peptide
 	 * @param proteinAcc
-	 * @param positionInPeptide position in the peptide for which this
-	 *                          {@link GroupedQuantifiedPeptide} was created
-	 * @param usecharge         whether to use the charge or not, meaning that if
-	 *                          not, peptides with the same sequence and different
-	 *                          charge can be grouped in this class and therefore
-	 *                          the call to getChargeState doesn't make sense
+	 * @param positionInPeptide        position in the peptide for which this
+	 *                                 {@link GroupedQuantifiedPeptide} was created
+	 * @param usecharge                whether to use the charge or not, meaning
+	 *                                 that if not, peptides with the same sequence
+	 *                                 and different charge can be grouped in this
+	 *                                 class and therefore the call to
+	 *                                 getChargeState doesn't make sense If the
+	 *                                 peptide is found in multiple positions in the
+	 *                                 protein, it throws an
+	 *                                 {@link IllegalArgumentException}
+	 * @param positionToCoverInProtein restriction that states that the peptide has
+	 *                                 to cover this position in the protein, just
+	 *                                 in case the peptide is found several times in
+	 *                                 the protein
 	 */
 	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, Integer positionInPeptide,
-			boolean useCharge) {
+			boolean useCharge, Integer positionToCoverInProtein) {
 		this.proteinAcc = proteinAcc;
-		this.startingPositionInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide, proteinAcc);
+		this.startingPositionsInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide, proteinAcc,
+				positionToCoverInProtein);
 		this.positionInPeptide = positionInPeptide;
 		this.useCharge = useCharge;
 		if (useCharge) {
@@ -64,10 +74,15 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 	 * @param peptide
 	 * @param proteinAcc
 	 * @param useCharge
+	 * @param positionToCoverInProtein restriction that states that the peptide has
+	 *                                 to cover this position in the protein, just
+	 *                                 in case the peptide is found several times in
+	 *                                 the protein
 	 * 
 	 */
-	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, boolean useCharge) {
-		this(peptide, proteinAcc, null, useCharge);
+	public GroupedQuantifiedPeptide(QuantifiedPeptideInterface peptide, String proteinAcc, boolean useCharge,
+			Integer positionToCoverInProtein) {
+		this(peptide, proteinAcc, null, useCharge, positionToCoverInProtein);
 	}
 
 	/**
@@ -188,12 +203,19 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 		if (positionInProtein == null) {
 			setPositionInPeptide(null);
 		} else {
-			final int positionInPeptide2 = positionInProtein - startingPositionInProtein + 1;
-			if (positionInPeptide2 < 1 || positionInPeptide2 > getSequence().length()) {
-				setPositionInPeptide(null);
-			} else {
-				setPositionInPeptide(positionInPeptide2);
+			// here we have to figure out which statingPositionInProteinTouse
+			// it will be the one that gives a number from 1 to sequence length
+			Integer validPosition = null;
+			for (final int startingPositionInProtein : startingPositionsInProtein.toArray()) {
+
+				final int positionInPeptide2 = positionInProtein - startingPositionInProtein + 1;
+				if (positionInPeptide2 < 1 || positionInPeptide2 > getSequence().length()) {
+
+				} else {
+					validPosition = positionInPeptide2;
+				}
 			}
+			setPositionInPeptide(validPosition);
 		}
 	}
 

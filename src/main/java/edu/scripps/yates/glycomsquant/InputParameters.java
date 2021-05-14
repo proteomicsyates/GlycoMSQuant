@@ -45,4 +45,6 @@ public interface InputParameters {
 	 * @return
 	 */
 	public Boolean isUseCharge();
+
+	public Boolean isDiscardPeptidesRepeatedInProtein();
 }
