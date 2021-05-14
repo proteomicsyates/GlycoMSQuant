@@ -22,16 +22,14 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 	public static final String RESULT_LOADER_FROM_DISK_FINISHED = "resultLoaderFinished";
 	public static final String RESULT_LOADER_FROM_DISK_ERROR = "resultLoaderError";
 	private final File individualResultsFolder;
-	private final String referenceProteinSequence;
 	private final static Logger log = Logger.getLogger(ResultLoaderFromDisk.class);
 
 	/**
 	 * 
 	 * @param individualResultsFolder individual results folder
 	 */
-	public ResultLoaderFromDisk(File individualResultsFolder, String referenceProteinSequence) {
+	public ResultLoaderFromDisk(File individualResultsFolder) {
 		this.individualResultsFolder = individualResultsFolder;
-		this.referenceProteinSequence = referenceProteinSequence;
 	}
 
 	@Override
@@ -59,9 +57,15 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 					resultsProperties.getProteinOfInterestACC(), resultsProperties.getIntensityThreshold(),
 					resultsProperties.isNormalizeReplicates(), resultsProperties.getMotifRegexp(),
 					resultsProperties.isDiscardWrongPositionedPTMs(), resultsProperties.isFixWrongPositionedPTMs(),
-					resultsProperties.isDiscardPeptidesWithNoMotifs(), resultsProperties.isUseCharge());
-
-			final List<GlycoSite> glycoSites = readDataFile(dataFile, reader);
+					resultsProperties.isDiscardPeptidesWithNoMotifs(), resultsProperties.isUseCharge(),
+					resultsProperties.isDiscardPeptidesRepeatedInProtein());
+			boolean discardPeptidesRepeatedInProtein = true;
+			if (resultsProperties.isDiscardPeptidesRepeatedInProtein() != null) {
+				discardPeptidesRepeatedInProtein = resultsProperties.isDiscardPeptidesRepeatedInProtein();
+			}
+			final List<GlycoSite> glycoSites = readDataFile(dataFile, reader,
+					resultsProperties.getReferenceProteinSequence(), resultsProperties.getProteinSequence(),
+					discardPeptidesRepeatedInProtein);
 			final List<QuantifiedPeptideInterface> peptides = GlycoPTMAnalyzerUtil.getPeptidesFromSites(glycoSites);
 			final ResultsLoadedFromDisk results = new ResultsLoadedFromDisk(resultsProperties, glycoSites, peptides);
 			firePropertyChange(RESULT_LOADER_FROM_DISK_FINISHED, null, results);
@@ -72,7 +76,8 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 		return null;
 	}
 
-	private List<GlycoSite> readDataFile(File dataFile, InputDataReader reader) throws IOException {
+	private List<GlycoSite> readDataFile(File dataFile, InputDataReader reader, String referenceProteinSequence,
+			String proteinSequence, boolean discardPeptidesRepeatedInProtein) throws IOException {
 		log.info("Reading data file: " + dataFile.getAbsolutePath());
 		final List<GlycoSite> ret = new ArrayList<GlycoSite>();
 		final List<String> lines = Files.readAllLines(dataFile.toPath());
@@ -81,7 +86,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			if (line.startsWith(GlycoSite.GLYCOSITE)) {
 				if (!"".equals(sb.toString())) {
 					final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), reader,
-							this.referenceProteinSequence);
+							referenceProteinSequence, proteinSequence, discardPeptidesRepeatedInProtein);
 					ret.add(glycoSite);
 					sb = new StringBuilder();
 				}
@@ -90,7 +95,7 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 		}
 		if (!"".equals(sb.toString())) {
 			final GlycoSite glycoSite = GlycoSite.readGlycoSiteFromString(sb.toString(), reader,
-					this.referenceProteinSequence);
+					referenceProteinSequence, proteinSequence, discardPeptidesRepeatedInProtein);
 			ret.add(glycoSite);
 			sb = new StringBuilder();
 		}

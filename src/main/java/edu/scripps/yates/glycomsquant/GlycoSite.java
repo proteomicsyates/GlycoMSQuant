@@ -92,7 +92,7 @@ public class GlycoSite {
 	}
 
 	public static GlycoSite readGlycoSiteFromString(String string, InputDataReader reader,
-			String referenceProteinSequence) {
+			String referenceProteinSequence, String proteinSequence, boolean discardPeptidesRepeatedInProtein) {
 		final boolean useCharge = reader.isUseCharge();
 		final String[] lines = string.split("\n");
 		GlycoSite ret = null;
@@ -119,6 +119,16 @@ public class GlycoSite {
 						final String peptideKey = split[i + 1];
 						if (peptideMap.containsKey(peptideKey)) {
 							final QuantifiedPeptideInterface peptide = peptideMap.get(peptideKey);
+							// if we dont discard peptides repeated in a protein, and we found one, we mark
+							// the glycosite as having ambiguous peptides
+							if (!discardPeptidesRepeatedInProtein) {
+								final Integer nullInteger = null;
+								final TIntList positionsInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide,
+										ret.getProtein(), proteinSequence, nullInteger);
+								if (positionsInProtein.size() > 1) {
+									ret.hasAmbiguousPeptides(true);
+								}
+							}
 							ret.addValue(ptmCode, intensity, peptide);
 						} else {
 							log.error("asdf");

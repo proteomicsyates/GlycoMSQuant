@@ -971,7 +971,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 
 		componentStateKeeper.keepEnableStates(this);
 		componentStateKeeper.disable(this);
-		final GlycoPTMRunComparator comparator = new GlycoPTMRunComparator(selectedRuns, getReferenceProteinSequence());
+		final GlycoPTMRunComparator comparator = new GlycoPTMRunComparator(selectedRuns);
 		comparator.addPropertyChangeListener(this);
 		comparator.execute();
 	}
@@ -1448,10 +1448,11 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final boolean fixWrongPositionedPTMs = isFixWrongPositionedPTMs();
 		final Boolean discardPeptidesWithNoMotifs = isDiscardPeptidesWithNoMotifs();
 		final Boolean useCharge = isUseCharge();
+		final Boolean discardPeptidesRepeatedInProtein = isDiscardPeptidesRepeatedInProtein();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
 		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, intensityThreshold,
 				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs, fixWrongPositionedPTMs,
-				discardPeptidesWithNoMotifs, useCharge);
+				discardPeptidesWithNoMotifs, useCharge, discardPeptidesRepeatedInProtein);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}
@@ -1949,8 +1950,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		this.componentStateKeeper.disable(this);
 		clearGraphs();
 		peptidesWithWrongPTMs = null;
-		final ResultLoaderFromDisk resultLoader = new ResultLoaderFromDisk(individualResultsFolder,
-				getReferenceProteinSequence());
+		final ResultLoaderFromDisk resultLoader = new ResultLoaderFromDisk(individualResultsFolder);
 		resultLoader.addPropertyChangeListener(this);
 		resultLoader.execute();
 	}

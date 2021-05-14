@@ -766,51 +766,62 @@ public class GlycoPTMAnalyzerUtil {
 
 	/**
 	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
-	 * class, so it must be initialized before this call. If peptide is not found is
-	 * maps to multiple locations of the protein, it throws an
-	 * {@link IllegalArgumentException}
+	 * class, so it must be initialized before this call.
 	 * 
 	 * @param peptide
 	 * @param proteinAcc
+	 * @param positionToCoverInProtein
 	 * @return
 	 */
-	public static int getPositionsInProtein(QuantifiedPeptideInterface peptide, String proteinAcc) {
-		return getPositionsInProtein(peptide.getSequence(), proteinAcc);
+	public static TIntList getPositionsInProtein(QuantifiedPeptideInterface peptide, String proteinAcc,
+			Integer positionToCoverInProtein) {
+		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
+		return getPositionsInProtein(peptide.getSequence(), proteinAcc, proteinSequence, positionToCoverInProtein);
 	}
 
 	/**
 	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
-	 * class, so it must be initialized before this call. If peptide is not found is
-	 * maps to multiple locations of the protein, it throws an
-	 * {@link IllegalArgumentException}
+	 * class, so it must be initialized before this call.
 	 * 
 	 * @param peptide
 	 * @param proteinAcc
+	 * @param proteinSequence
+	 * @param positionToCoverInProtein
 	 * @return
 	 */
-	public static int getPositionsInProtein(String peptideSequence, String proteinAcc) {
-		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
-		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence, peptideSequence);
-		if (positionsOfPeptideInProtein.isEmpty()) {
-			throw new IllegalArgumentException("Peptide " + peptideSequence + " doesn't map to protein " + proteinAcc
-					+ " in sequence " + proteinSequence);
-		}
-		if (positionsOfPeptideInProtein.size() > 1) {
-			throw new IllegalArgumentException("Peptide " + peptideSequence + " map to protein " + proteinAcc
-					+ " in sequence " + proteinSequence + " in multiple positions. It should be discarded.");
-		}
-		return positionsOfPeptideInProtein.get(0);
-	}
-
 	public static TIntList getPositionsInProtein(QuantifiedPeptideInterface peptide, String proteinAcc,
-			Integer positionToCoverInProtein) {
-		return getPositionsInProtein(peptide.getSequence(), proteinAcc, positionToCoverInProtein);
+			String proteinSequence, Integer positionToCoverInProtein) {
+		return getPositionsInProtein(peptide.getSequence(), proteinAcc, proteinSequence, positionToCoverInProtein);
 	}
 
+	/**
+	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
+	 * class, so it must be initialized before this call.
+	 * 
+	 * @param peptideSequence
+	 * @param proteinAcc
+	 * @param positionToCoverInProtein
+	 * @return
+	 */
 	public static TIntList getPositionsInProtein(String peptideSequence, String proteinAcc,
 			Integer positionToCoverInProtein) {
-
 		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
+		return getPositionsInProtein(peptideSequence, proteinAcc, proteinSequence, positionToCoverInProtein);
+	}
+
+	/**
+	 * Gets the positions of peptide in proteinAcc. It uses {@link ProteinSequences}
+	 * class, so it must be initialized before this call.
+	 * 
+	 * @param peptideSequence
+	 * @param proteinAcc
+	 * @param proteinSequence
+	 * @param positionToCoverInProtein
+	 * @return
+	 */
+	public static TIntList getPositionsInProtein(String peptideSequence, String proteinAcc, String proteinSequence,
+			Integer positionToCoverInProtein) {
+
 		final TIntArrayList positionsOfPeptideInProtein = StringUtils.allPositionsOf(proteinSequence, peptideSequence);
 		if (positionsOfPeptideInProtein.isEmpty()) {
 			throw new IllegalArgumentException("Peptide " + peptideSequence + " doesn't map to protein " + proteinAcc

@@ -28,11 +28,9 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 	private final List<String> selectedRuns;
 	private final List<ResultsLoadedFromDisk> resultsFromDisk = new ArrayList<ResultsLoadedFromDisk>();
 	private final ReentrantLock lock = new ReentrantLock(true);
-	private final String referenceProteinSequence;
 
-	public GlycoPTMRunComparator(List<String> selectedRuns, String referenceProteinSequence) {
+	public GlycoPTMRunComparator(List<String> selectedRuns) {
 		this.selectedRuns = selectedRuns;
-		this.referenceProteinSequence = referenceProteinSequence;
 	}
 
 	@Override
@@ -50,7 +48,7 @@ public class GlycoPTMRunComparator extends SwingWorker<Void, Void> implements Pr
 
 		for (final String selectedRun : selectedRuns) {
 			final File resultsFolder = new File(selectedRun);
-			final ResultLoaderFromDisk loader = new ResultLoaderFromDisk(resultsFolder, referenceProteinSequence);
+			final ResultLoaderFromDisk loader = new ResultLoaderFromDisk(resultsFolder);
 			loader.addPropertyChangeListener(this);
 			loader.run();
 		}

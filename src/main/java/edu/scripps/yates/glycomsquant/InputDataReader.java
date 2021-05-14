@@ -266,6 +266,16 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				continue;
 			}
 
+			if (this.discardPeptidesRepeatedInProtein) {
+				final TIntList positionsInProtein = GlycoPTMAnalyzerUtil.getPositionsInProtein(peptide,
+						proteinOfInterestACC, null);
+				if (positionsInProtein.size() > 1) {
+					// discard it because it is repeated in the protein
+					continue;
+				}
+
+			}
+
 			boolean valid = true;
 			final TIntObjectMap<PTMInPeptide> ptmPositions = GlycoPTMAnalyzerUtil.getPTMsInPeptideByPosition(peptide);
 			final TIntList motifs = GlycoPTMAnalyzerUtil.getMotifPositions(peptide, proteinOfInterestACC);
