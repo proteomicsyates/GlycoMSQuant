@@ -1299,6 +1299,7 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	protected void openSelectInputFileDialog() {
 		if (fileChooserInputFile == null) {
 			fileChooserInputFile = new JFileChooser();
+			fileChooserInputFile.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			final String previousInputFile = AppDefaults.getInstance().getInputFile();
 			if (previousInputFile != null) {
 				fileChooserInputFile.setCurrentDirectory(new File(previousInputFile).getParentFile());
@@ -1506,6 +1507,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	public void propertyChange(PropertyChangeEvent evt) {
 		if (evt.getPropertyName().equals("progress")) {
 			showMessage(evt.getNewValue());
+		} else if (evt.getPropertyName().equals(InputDataReader.INPUT_DATA_READER_AMOUNT_TYPE_ASSESSED)) {
+			final AmountType amountType = (AmountType) evt.getNewValue();
+			this.amountType = amountType;
+			log.info("Amount type from input file is " + amountType);
 		} else if (evt.getPropertyName().equals(InputDataReader.INPUT_DATA_READER_FINISHED)) {
 			currentPeptides = (List<QuantifiedPeptideInterface>) evt.getNewValue();
 			if (currentPeptides != null && !currentPeptides.isEmpty()) {

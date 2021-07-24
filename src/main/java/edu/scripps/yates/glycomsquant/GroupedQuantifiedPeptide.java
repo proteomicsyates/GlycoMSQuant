@@ -106,6 +106,7 @@ public class GroupedQuantifiedPeptide extends THashSet<QuantifiedPeptideInterfac
 			key = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, useCharge);
 			keyWithNoCharge = GlycoPTMAnalyzerUtil.getPeptideKey(peptide, false);
 		}
+
 		return super.add(peptide);
 	}
 

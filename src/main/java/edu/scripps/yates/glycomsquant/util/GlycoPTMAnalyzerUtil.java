@@ -493,9 +493,9 @@ public class GlycoPTMAnalyzerUtil {
 
 		peptide.getPTMsInPeptide().stream().forEach(ptm -> ret.put(ptm.getPosition(), ptm));
 		final List<PTMInPeptide> ptMsInPeptide = peptide.getPTMsInPeptide();
-		if (ret.size() != ptMsInPeptide.size()) {
-			throw new IllegalArgumentException();
-		}
+//		if (ret.size() != ptMsInPeptide.size()) {
+//			throw new IllegalArgumentException();
+//		}
 		return ret;
 	}
 
@@ -621,7 +621,13 @@ public class GlycoPTMAnalyzerUtil {
 //			throw new IllegalArgumentException(
 //					"There should be only 1 intensity, because is from one peptide in one replicate");
 //			
-			log.error("There should be only 1 intensity, because is from one peptide in one replicate");
+
+			// in case of MaxQuant, we can find peptides with the same peptide+charge in the
+			// same replicate, same experiment, but different intensities
+			// in that case, we report the average number:
+
+			return Maths.mean(values);
+//			log.error("There should be only 1 intensity, because is from one peptide in one replicate");
 		}
 		if (values.isEmpty()) {
 			return Double.NaN;

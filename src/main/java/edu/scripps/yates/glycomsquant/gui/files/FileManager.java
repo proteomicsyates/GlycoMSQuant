@@ -115,7 +115,9 @@ public class FileManager {
 	 * @throws IOException
 	 */
 	public static void copyInputDataFileToResultsFolder(File inputDataFile, File resultsFolder) throws IOException {
-
+		if (!inputDataFile.isFile()) {
+			return; // if it is a folder, dont copy. this is the case of maxQuant folder
+		}
 		final File to = new File(resultsFolder.getAbsolutePath() + File.separator
 				+ FilenameUtils.getName(inputDataFile.getAbsolutePath()));
 		Files.copy(inputDataFile, to);

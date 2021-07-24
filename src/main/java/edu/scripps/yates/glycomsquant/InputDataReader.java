@@ -14,11 +14,13 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
+import edu.scripps.yates.census.read.MaxLFQuantParser;
 import edu.scripps.yates.census.read.QuantCompareParser;
 import edu.scripps.yates.census.read.QuantCompareTimsTOFParser;
 import edu.scripps.yates.census.read.QuantParserException;
 import edu.scripps.yates.census.read.model.QuantifiedPSM;
 import edu.scripps.yates.census.read.model.QuantifiedPeptide;
+import edu.scripps.yates.census.read.model.interfaces.QuantParser;
 import edu.scripps.yates.census.read.model.interfaces.QuantRatio;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
@@ -31,6 +33,7 @@ import edu.scripps.yates.glycomsquant.util.PeptidesPTMLocalizationReport;
 import edu.scripps.yates.utilities.luciphor.LuciphorReader;
 import edu.scripps.yates.utilities.maths.Maths;
 import edu.scripps.yates.utilities.proteomicsmodel.Amount;
+import edu.scripps.yates.utilities.proteomicsmodel.Condition;
 import edu.scripps.yates.utilities.proteomicsmodel.PSM;
 import edu.scripps.yates.utilities.proteomicsmodel.PTM;
 import edu.scripps.yates.utilities.proteomicsmodel.PTMPosition;
@@ -90,7 +93,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private AmountType amountType;
 	private final boolean normalizeExperimentsByProtein;
 	private List<QuantifiedPeptideInterface> peptides;
-	private final Map<File, QuantCompareParser> parsersByFile = new THashMap<File, QuantCompareParser>();
+	private final Map<File, QuantParser> parsersByFile = new THashMap<File, QuantParser>();
 	private final String motifRegexp;
 	private final String proteinOfInterestSequence;
 	private final boolean discardWrongPositionedPTMs;
@@ -101,6 +104,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private final boolean useCharge;
 	private final boolean discardPeptidesRepeatedInProtein;
 	private static final DecimalFormat formatter = new DecimalFormat("#.#%");
+	public static final String INPUT_DATA_READER_AMOUNT_TYPE_ASSESSED = "Amount type assessed";
 
 	/**
 	 * Constructor in which the proteinOfInterestACC and the fakePTM can be
@@ -147,17 +151,22 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
 	}
 
-	private QuantCompareParser getQuantCompareParser() throws FileNotFoundException {
-		QuantCompareParser reader = null;
+	private QuantParser getQuantParser() throws FileNotFoundException {
+		QuantParser reader = null;
 		if (parsersByFile.containsKey(inputFile)) {
 			reader = parsersByFile.get(inputFile);
 		} else {
 			// I try as timsTofFirst
 			amountType = AmountType.XIC;
-			reader = new QuantCompareTimsTOFParser(inputFile);
-			if (!reader.canRead()) {
-				amountType = AmountType.INTENSITY;
-				reader = new QuantCompareParser(inputFile);
+			if (!inputFile.isFile()) {
+				// then it might be a MaxQuant results folder (txt folder)
+				reader = new MaxLFQuantParser(inputFile, null, null);
+			} else {
+				reader = new QuantCompareTimsTOFParser(inputFile);
+				if (!((QuantCompareTimsTOFParser) reader).canRead()) {
+					amountType = AmountType.INTENSITY;
+					reader = new QuantCompareParser(inputFile);
+				}
 			}
 			MainFrame.getInstance();
 			// charge state sensible and ptm sensible
@@ -176,9 +185,10 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @throws IOException
 	 */
 	public List<QuantifiedPeptideInterface> runReader() throws QuantParserException {
-		QuantCompareParser reader;
+		QuantParser reader;
 		try {
-			reader = getQuantCompareParser();
+			reader = getQuantParser();
+			firePropertyChange(INPUT_DATA_READER_AMOUNT_TYPE_ASSESSED, null, amountType);
 		} catch (final FileNotFoundException e) {
 			throw new QuantParserException(e);
 		}
@@ -208,7 +218,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 		return peptides;
 	}
 
-	private List<QuantifiedPeptideInterface> filterData(QuantCompareParser reader) throws QuantParserException {
+	private List<QuantifiedPeptideInterface> filterData(QuantParser reader) throws QuantParserException {
 
 		final PeptidesPTMLocalizationReport peptidesPTMLocalizationReport = new PeptidesPTMLocalizationReport();
 		final List<QuantifiedPeptideInterface> peptidesFixed = new ArrayList<QuantifiedPeptideInterface>();
@@ -623,6 +633,9 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 				newPSM.addProtein(protein, true);
 				protein.getQuantifiedPeptides().remove(peptide);
 				protein.getQuantifiedPSMs().remove(psm);
+			}
+			for (final Condition condition : psm.getConditions()) {
+				newPSM.addCondition(condition);
 			}
 			newPSM.setMSRun(psm.getMSRun());
 			newPSM.setRtInMinutes(psm.getRtInMinutes());

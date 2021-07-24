@@ -120,7 +120,6 @@ public class ColumnsGroupedPeptidesTableUtil {
 				break;
 			case SPC_PER_REPLICATE:
 				sb = new StringBuilder();
-
 				for (final String replicate : replicates) {
 					int num = 0;
 					for (final QuantifiedPSMInterface psm : quantifiedPSMs) {
