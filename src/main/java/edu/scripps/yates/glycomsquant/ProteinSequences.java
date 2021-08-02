@@ -140,6 +140,9 @@ public class ProteinSequences {
 					} catch (final IOException e) {
 						e.printStackTrace();
 					}
+				} else {
+					throw new IllegalArgumentException("The fasta file '" + fastaFile.getAbsolutePath()
+							+ "' is not readable. Make sure all fasta headers start by '>' symbol");
 				}
 			} finally {
 				loader.close();
