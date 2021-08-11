@@ -95,7 +95,7 @@ public class GlycoPTMAnalyzerUtil {
 
 	public static TIntList getMotifPositions(Peptide peptide, String proteinAcc) {
 		final String proteinSequence = ProteinSequences.getInstance().getProteinSequence(proteinAcc);
-		return getMotifPositions(peptide, proteinSequence, ProteinSequences.getInstance().getMotifRegexp());
+		return getMotifPositions(peptide, proteinSequence, ProteinSequences.getInstance().getMotifRegexp(proteinAcc));
 	}
 
 	/**

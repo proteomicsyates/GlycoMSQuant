@@ -320,9 +320,10 @@ public class GlycoPTMAnalyzer implements InputParameters {
 	public void run(boolean generateTable, boolean generateGraphs) throws IOException {
 		List<QuantifiedPeptideInterface> peptides = null;
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		final InputDataReader q = new InputDataReader(inputFile, luciphorFile, proteinOfInterestACC, intensityThreshold,
-				normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs, this.fixWrongPositionedPTMs,
-				this.discardPeptidesWithNoMotifs, this.useCharge, this.discardPeptidesRepeatedInProtein);
+		final InputDataReader q = new InputDataReader(inputFile, luciphorFile, proteinOfInterestACC, this.fastaFile,
+				intensityThreshold, normalizeReplicates, this.motifRegexp, this.discardWrongPositionedPTMs,
+				this.fixWrongPositionedPTMs, this.discardPeptidesWithNoMotifs, this.useCharge,
+				this.discardPeptidesRepeatedInProtein);
 		try {
 			peptides = q.runReader();
 		} catch (final QuantParserException e) {

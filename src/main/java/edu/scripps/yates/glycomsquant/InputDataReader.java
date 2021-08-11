@@ -26,6 +26,7 @@ import edu.scripps.yates.census.read.model.interfaces.QuantifiedPSMInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedPeptideInterface;
 import edu.scripps.yates.census.read.model.interfaces.QuantifiedProteinInterface;
 import edu.scripps.yates.glycomsquant.gui.MainFrame;
+import edu.scripps.yates.glycomsquant.gui.files.ResultsProperties;
 import edu.scripps.yates.glycomsquant.util.AmbiguousPTMLocationException;
 import edu.scripps.yates.glycomsquant.util.GlycoPTMAnalyzerUtil;
 import edu.scripps.yates.glycomsquant.util.NotPossiblePTMLocationException;
@@ -97,7 +98,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	private final String motifRegexp;
 	private final String proteinOfInterestSequence;
 	private final boolean discardWrongPositionedPTMs;
-	private final File luciphorFile;
+	private File luciphorFile;
 	private Map<String, QuantifiedPeptideInterface> peptideMap;
 	private final boolean fixWrongPositionedPTMs;
 	private final boolean discardPeptidesWithNoMotifs;
@@ -128,7 +129,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 	 * @param useCharge
 	 * @param discardPeptidesRepeatedInProtein
 	 */
-	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC,
+	public InputDataReader(File inputDataFile, File luciphorFile, String proteinOfInterestACC, File fastaFile,
 			double intensityThreshold, boolean normalizeReplicates, String motifRegexp,
 			boolean discardWrongPositionedPTMs, boolean fixWrongPositionedPTMs, boolean discardPeptidesWithNoMotifs,
 			boolean useCharge, boolean discardPeptidesRepeatedInProtein) {
@@ -143,12 +144,51 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 
 		this.intensityThreshold = intensityThreshold;
 		this.normalizeExperimentsByProtein = normalizeReplicates;
-		this.proteinOfInterestSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
+		if (fastaFile != null) {
+			this.proteinOfInterestSequence = ProteinSequences.getInstance(fastaFile, motifRegexp)
+					.getProteinSequence(proteinOfInterestACC);
+		} else {
+			this.proteinOfInterestSequence = ProteinSequences.getInstance().getProteinSequence(proteinOfInterestACC);
+		}
+		if (proteinOfInterestSequence == null) {
+			log.error("Sequence not found!");
+		}
 		this.discardWrongPositionedPTMs = discardWrongPositionedPTMs;
 		this.fixWrongPositionedPTMs = fixWrongPositionedPTMs;
 		this.discardPeptidesWithNoMotifs = discardPeptidesWithNoMotifs;
 		this.useCharge = useCharge;
 		this.discardPeptidesRepeatedInProtein = discardPeptidesRepeatedInProtein;
+	}
+
+	public InputDataReader(ResultsProperties resultsProperties) {
+
+		this.motifRegexp = resultsProperties.getMotifRegexp();
+		this.inputFile = resultsProperties.getInputFile();
+		this.luciphorFile = resultsProperties.getLuciphorFile();
+		if (inputFile == null || !inputFile.exists()) {
+			throw new IllegalArgumentException("Input data file in result folder '"
+					+ resultsProperties.getIndividualResultsFolder().getAbsolutePath() + "' is not found");
+		}
+
+		if (luciphorFile == null || !luciphorFile.exists()) {
+			luciphorFile = null;
+		}
+
+		this.proteinOfInterestACC = resultsProperties.getProteinOfInterestACC();
+
+		this.intensityThreshold = resultsProperties.getIntensityThreshold();
+		this.normalizeExperimentsByProtein = resultsProperties.isNormalizeReplicates();
+		this.proteinOfInterestSequence = ProteinSequences
+				.getInstance(resultsProperties.getFastaFile(), resultsProperties.getMotifRegexp())
+				.getProteinSequence(proteinOfInterestACC);
+		if (proteinOfInterestSequence == null) {
+			log.error("Sequence not found!");
+		}
+		this.discardWrongPositionedPTMs = resultsProperties.isDiscardWrongPositionedPTMs();
+		this.fixWrongPositionedPTMs = resultsProperties.isFixWrongPositionedPTMs();
+		this.discardPeptidesWithNoMotifs = resultsProperties.isDiscardPeptidesWithNoMotifs();
+		this.useCharge = resultsProperties.isUseCharge();
+		this.discardPeptidesRepeatedInProtein = resultsProperties.isDiscardPeptidesRepeatedInProtein();
 	}
 
 	private QuantParser getQuantParser() throws FileNotFoundException {

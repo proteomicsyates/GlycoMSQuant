@@ -53,12 +53,8 @@ public class ResultLoaderFromDisk extends SwingWorker<Void, Void> {
 			if (luciphorFile == null || !luciphorFile.exists()) {
 				luciphorFile = null;
 			}
-			final InputDataReader reader = new InputDataReader(inputDataFile, luciphorFile,
-					resultsProperties.getProteinOfInterestACC(), resultsProperties.getIntensityThreshold(),
-					resultsProperties.isNormalizeReplicates(), resultsProperties.getMotifRegexp(),
-					resultsProperties.isDiscardWrongPositionedPTMs(), resultsProperties.isFixWrongPositionedPTMs(),
-					resultsProperties.isDiscardPeptidesWithNoMotifs(), resultsProperties.isUseCharge(),
-					resultsProperties.isDiscardPeptidesRepeatedInProtein());
+			final InputDataReader reader = new InputDataReader(resultsProperties);
+
 			boolean discardPeptidesRepeatedInProtein = true;
 			if (resultsProperties.isDiscardPeptidesRepeatedInProtein() != null) {
 				discardPeptidesRepeatedInProtein = resultsProperties.isDiscardPeptidesRepeatedInProtein();

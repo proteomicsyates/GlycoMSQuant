@@ -1451,9 +1451,9 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		final Boolean useCharge = isUseCharge();
 		final Boolean discardPeptidesRepeatedInProtein = isDiscardPeptidesRepeatedInProtein();
 		log.info("Reading input file '" + inputFile.getAbsolutePath() + "'...");
-		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, intensityThreshold,
-				normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs, fixWrongPositionedPTMs,
-				discardPeptidesWithNoMotifs, useCharge, discardPeptidesRepeatedInProtein);
+		inputDataReader = new InputDataReader(inputFile, luciphorFile2, proteinOfInterestACC, getFastaFile(),
+				intensityThreshold, normalizeExperimentsByProtein, motifRegexp, discardWrongPositionedPTMs,
+				fixWrongPositionedPTMs, discardPeptidesWithNoMotifs, useCharge, discardPeptidesRepeatedInProtein);
 		inputDataReader.addPropertyChangeListener(this);
 		inputDataReader.execute();
 	}

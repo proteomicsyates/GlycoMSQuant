@@ -71,6 +71,10 @@ public class ResultsProperties implements InputParameters {
 		loadProperties();
 	}
 
+	public File getIndividualResultsFolder() {
+		return individualResultsFolder;
+	}
+
 	private File getPropertiesFile() {
 
 		final File propertiesFile = new File(
