@@ -77,7 +77,7 @@ public class ColumnsComparisonTableUtil {
 				ret.add(comparison.getXSem());
 				break;
 			case SEM_2:
-				ret.add(comparison.getYMean());
+				ret.add(comparison.getYSem());
 				break;
 			case PTM:
 				ret.add(comparison.getPtm().getCode());
