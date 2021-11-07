@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -23,6 +24,8 @@ import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+
+import edu.scripps.yates.glycomsquant.ProteinSequences;
 
 @SuppressWarnings("serial")
 public class ReferenceProteinSequenceEditor extends JDialog {
@@ -43,6 +46,9 @@ public class ReferenceProteinSequenceEditor extends JDialog {
 		jTextAreaProteinSequence.setLineWrap(true);
 		jTextAreaProteinSequence.setToolTipText("Reference protein sequence");
 		scrollPane.setViewportView(jTextAreaProteinSequence);
+		// capture paste on textarea
+		Action action = jTextAreaProteinSequence.getActionMap().get("paste-from-clipboard");
+		jTextAreaProteinSequence.getActionMap().put("paste-from-clipboard", new ProxyAction(action));
 
 		final JPanel northPanel = new JPanel();
 		getContentPane().add(northPanel, BorderLayout.NORTH);
@@ -107,6 +113,7 @@ public class ReferenceProteinSequenceEditor extends JDialog {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				setReferenceProteinSequence(MappingToReferenceHXB2.HXB2);
+				ProteinSequences.REFERENCE = "HXB2";
 			}
 		});
 		btnNewButton.setToolTipText("click here to set HXB2 as your reference protein");

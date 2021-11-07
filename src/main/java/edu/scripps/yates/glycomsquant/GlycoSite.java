@@ -192,7 +192,8 @@ public class GlycoSite {
 
 	@Override
 	public String toString() {
-		return "HIVPosition [position=" + position + ", value=" + getValuesString() + "]";
+		return "Position [position=" + position + " (ref:" + getReferencePosition() + "), value=" + getValuesString()
+				+ "]";
 	}
 
 	/**

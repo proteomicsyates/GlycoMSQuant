@@ -36,7 +36,7 @@ public class ProteinSequences {
 	private boolean loaded;
 	private final Map<String, MappingToReferenceHXB2> mappingsByProtein = new THashMap<String, MappingToReferenceHXB2>();
 	private final Map<String, String> motifsByProteinAccs = new THashMap<String, String>();
-	public final static String REFERENCE = "HXB2";
+	public static String REFERENCE = "HXB2";
 
 	private ProteinSequences(File fastaFile, String motifRegexp) {
 		this.fastaFiles.add(fastaFile);

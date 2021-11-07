@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 enum ColumnsComparisonTable {
-	POSITION("Position", 20, "Position in the protein sequence", Integer.class), //
+	REF_POSITION("Ref. Position", 20, "Position in the reference protein sequence", String.class),
+	POSITIONS("Position", 20, "Position in the protein sequence of each experiment", String.class), //
 	PTM("PTM", 50, "PTM type", String.class), PROPORTION_1("% 1", 40, "Averaged proportion in 1", Double.class),
 	PROPORTION_2("% 2", 40, "Averaged proportion in 2", Double.class),
 	SEM_1("SEM 1", 40, "Squared Error of Mean of the proportions in 1", Double.class),

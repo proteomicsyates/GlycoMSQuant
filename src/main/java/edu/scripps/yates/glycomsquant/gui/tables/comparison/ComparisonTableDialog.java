@@ -93,7 +93,7 @@ public class ComparisonTableDialog extends JFrame {
 	protected List<MyMannWhitneyTestResult> getSelectedComparisons(int[] selectedRows) {
 		final List<MyMannWhitneyTestResult> ret = new ArrayList<MyMannWhitneyTestResult>();
 		final List<ColumnsComparisonTable> columns = ColumnsComparisonTable.getColumns();
-		final int positionColumnIndex = columns.indexOf(ColumnsComparisonTable.POSITION);
+		final int positionColumnIndex = columns.indexOf(ColumnsComparisonTable.POSITIONS);
 		final int ptmColumnIndex = columns.indexOf(ColumnsComparisonTable.PTM);
 		for (final int selectedRow : selectedRows) {
 			final int row = table.getTable().getRowSorter().convertRowIndexToModel(selectedRow);
@@ -111,7 +111,7 @@ public class ComparisonTableDialog extends JFrame {
 		if (comparisonsByKey == null) {
 			comparisonsByKey = new THashMap<String, MyMannWhitneyTestResult>();
 			final List<ColumnsComparisonTable> columns = ColumnsComparisonTable.getColumns();
-			final int positionColumnIndex = columns.indexOf(ColumnsComparisonTable.POSITION);
+			final int positionColumnIndex = columns.indexOf(ColumnsComparisonTable.POSITIONS);
 			final int ptmColumnIndex = columns.indexOf(ColumnsComparisonTable.PTM);
 			for (final MyMannWhitneyTestResult test : getComparisons()) {
 				final int position = Integer.valueOf(ColumnsComparisonTableUtil.getInstance()
@@ -155,7 +155,7 @@ public class ComparisonTableDialog extends JFrame {
 
 				@Override
 				public int compare(MyMannWhitneyTestResult o1, MyMannWhitneyTestResult o2) {
-					int ret = Integer.compare(o1.getPosition(), o2.getPosition());
+					int ret = o1.getReferencePosition().compareTo(o2.getReferencePosition());
 					if (ret == 0) {
 						ret = Integer.compare(o1.getPtm().ordinal(), o2.getPtm().ordinal());
 					}

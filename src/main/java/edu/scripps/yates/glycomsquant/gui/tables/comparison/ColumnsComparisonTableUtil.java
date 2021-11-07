@@ -59,8 +59,11 @@ public class ColumnsComparisonTableUtil {
 
 				ret.add(comparison.getCorrectedPValue());
 				break;
-			case POSITION:
-				ret.add(comparison.getPosition());
+			case POSITIONS:
+				ret.add(comparison.getIndividualPositionsString());
+				break;
+			case REF_POSITION:
+				ret.add(comparison.getReferencePosition());
 				break;
 			case P_VALUE:
 				ret.add(comparison.getPValue());

@@ -741,6 +741,14 @@ public class GlycoPTMAnalyzerUtil {
 		return ret;
 	}
 
+	public static Map<String, GlycoSite> getSitesByReferencePosition(List<GlycoSite> sites) {
+		final Map<String, GlycoSite> ret = new THashMap<String, GlycoSite>();
+		for (final GlycoSite glycoSite : sites) {
+			ret.put(glycoSite.getReferencePosition(), glycoSite);
+		}
+		return ret;
+	}
+
 	public static TMap<PTMCode, TDoubleList> getIntensitiesByPTMCode(
 			GroupedQuantifiedPeptide groupedQuantifiedPeptide) {
 		final TMap<PTMCode, TDoubleList> ret = new THashMap<PTMCode, TDoubleList>();

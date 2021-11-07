@@ -31,7 +31,8 @@ public class MyMannWhitneyTestResult {
 	private Double correctedPValue;
 	private final PValueCorrectionType method = PValueCorrectionType.BH;
 	private final PTMCode ptm;
-	private final int position;
+	private final String referencePosition;
+	private final Integer[] positions = new Integer[2];
 	private static TObjectDoubleMap<Integer> pvaluesByID = new TObjectDoubleHashMap<Integer>();
 	private static int id = 0;
 	private static TIntObjectMap<MyMannWhitneyTestResult> instancesByID = new TIntObjectHashMap<MyMannWhitneyTestResult>();
@@ -45,9 +46,12 @@ public class MyMannWhitneyTestResult {
 		instancesByID.clear();
 	}
 
-	public MyMannWhitneyTestResult(PTMCode ptm, int position, double[] x, double y[]) {
+	public MyMannWhitneyTestResult(PTMCode ptm, String referencePosition, Integer position1, Integer position2,
+			double[] x, double y[]) {
 		this.ptm = ptm;
-		this.position = position;
+		this.referencePosition = referencePosition;
+		this.positions[0] = position1;
+		this.positions[1] = position2;
 		final MannWhitneyUTest test = new MannWhitneyUTest(NaNStrategy.REMOVED, TiesStrategy.AVERAGE);
 		this.x = x;
 		this.y = y;
@@ -139,8 +143,24 @@ public class MyMannWhitneyTestResult {
 		return sb.toString();
 	}
 
-	public int getPosition() {
-		return position;
+	public String getIndividualPositionsString() {
+		StringBuilder sb = new StringBuilder();
+		if (positions[0] != null) {
+			sb.append(positions[0]);
+		} else {
+			sb.append("-");
+		}
+		sb.append("-");
+		if (positions[1] != null) {
+			sb.append(positions[1]);
+		} else {
+			sb.append("-");
+		}
+		return sb.toString();
+	}
+
+	public String getReferencePosition() {
+		return this.referencePosition;
 	}
 
 	public PTMCode getPtm() {
