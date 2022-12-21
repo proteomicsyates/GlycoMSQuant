@@ -177,9 +177,9 @@ public class ScrollableRunsTable extends JPanel {
 				@Override
 				public void valueChanged(ListSelectionEvent e) {
 					if (table.getSelectedRowCount() > 1) {
-						MainFrame.getInstance().enableRunComparison(true);
+						MainFrame.getInstance(null).enableRunComparison(true);
 					} else {
-						MainFrame.getInstance().enableRunComparison(false);
+						MainFrame.getInstance(null).enableRunComparison(false);
 					}
 					ScrollableRunsTable.this.deleteRunButton.setEnabled(table.getSelectedRowCount() > 0);
 					ScrollableRunsTable.this.loadRunButton.setEnabled(table.getSelectedRowCount() == 1);
@@ -226,7 +226,7 @@ public class ScrollableRunsTable extends JPanel {
 	}
 
 	protected void softClickOnResult(String value) {
-		MainFrame.getInstance().updateControlsWithParametersFromDisk(new File(value));
+		MainFrame.getInstance(null).updateControlsWithParametersFromDisk(new File(value));
 
 	}
 
@@ -235,7 +235,7 @@ public class ScrollableRunsTable extends JPanel {
 	 * @param individualResultsFolder folder to individual results
 	 */
 	protected void loadResultsFromDisk(File individualResultsFolder) {
-		MainFrame.getInstance().loadResultsFromDisk(individualResultsFolder);
+		MainFrame.getInstance(null).loadResultsFromDisk(individualResultsFolder);
 
 	}
 

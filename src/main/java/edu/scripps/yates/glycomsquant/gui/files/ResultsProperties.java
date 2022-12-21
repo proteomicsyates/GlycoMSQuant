@@ -381,7 +381,7 @@ public class ResultsProperties implements InputParameters {
 	@Override
 	public AmountType getAmountType() {
 		loadProperties();
-		return MainFrame.getInstance().getAmountType();
+		return MainFrame.getInstance(null).getAmountType();
 	}
 
 	@Override

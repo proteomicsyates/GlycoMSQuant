@@ -208,7 +208,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 					reader = new QuantCompareParser(inputFile);
 				}
 			}
-			MainFrame.getInstance();
+			MainFrame.getInstance(null);
 			// charge state sensible and ptm sensible
 			reader.setChargeSensible(MainFrame.isChargeStateSensible());
 			reader.setDecoyPattern(MainFrame.getDecoyPattern());
@@ -485,7 +485,7 @@ public class InputDataReader extends javax.swing.SwingWorker<List<QuantifiedPept
 			tmp4 += " (KEPT)";
 		}
 		firePropertyChange("progress", null, tmp4);
-		if (Double.compare(0.0, intensityThreshold) != 0) {
+		if (intensitiesDiscardedByIntensityThreshold > 0 || Double.compare(0.0, intensityThreshold) != 0) {
 			firePropertyChange("progress", null,
 					"Peptides with none of their intensities in the different experiments pass intensity threshold of '"
 							+ intensityThreshold + "': "

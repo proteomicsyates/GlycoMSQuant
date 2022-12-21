@@ -135,9 +135,10 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 	// text for separate charts button
 	private final static String POPUP_CHARTS = "Pop-up charts";
 
-	public static MainFrame getInstance() {
-		if (instance == null) {
-			instance = new MainFrame();
+	public static MainFrame getInstance(String motifRegexp) {
+		if (instance == null
+				|| (instance != null && motifRegexp != null && !motifRegexp.equals(instance.motifRegexp))) {
+			instance = new MainFrame(motifRegexp);
 		}
 		return instance;
 	}
@@ -154,8 +155,13 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		}
 	}
 
-	private MainFrame() {
+	private MainFrame(String motifRegexp) {
 		super(500); // size of the attached dialog
+		if (motifRegexp == null) {
+			this.motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
+		} else {
+			this.motifRegexp = motifRegexp;
+		}
 		setMaximumSize(SwingUtils.getScreenDimension());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setTitle("GlycoMSQuant");
@@ -1374,7 +1380,22 @@ public class MainFrame extends AbstractJFrameWithAttachedHelpAndAttachedRunsDial
 		// set to not disapear all tooltips
 		ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
 
-		final MainFrame frame = MainFrame.getInstance();
+		String motifRegexp = GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP;
+		if (args.length > 0) {
+			if (args[0].equals("-motif")) {
+				if (args.length != 2) {
+					System.err.println("You need to specify a motif, like \"(N)\" or \""
+							+ GlycoPTMAnalyzer.NEW_DEFAULT_MOTIF_REGEXP + "\" after -motif parameter");
+					System.exit(-1);
+				}
+				motifRegexp = args[1];
+			} else {
+				System.err.println("Parameter not recognized '" + args[0] + "'. You can only provide -motif parameter");
+				System.exit(-1);
+			}
+		}
+		System.out.println("MOTIF REGEXP: '" + motifRegexp + "'");
+		final MainFrame frame = MainFrame.getInstance(motifRegexp);
 		frame.setVisible(true);
 		CurrentInputParameters.getInstance().setInputParameters(frame);
 	}

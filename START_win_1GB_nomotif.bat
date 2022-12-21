@@ -1,0 +1,1 @@
+java -jar -Xms64m -Xmx1024m glycoMSQuant.jar -motif "(N)"
